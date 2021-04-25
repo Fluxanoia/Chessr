@@ -1,8 +1,8 @@
 from enum import auto
 import pygame as pg
-from src.enum import ArrayEnum
+from src.enum import ArrayEnum, enum_as_list
 from src.files import FileManager
-from src.globals import Singleton, instance
+from src.globals import Singleton, instance, scale_rect
 
 class PieceType(ArrayEnum):
     QUEEN = auto()
@@ -17,7 +17,7 @@ class PieceColour(ArrayEnum):
     BLACK = auto()
     RED = auto()
 
-class PieceShadow(ArrayEnum):
+class ShadowType(ArrayEnum):
     LIGHT = auto()
     DARK = auto()
 
@@ -44,46 +44,32 @@ class Spritesheet(Singleton):
 
     def __init__(self):
         super().__init__()
-        self.__sheet = instance(FileManager).load_image("sprites.png", True)
+        self.__sheets = { 1 : instance(FileManager).load_image("sprites.png", True) }
 
-        left = 0
-        rect = pg.Rect(0, 0, 0, 0)
+    def get_sheet(self, scale = 1):
+        if scale in self.__sheets: return self.__sheets[scale]
+        self.__sheets[scale] = pg.transform.scale(self.__sheets[1],
+            tuple(map(lambda x : x * scale, self.__sheets[1].get_size())))
+        return self.__sheets[scale]
 
-        self.__pieces = list()
-        rect.update(left, 0, Spritesheet.PIECE_WIDTH, Spritesheet.PIECE_HEIGHT)
-        for colour in PieceColour:
-            rect.top = colour * Spritesheet.PIECE_HEIGHT
-            row = list()
-            for _type in PieceType:
-                rect.left = _type * Spritesheet.PIECE_WIDTH
-                row.append(self.__sheet.subsurface(rect))
-            self.__pieces.append(row)
+    @staticmethod
+    def get_piece_src_rect(colour, _type, scale = 1):
+        r = pg.Rect(_type * Spritesheet.PIECE_WIDTH, colour * Spritesheet.PIECE_HEIGHT,
+            Spritesheet.PIECE_WIDTH, Spritesheet.PIECE_HEIGHT)
+        scale_rect(r, scale)
+        return r
 
-        left = rect.left + Spritesheet.PIECE_WIDTH
+    @staticmethod
+    def get_shadow_src_rect(_type, scale = 1):
+        r = pg.Rect(len(enum_as_list(PieceType)) * Spritesheet.PIECE_WIDTH,
+            _type * Spritesheet.SHADOW_HEIGHT, Spritesheet.SHADOW_WIDTH, Spritesheet.SHADOW_HEIGHT)
+        scale_rect(r, scale)
+        return r
 
-        self.__shadows = list()
-        rect.update(left, 0, Spritesheet.SHADOW_WIDTH, Spritesheet.SHADOW_HEIGHT)
-        for shadow in PieceShadow:
-            rect.top = shadow * Spritesheet.SHADOW_HEIGHT
-            self.__shadows.append(self.__sheet.subsurface(rect))
-
-        left += Spritesheet.SHADOW_WIDTH
-
-        self.__boards = list()
-        rect.update(left, 0, Spritesheet.BOARD_WIDTH, Spritesheet.BOARD_HEIGHT)
-        for colour in BoardColour:
-            rect.top = colour * Spritesheet.BOARD_HEIGHT
-            row = list()
-            for _type in BoardType:
-                rect.left = left + _type * Spritesheet.BOARD_WIDTH
-                row.append(self.__sheet.subsurface(rect))
-            self.__boards.append(row)
-
-    def get_piece(self, colour, _type):
-        return self.__pieces[colour][_type]
-
-    def get_shadow(self, _type):
-        return self.__shadows[_type]
-
-    def get_board(self, colour, _type):
-        return self.__boards[colour][_type]
+    @staticmethod
+    def get_board_src_rect(colour, _type, scale = 1):
+        offset = len(enum_as_list(PieceType)) * Spritesheet.PIECE_WIDTH + Spritesheet.SHADOW_WIDTH
+        r = pg.Rect(offset + _type * Spritesheet.BOARD_WIDTH,
+            colour * Spritesheet.BOARD_HEIGHT, Spritesheet.BOARD_WIDTH, Spritesheet.BOARD_HEIGHT)
+        scale_rect(r, scale)
+        return r

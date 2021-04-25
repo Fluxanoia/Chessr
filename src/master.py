@@ -18,7 +18,7 @@ class Master:
 
         self.__groups = Groups()
         self.__spritesheet = Spritesheet()
-
+        self.__clock = pg.time.Clock()
         self.__board = Board()
 
         running = True
@@ -27,10 +27,13 @@ class Master:
                 if event.type == pg.QUIT:
                     running = False
                     continue
+                if event.type == pg.MOUSEBUTTONDOWN: self.__board.pressed(event)
+                if event.type == pg.MOUSEBUTTONUP: self.__board.released(event)
             self.__board.update()
             self.__groups.update()
             self.__screen.fill((40, 40, 40))
             self.__groups.draw(self.__screen)
             pg.display.flip()
+            self.__clock.tick(self.__globals.get_fps())
 
         pg.quit()
