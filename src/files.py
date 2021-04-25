@@ -1,24 +1,13 @@
 import os
-
 import pygame as pg
+from src.globals import Singleton
 
-class FileManager:
-
-    __instance = None
-
-    @staticmethod
-    def get_instance():
-        if FileManager.__instance is None:
-            raise Exception("No instance of FileManager.")
-        return FileManager.__instance
+class FileManager(Singleton):
 
     def __init__(self):
-        if FileManager.__instance is not None:
-            raise Exception("Invalid initialistion of FileManager.")
-        else:
-            if not pg.image.get_extended():
-                raise SystemExit("Extended image types required.")
-            FileManager.__instance = self
+        super().__init__()
+        if not pg.image.get_extended():
+            raise SystemExit("Extended image types required.")
 
     def load_image(self, name, with_alpha = False):
         name = FileManager.get_images_path(name)
