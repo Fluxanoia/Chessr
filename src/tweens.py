@@ -1,29 +1,28 @@
 from enum import Enum, unique
-import pygame as pg
 import pytweening as pt
+from src.timer import Timer
 
-class Tween():
+class Tween(Timer):
 
-    def __init__(self, _type, start, end, duration, pause = 0):
+    def __init__(self, _type, start, end, duration, pause = 0, chain = None):
+        super().__init__(duration, pause)
         self.__type = _type
-        self.__start, self.__end = start, end
-        self.__duration = duration
-        self.__start_time = pg.time.get_ticks() + pause
-
-    def has_not_started(self):
-        return pg.time.get_ticks() <= self.__start_time
-    def finished(self):
-        return pg.time.get_ticks() >= self.__start_time + self.__duration
+        self.__start = start
+        self.__end = end
+        self.__chain = chain
+        self.restart()
 
     def value(self):
-        if self.has_not_started(): return self.__start
-        if self.finished(): return self.__end
-        scale = self.__type((pg.time.get_ticks() - self.__start_time) / self.__duration)
-        tween = lambda x : x[0] + (x[1] - x[0]) * scale
+        percentage = super().value() / float(self.get_duration())
+        tween = lambda x : x[0] + (x[1] - x[0]) * percentage
         for i in (list, tuple):
             if isinstance(self.__start, i) and isinstance(self.__end, i):
                 return i(map(tween, zip(self.__start, self.__end)))
         return tween((self.__start, self.__end))
+
+    def get_chained(self):
+        if self.__chain is not None: self.__chain.restart()
+        return self.__chain
 
 @unique
 class TweenType(Enum):
