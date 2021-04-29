@@ -24,6 +24,8 @@ class ShadowType(ArrayEnum):
 class BoardType(ArrayEnum):
     LIGHT = auto()
     DARK = auto()
+    MOVE = auto()
+    DANGER = auto()
 
 class BoardColour(ArrayEnum):
     BEIGE = auto()

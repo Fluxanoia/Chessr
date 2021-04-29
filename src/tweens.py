@@ -4,7 +4,7 @@ from src.timer import Timer
 
 class Tween(Timer):
 
-    def __init__(self, _type, start, end, duration, pause = 0, chain = None):
+    def __init__(self, _type, start, end, duration, pause=0, chain=None):
         super().__init__(duration, pause)
         self.__type = _type
         self.__start = start
@@ -14,15 +14,17 @@ class Tween(Timer):
 
     def value(self):
         percentage = super().value() / float(self.get_duration())
-        tween = lambda x : x[0] + (x[1] - x[0]) * percentage
+        def tween(x): return x[0] + (x[1] - x[0]) * percentage
         for i in (list, tuple):
             if isinstance(self.__start, i) and isinstance(self.__end, i):
                 return i(map(tween, zip(self.__start, self.__end)))
         return tween((self.__start, self.__end))
 
     def get_chained(self):
-        if self.__chain is not None: self.__chain.restart()
+        if self.__chain is not None:
+            self.__chain.restart()
         return self.__chain
+
 
 @unique
 class TweenType(Enum):

@@ -1,6 +1,6 @@
 import pygame as pg
 from src.files import FileManager
-from src.board import Board
+from src.board import Board, Logic
 from src.groups import Groups
 from src.globals import Globals
 from src.spritesheet import Spritesheet
@@ -10,6 +10,7 @@ class Master:
     def __init__(self):
         self.__globals = Globals()
         self.__files = FileManager()
+        self.__logic = Logic()
 
         pg.init()
         pg.display.set_caption("Chessr")
