@@ -1,8 +1,14 @@
+from enum import auto
 import pygame as pg
+from src.enum import ArrayEnum
 from src.tweens import Tween, TweenType
 from src.groups import Groups
 from src.globals import instance
 from src.spritesheet import Spritesheet, ShadowType
+
+class Side(ArrayEnum):
+    FRONT = auto()
+    BACK = auto()
 
 class BoardSprite(pg.sprite.DirtySprite):
 
@@ -51,12 +57,12 @@ class BoardSprite(pg.sprite.DirtySprite):
     def collidepoint(self, pos):
         return self.rect.collidepoint(pos)
 
-
 class Piece(BoardSprite):
 
-    def __init__(self, sheet, xy, colour, _type, scale):
+    def __init__(self, sheet, xy, colour, _type, side, scale):
         self.__colour = colour
         self.__type = _type
+        self.__side = side
         super().__init__(sheet, xy, scale)
 
     def position_transform(self, xy):
@@ -65,9 +71,10 @@ class Piece(BoardSprite):
         return Spritesheet.get_piece_src_rect(self.__colour, self.__type, self._scale)
     def get_group(self):
         return instance(Groups).get_piece_group()
-    def set_colour_and_type(self, colour, _type):
+    def set_data(self, colour, _type, side):
         self.__colour = colour
         self.__type = _type
+        self.__side = side
         self.update_src_rect()
 
     def move(self, start, end, duration, pause = 0):
@@ -76,8 +83,9 @@ class Piece(BoardSprite):
 
     def get_colour(self): return self.__colour
     def get_type(self): return self.__type
+    def get_side(self): return self.__side
+    def get_data(self): return (self.__colour, self.__type, self.__side)
     def get_bottom_left(self): return self.rect.bottomleft
-
 
 class Shadow(BoardSprite):
 
@@ -96,6 +104,16 @@ class Shadow(BoardSprite):
         self.__type = _type
         self.update_src_rect()
 
+class CellInfo():
+
+    def __init__(self, piece, side, has_moved):
+        self.__piece = piece
+        self.__side = side
+        self.__has_moved = has_moved
+
+    def get_piece(self): return self.__piece
+    def get_side(self): return self.__side
+    def has_moved(self): return self.__has_moved
 
 class BoardCell(BoardSprite):
 
@@ -106,9 +124,10 @@ class BoardCell(BoardSprite):
 
         self.__grid_position = gxy
         self.__selected = False
+        self.__has_moved = False
         self.__fallback_type = None
 
-        self.__piece = Piece(self.image, self.get_bottom_left(), 0, 0, scale)
+        self.__piece = Piece(self.image, self.get_bottom_left(), 0, 0, 0, scale)
         self.__piece.visible = 0
         self.__shadow = Shadow(
             sheet, self.get_bottom_left(), ShadowType.LIGHT, scale)
@@ -118,22 +137,29 @@ class BoardCell(BoardSprite):
         return Spritesheet.get_board_src_rect(self.__colour, self.__type, self._scale)
     def get_group(self):
         return instance(Groups).get_board_group()
-    def set_colour_and_type(self, colour, _type):
+    def set_data(self, colour, _type):
         self.__colour = colour
         self.__type = _type
         self.update_src_rect()
 
+    def get_info(self):
+        if self.has_piece():
+            return CellInfo(self.__piece.get_type(), self.__piece.get_side(), self.__has_moved)
+        return None
+    def set_moved(self, has_moved):
+        self.__has_moved = has_moved
+
     def get_piece(self): return self.__piece
     def has_piece(self): return bool(self.__piece.visible)
 
-    def set_piece_colour_and_type(self, colour, _type):
-        self.__piece.set_colour_and_type(colour, _type)
+    def set_piece_data(self, colour, _type, side):
+        self.__piece.set_data(colour, _type, side)
         self.__piece.visible = 1
     def remove_piece(self):
         self.__selected = False
         self.__piece.visible = 0
         self.__piece.set_position(self.get_bottom_left())
-    def move_piece(self, start, end, duration=250, pause=0):
+    def move_piece(self, start, end, duration = 250, pause = 0):
         if self.has_piece():
             self.__piece.move(start, end, duration, pause)
 
@@ -155,8 +181,8 @@ class BoardCell(BoardSprite):
             if cell.has_piece():
                 self.unselect()
             else:
-                cell.set_piece_colour_and_type(
-                    self.__piece.get_colour(), self.__piece.get_type())
+                cell.set_moved(True)
+                cell.set_piece_data(*self.__piece.get_data())
                 cell.move_piece(self.__piece.get_bottom_left(),
                                 cell.get_bottom_left())
                 self.remove_piece()
@@ -164,10 +190,10 @@ class BoardCell(BoardSprite):
     def set_temporary_type(self, _type):
         if self.__fallback_type is None:
             self.__fallback_type = self.__type
-        self.set_colour_and_type(self.__colour, _type)
+        self.set_data(self.__colour, _type)
     def fallback_type(self):
         if self.__fallback_type is not None:
-            self.set_colour_and_type(self.__colour, self.__fallback_type)
+            self.set_data(self.__colour, self.__fallback_type)
             self.__fallback_type = None
 
     def get_grid_position(self): return self.__grid_position
