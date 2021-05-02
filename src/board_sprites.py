@@ -64,6 +64,7 @@ class Piece(BoardSprite):
         self.__type = _type
         self.__side = side
         super().__init__(sheet, xy, scale)
+        self.__tags = set()
 
     def position_transform(self, xy):
         return (xy[0], xy[1] - self.rect.h)
@@ -71,20 +72,26 @@ class Piece(BoardSprite):
         return Spritesheet.get_piece_src_rect(self.__colour, self.__type, self._scale)
     def get_group(self):
         return instance(Groups).get_piece_group()
-    def set_data(self, colour, _type, side):
+    def set_data(self, colour, _type, side, tags = None):
         self.__colour = colour
         self.__type = _type
         self.__side = side
+        self.__tags = set() if tags is None else tags
         self.update_src_rect()
 
     def move(self, start, end, duration, pause = 0):
         self.tween_position(Tween(TweenType.EASE_OUT_SINE,
                                   start, end, duration, pause))
 
+    def add_tag(self, tag): self.__tags.add(tag)
+    def remove_tag(self, tag): self.__tags.remove(tag)
+    def has_tag(self, tag): return tag in self.__tags
+    def get_tags(self): return self.__tags
+
     def get_colour(self): return self.__colour
     def get_type(self): return self.__type
     def get_side(self): return self.__side
-    def get_data(self): return (self.__colour, self.__type, self.__side)
+    def get_data(self): return (self.__colour, self.__type, self.__side, self.__tags)
     def get_bottom_left(self): return self.rect.bottomleft
 
 class Shadow(BoardSprite):
@@ -106,14 +113,16 @@ class Shadow(BoardSprite):
 
 class CellInfo():
 
-    def __init__(self, piece, side, has_moved):
+    def __init__(self, piece, side, has_moved, tags):
         self.__piece = piece
         self.__side = side
         self.__has_moved = has_moved
+        self.__tags = tags
 
     def get_piece(self): return self.__piece
     def get_side(self): return self.__side
     def has_moved(self): return self.__has_moved
+    def has_tag(self, tag): return tag in self.__tags
 
 class BoardCell(BoardSprite):
 
@@ -144,7 +153,8 @@ class BoardCell(BoardSprite):
 
     def get_info(self):
         if self.has_piece():
-            return CellInfo(self.__piece.get_type(), self.__piece.get_side(), self.__has_moved)
+            return CellInfo(self.__piece.get_type(), self.__piece.get_side(),
+                self.__has_moved, self.__piece.get_tags())
         return None
     def set_moved(self, has_moved):
         self.__has_moved = has_moved
@@ -152,8 +162,8 @@ class BoardCell(BoardSprite):
     def get_piece(self): return self.__piece
     def has_piece(self): return bool(self.__piece.visible)
 
-    def set_piece_data(self, colour, _type, side):
-        self.__piece.set_data(colour, _type, side)
+    def set_piece_data(self, data):
+        self.__piece.set_data(*data)
         self.__piece.visible = 1
     def remove_piece(self):
         self.__selected = False
@@ -182,7 +192,7 @@ class BoardCell(BoardSprite):
                 self.unselect()
             else:
                 cell.set_moved(True)
-                cell.set_piece_data(*self.__piece.get_data())
+                cell.set_piece_data(self.__piece.get_data())
                 cell.move_piece(self.__piece.get_bottom_left(),
                                 cell.get_bottom_left())
                 self.remove_piece()

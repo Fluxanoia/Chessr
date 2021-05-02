@@ -1,5 +1,6 @@
+from enum import auto
 import pygame as pg
-from src.enum import enum_as_list
+from src.enum import ArrayEnum, enum_as_list
 from src.timer import Timer
 from src.groups import Groups
 from src.tweens import Tween, TweenType
@@ -9,15 +10,15 @@ from src.board_sprites import Side, BoardCell
 
 def v_add(x, y):
     return (x[0] + y[0], x[1] + y[1])
+def is_singular_vector(v):
+    return isinstance(v, (list, tuple)) and any(not isinstance(w, (list, tuple)) for w in v)
 
 class PieceData:
 
-    def __init__(self, _char, move_vectors, revolve, expand,
-                 challenge_vectors = None, condition_vectors = None):
+    def __init__(self, _char, move_vectors, revolve, expand, challenge_vectors = None):
         self.__char = _char
         self.__move_vectors = move_vectors
         self.__challenge_vectors = challenge_vectors
-        self.__condition_vectors = condition_vectors
         self.__expand = expand
         self.__revolve = revolve
         if revolve:
@@ -26,6 +27,8 @@ class PieceData:
                 self.__challenge_vectors = self.__revolve_vectors(self.__challenge_vectors)
 
     def __revolve_vectors(self, vectors):
+        if is_singular_vector(vectors):
+            return self.__revolve_vectors((vectors,))[0]
         revolved = []
         for v in vectors:
             revolved.append(v)
@@ -33,107 +36,132 @@ class PieceData:
                 i, j = revolved[-1]
                 revolved.append((j, -i))
         return tuple(revolved)
-
     def __flip_vectors(self, vectors):
+        if is_singular_vector(vectors):
+            return self.__flip_vectors((vectors,))[0]
         flipped = []
         for (i, j) in vectors:
             flipped.append((-i, j))
         return flipped
+    def vector_transform(self, info, v):
+        do_flip = not self.__revolve and info.get_side() == Side.BACK
+        if do_flip:
+            v = self.__flip_vectors(v)
+        return v
 
     def __inbounds(self, board_size, cell):
         if isinstance(cell, tuple):
             return all(map(lambda x: self.__inbounds(board_size, x), cell))
         return 0 <= cell < board_size
 
-    def __get_conditionals(self, board, cell):
-        if self.__condition_vectors is None:
-            return (tuple(), tuple())
-        move_vectors = []
-        challenge_vectors = []
-        for condition in self.__condition_vectors:
-            result = condition(board, cell)
-            if result is None:
-                continue
-            mv, cv = result
-            move_vectors.extend(mv)
-            challenge_vectors.extend(cv)
-        return (tuple(move_vectors), tuple(challenge_vectors))
-
     def get_move_and_challenge_cells(self, board, cell):
         moves = []
         challenges = []
         board_size = board.get_size()
+        info = board.at(*cell)
 
         def check_and_add_cell(c, challenge = False):
             if not self.__inbounds(board_size, c):
                 return False
-            if challenge or self.__challenge_vectors is None:
-                challenges.append(c)
             if board.at(*c) is not None:
+                if challenge or self.__challenge_vectors is None:
+                    challenges.append(c)
                 return False
             if not challenge:
                 moves.append(c)
             return self.__expand
-        info = board.at(*cell)
-        do_flip = not self.__revolve and info.get_side() == Side.BACK
 
-        mc, cc = self.__get_conditionals(board, cell)
-
-        mv = self.__move_vectors + mc
-        if do_flip:
-            mv = self.__flip_vectors(mv)
-        for v in mv:
+        for v in self.vector_transform(info, self.__move_vectors):
             c = v_add(cell, v)
             while check_and_add_cell(c):
                 c = v_add(c, v)
 
         if self.__challenge_vectors is None:
-            return (moves, challenges)
+            return (tuple(moves), tuple(challenges))
 
-        cv = self.__challenge_vectors + cc
-        if do_flip:
-            cv = self.__flip_vectors(cv)
-        for v in cv:
+        for v in self.vector_transform(info, self.__challenge_vectors):
             c = v_add(cell, v)
             while check_and_add_cell(c, True):
                 c = v_add(c, v)
-        return (moves, challenges)
+        return (tuple(moves), tuple(challenges))
 
     def get_char(self): return self.__char
+
+class PieceTag(ArrayEnum):
+    DOUBLE_MOVE = auto()
 
 class Logic(Singleton):
 
     def __init__(self):
         super().__init__()
-
-        def pawn_double_move(board, cell):
-            info = board.at(*cell)
-            if info.has_moved():
-                return None
-            flip = info.get_side() == Side.BACK
-            if board.at(*v_add(cell, (1, 0) if flip else (-1, 0))) is not None:
-                return None
-            return (((-2, 0),), tuple())
-
         self.__data = {}
         self.__data[PieceType.QUEEN] = PieceData('Q', ((1, 0), (1, 1)), True, True)
         self.__data[PieceType.KING] = PieceData('K', ((1, 0), (1, 1)), True, False)
         self.__data[PieceType.BISHOP] = PieceData('B', ((1, 1),), True, True)
         self.__data[PieceType.ROOK] = PieceData('R', ((1, 0),), True, True)
         self.__data[PieceType.KNIGHT] = PieceData('K', ((2, 1), (2, -1)), True, False)
-        self.__data[PieceType.PAWN] = PieceData('P', ((-1, 0),), False, False, ((-1, -1), (-1, 1)),
-            (pawn_double_move,))
+        self.__data[PieceType.PAWN] = PieceData('P', ((-1, 0),), False, False, ((-1, -1), (-1, 1)))
         if not all(map(lambda p: p in self.__data.keys(), enum_as_list(PieceType))):
             raise SystemExit("Not all piece types are categorised.")
 
+    def get_base_row(self, board, side):
+        return 0 if side == Side.BACK else board.get_size() - 1
     def get_move_and_challenge_cells(self, board, cell):
         info = board.at(*cell)
         if info is None:
             return None
-        return self.__data[info.get_piece()].get_move_and_challenge_cells(board, cell)
+        return self.get_data(info.get_piece()).get_move_and_challenge_cells(board, cell)
+    def get_special_maneuvers(self, board, cell):
+        maneuvers = []
+        info = board.at(*cell)
+        piece = info.get_piece()
+        if info is not None:
+            if piece is PieceType.PAWN:
+                maneuvers.extend(self.__double_move_maneuver(board, cell))
+                maneuvers.extend(self.__en_passant_maneuver(board, cell))
+            if piece is PieceType.KING:
+                # castle
+                pass
+            if piece is PieceType.ROOK:
+                # castle
+                pass
+        return tuple(maneuvers)
 
+    def __double_move_maneuver(self, board, cell):
+        def double_move_callback(_src, dst, board):
+            board.at(*dst).get_piece().add_tag(PieceTag.DOUBLE_MOVE)
+        info = board.at(*cell)
+        data = self.get_data(info.get_piece()) 
+        if not info.has_moved():
+            v = data.vector_transform(info, (-1, 0))
+            c = v_add(cell, v)
+            if board.at(*c) is None:
+                return ((v_add(c, v), double_move_callback),)
+        return tuple()
+
+    def __en_passant_maneuver(self, board, cell):
+        def en_passant_callback(src, dst, board):
+            board.game_remove((src[0], dst[1]))
+        maneuvers = []
+        info = board.at(*cell)
+        data = self.get_data(info.get_piece())
+        ep_row = self.get_base_row(board, info.get_side()) \
+            + data.vector_transform(info, (4 - board.get_size(), 0))[0]
+        forward_vector = data.vector_transform(info, (-1, 0))
+        if cell[0] == ep_row:
+            for v in ((0, -1), (0, 1)):
+                adj = board.at(*v_add(cell, v))
+                if adj is None:
+                    continue
+                if adj.get_piece() is PieceType.PAWN and adj.has_tag(PieceTag.DOUBLE_MOVE):
+                    move = v_add(v, forward_vector)
+                    maneuvers.append((v_add(cell, move), en_passant_callback))
+        return tuple(maneuvers)
+
+    def get_data(self, piece):
+        return self.__data[piece]
     def get_char(self, piece):
-        return self.__data[piece].get_char()
+        return self.get_data(piece).get_char()
 
 class SimpleBoard():
 
@@ -216,12 +244,12 @@ class Board():
         for _type, cols in base_info:
             for i in base_rows:
                 for j in cols:
-                    self.__board[i][j].set_piece_data(colour(i), _type, side(i))
+                    self.__board[i][j].set_piece_data((colour(i), _type, side(i)))
 
         pawn_rows = (1, self.__size - 2)
         for i in pawn_rows:
             for j in range(self.__size):
-                self.__board[i][j].set_piece_data(colour(i), PieceType.PAWN, side(i))
+                self.__board[i][j].set_piece_data((colour(i), PieceType.PAWN, side(i)))
     def __drop_board(self):
         drop_duration = 750
         delta_duration = 100
@@ -265,6 +293,27 @@ class Board():
         if self.__is_inactive():
             return
 
+    def game_move(self, a, b):
+        if not self.at(*a).has_piece():
+            return
+        if self.at(*b).has_piece():
+            return
+        self.at(*a).transfer_to(self.at(*b))
+        for (xy, callback) in self.__moves[2]:
+            if xy == b:
+                callback(a, b, self)
+    def game_take(self, a, b):
+        if not self.at(*a).has_piece():
+            return
+        if not self.at(*b).has_piece():
+            return
+        if self.at(*a).get_piece().get_side() == self.at(*b).get_piece().get_side():
+            return
+        self.game_remove(b)
+        self.game_move(a, b)
+    def game_remove(self, a):
+        self.at(*a).remove_piece()
+
     def __get_collision(self, pos):
         for s in reversed(instance(Groups).get_board_cells()):
             if s.collidepoint(pos):
@@ -294,24 +343,27 @@ class Board():
                 self.__selected = gxy
                 self.at(*gxy).select()
             elif self.__selected is not None:
-                self.at(*self.__selected).transfer_to(self.at(*gxy))
+                self.game_move(self.__selected, gxy)
                 self.__selected = None
         elif self.__selected is not None:
             self.at(*self.__selected).unselect()
             self.__selected = None
         self.__update_highlighting()
 
-    def __get_moves_and_challenges(self, gxy):
-        return instance(Logic).get_move_and_challenge_cells(SimpleBoard(self), gxy)
+    def __get_all_moves(self, gxy):
+        logic = instance(Logic)
+        board = SimpleBoard(self)
+        return (*logic.get_move_and_challenge_cells(board, gxy),
+            logic.get_special_maneuvers(board, gxy))
     def __update_highlighting(self):
         if self.__selected is None:
             for i in range(self.__size):
                 for j in range(self.__size):
                     self.at(i, j).fallback_type()
         else:
-            moves_and_challenges = self.__get_moves_and_challenges(self.__selected)
-            if moves_and_challenges is not None:
-                moves, challenges = moves_and_challenges
+            self.__moves = self.__get_all_moves(self.__selected)
+            if self.__moves is not None:
+                moves, challenges, special = self.__moves
                 for i in range(self.__size):
                     for j in range(self.__size):
                         cell = self.at(i, j)
@@ -319,6 +371,8 @@ class Board():
                             cell.set_temporary_type(BoardType.MOVE)
                         elif (i, j) in challenges:
                             cell.set_temporary_type(BoardType.DANGER)
+                        elif (i, j) in map(lambda x : x[0], special):
+                            cell.set_temporary_type(BoardType.DEBUG)
                         else:
                             cell.fallback_type()
 

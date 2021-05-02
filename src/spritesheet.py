@@ -26,6 +26,7 @@ class BoardType(ArrayEnum):
     DARK = auto()
     MOVE = auto()
     DANGER = auto()
+    DEBUG = auto()
 
 class BoardColour(ArrayEnum):
     BEIGE = auto()
