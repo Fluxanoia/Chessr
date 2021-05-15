@@ -16,7 +16,7 @@ class Singleton:
 
     def __init__(self):
         if type(self) in Singleton.__instances:
-            raise Exception("Invalid initialistion of Singleton.")
+            raise Exception("Invalid initialisation of Singleton.")
         Singleton.__instances[type(self)] = self
 
 class MouseButton(CountEnum):
@@ -25,7 +25,7 @@ class MouseButton(CountEnum):
     RIGHT = auto()
     SCROLL_UP = auto()
     SCROLL_DOWN = auto()
-    
+
 class Globals(Singleton):
 
     def __init__(self):

@@ -113,12 +113,14 @@ class Shadow(BoardSprite):
 
 class CellInfo():
 
-    def __init__(self, piece, side, has_moved, tags):
+    def __init__(self, position, piece, side, has_moved, tags):
+        self.__position = position
         self.__piece = piece
         self.__side = side
         self.__has_moved = has_moved
         self.__tags = tags
 
+    def get_position(self): return self.__position
     def get_piece(self): return self.__piece
     def get_side(self): return self.__side
     def has_moved(self): return self.__has_moved
@@ -153,8 +155,11 @@ class BoardCell(BoardSprite):
 
     def get_info(self):
         if self.has_piece():
-            return CellInfo(self.__piece.get_type(), self.__piece.get_side(),
-                self.__has_moved, self.__piece.get_tags())
+            return CellInfo(self.__grid_position,
+                self.__piece.get_type(),
+                self.__piece.get_side(),
+                self.__has_moved,
+                self.__piece.get_tags())
         return None
     def set_moved(self, has_moved):
         self.__has_moved = has_moved

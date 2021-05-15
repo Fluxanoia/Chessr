@@ -111,38 +111,33 @@ class Logic(Singleton):
         if info is None:
             return None
         return self.get_data(info.get_piece()).get_move_and_challenge_cells(board, cell)
-    def get_special_maneuvers(self, board, cell):
-        maneuvers = []
+    def get_special_manoeuvres(self, board, cell):
+        manoeuvres = []
         info = board.at(*cell)
         piece = info.get_piece()
         if info is not None:
             if piece is PieceType.PAWN:
-                maneuvers.extend(self.__double_move_maneuver(board, cell))
-                maneuvers.extend(self.__en_passant_maneuver(board, cell))
+                manoeuvres.extend(self.__double_move_manoeuvre(board, cell))
+                manoeuvres.extend(self.__en_passant_manoeuvre(board, cell))
             if piece is PieceType.KING:
-                # castle
-                pass
-            if piece is PieceType.ROOK:
-                # castle
-                pass
-        return tuple(maneuvers)
+                manoeuvres.extend(self.__castle_manoeuvre(board, cell))
+        return tuple(manoeuvres)
 
-    def __double_move_maneuver(self, board, cell):
+    def __double_move_manoeuvre(self, board, cell):
         def double_move_callback(_src, dst, board):
             board.at(*dst).get_piece().add_tag(PieceTag.DOUBLE_MOVE)
         info = board.at(*cell)
-        data = self.get_data(info.get_piece()) 
+        data = self.get_data(info.get_piece())
         if not info.has_moved():
             v = data.vector_transform(info, (-1, 0))
             c = v_add(cell, v)
             if board.at(*c) is None:
                 return ((v_add(c, v), double_move_callback),)
         return tuple()
-
-    def __en_passant_maneuver(self, board, cell):
+    def __en_passant_manoeuvre(self, board, cell):
         def en_passant_callback(src, dst, board):
             board.game_remove((src[0], dst[1]))
-        maneuvers = []
+        manoeuvres = []
         info = board.at(*cell)
         data = self.get_data(info.get_piece())
         ep_row = self.get_base_row(board, info.get_side()) \
@@ -155,8 +150,40 @@ class Logic(Singleton):
                     continue
                 if adj.get_piece() is PieceType.PAWN and adj.has_tag(PieceTag.DOUBLE_MOVE):
                     move = v_add(v, forward_vector)
-                    maneuvers.append((v_add(cell, move), en_passant_callback))
-        return tuple(maneuvers)
+                    manoeuvres.append((v_add(cell, move), en_passant_callback))
+        return tuple(manoeuvres)
+    def __castle_manoeuvre(self, board, cell):
+        king_info = board.at(*cell)
+        if king_info.has_moved():
+            return tuple()
+        def castle_callback(src, dst, board):
+            direction = -1 if dst[1] < src[1] else 1
+            b = (dst[0], dst[1] - direction)
+            j = dst[1] + direction
+            while 0 <= j < board.get_size():
+                a = (dst[0], j)
+                cell = board.at(*a)
+                if cell.get_piece().get_type() is PieceType.ROOK:
+                    board.game_move(a, b)
+                    return
+                j += direction
+        manoeuvres = []
+        row, column = cell
+        side = king_info.get_side()
+        def rook_check(c):
+            return c is not None \
+                and not c.has_moved() \
+                and c.get_piece() is PieceType.ROOK \
+                and c.get_side() is side
+        rooks = map(lambda c : c.get_position()[1], filter(rook_check, board.row_at(row)))
+        for rook in rooks:
+            if abs(column - rook) < 2:
+                continue
+            direction = 1 if rook > column else -1
+            cells_between = [board.at(row, j) for j in range(column + direction, rook, direction)]
+            if all(map(lambda x : x is None, cells_between)):
+                manoeuvres.append((row, column + 2 * direction))
+        return tuple(map(lambda x : (x, castle_callback), manoeuvres))
 
     def get_data(self, piece):
         return self.__data[piece]
@@ -180,6 +207,8 @@ class SimpleBoard():
 
     def at(self, i, j):
         return self.__board[i][j]
+    def row_at(self, i):
+        return self.__board[i]
 
     def get_size(self):
         return self.__size
@@ -354,7 +383,7 @@ class Board():
         logic = instance(Logic)
         board = SimpleBoard(self)
         return (*logic.get_move_and_challenge_cells(board, gxy),
-            logic.get_special_maneuvers(board, gxy))
+                logic.get_special_manoeuvres(board, gxy))
     def __update_highlighting(self):
         if self.__selected is None:
             for i in range(self.__size):
@@ -371,7 +400,7 @@ class Board():
                             cell.set_temporary_type(BoardType.MOVE)
                         elif (i, j) in challenges:
                             cell.set_temporary_type(BoardType.DANGER)
-                        elif (i, j) in map(lambda x : x[0], special):
+                        elif (i, j) in map(lambda x: x[0], special):
                             cell.set_temporary_type(BoardType.DEBUG)
                         else:
                             cell.fallback_type()
