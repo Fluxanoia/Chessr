@@ -5,8 +5,8 @@ from src.timer import Timer
 from src.groups import Groups
 from src.tweens import Tween, TweenType
 from src.globals import Globals, Singleton, MouseButton, instance
-from src.spritesheet import Spritesheet, BoardColour, BoardType, PieceColour, PieceType
-from src.board_sprites import Side, BoardCell
+from src.spritesheet import Spritesheet, BoardColour, BoardType, PieceColour, PieceType, Side
+from src.board_sprites import BoardCell
 
 def v_add(x, y):
     return (x[0] + y[0], x[1] + y[1])
@@ -227,10 +227,10 @@ class SimpleBoard():
 
 class Board():
 
-    def __init__(self, colour = BoardColour.BLACK_WHITE, scale = 3):
-        self.__spritesheet = instance(Spritesheet).get_sheet(scale)
+    def __init__(self, colour = BoardColour.BLACK_WHITE, scale = 3, cell_scale = 1.25):
         self.__colour = colour
         self.__scale = scale
+        self.__cell_scale = scale * cell_scale
 
         self.__pressed = None
         self.__selected = None
@@ -239,7 +239,8 @@ class Board():
         self.__drop_board()
 
     def __calculate_offsets(self):
-        def get_offset(x): return (x - Spritesheet.BOARD_WIDTH * self.__scale * self.__size) / 2
+        def get_offset(x):
+            return (x - Spritesheet.BOARD_WIDTH * self.__cell_scale * self.__size) / 2
         self.__x_offset, self.__y_offset = map(get_offset, instance(Globals).get_window_size())
     def __get_cell_type(self, i, j):
         return self.__cell_types[(i + j) % len(self.__cell_types)]
@@ -249,16 +250,19 @@ class Board():
         for i in range(self.__size):
             row = []
             for j in range(self.__size):
-                row.append(BoardCell(self.__spritesheet, (i, j),
-                                     self.__get_cell_position(i, j), self.__colour,
-                                     self.__get_cell_type(i, j), self.__scale))
+                row.append(BoardCell((i, j),
+                                     self.__get_cell_position(i, j),
+                                     self.__colour,
+                                     self.__get_cell_type(i, j),
+                                     self.__cell_scale,
+                                     self.__scale))
             self.__board.append(row)
     def __load_default_layout(self):
         self.__size = 8
         self.__cell_types = (BoardType.LIGHT, BoardType.DARK)
         self.__fill_board()
 
-        colours = (PieceColour.BLACK, PieceColour.WHITE)
+        colours = (PieceColour.RED, PieceColour.WHITE)
         def colour(i): return colours[0 if i < self.__size / 2 else 1]
         def side(i): return Side.BACK if i < self.__size / 2 else Side.FRONT
 
@@ -293,12 +297,12 @@ class Board():
                 delay_factor = self.__size - 1 - i + j
                 cell.set_position((sx, sy))
                 cell.move_piece(
-                    (sx, -Spritesheet.PIECE_HEIGHT * self.__scale),
-                    cell.get_bottom_left(),
+                    (sx, -Spritesheet.PIECE_HEIGHT * self.__cell_scale),
+                    cell.get_piece_position(),
                     drop_duration,
                     delay_factor * delta_duration + piece_pause)
                 cell.tween_position(Tween(TweenType.EASE_OUT_EXPO,
-                                          (sx, -Spritesheet.BOARD_HEIGHT * self.__scale),
+                                          (sx, -Spritesheet.BOARD_HEIGHT * self.__cell_scale),
                                           (sx, sy),
                                           drop_duration,
                                           delay_factor * delta_duration))
@@ -306,8 +310,8 @@ class Board():
     def at(self, i, j):
         return self.__board[i][j]
     def __get_cell_position(self, i, j):
-        return (self.__x_offset + j * Spritesheet.BOARD_WIDTH * self.__scale,
-                self.__y_offset + i * Spritesheet.BOARD_WIDTH * self.__scale)
+        return (self.__x_offset + j * Spritesheet.BOARD_WIDTH * self.__cell_scale,
+                self.__y_offset + i * Spritesheet.BOARD_WIDTH * self.__cell_scale)
 
     def __is_inactive(self):
         if self.__inactive_timer is not None:

@@ -1,21 +1,15 @@
-from enum import auto
 import pygame as pg
-from src.enum import ArrayEnum
 from src.tweens import Tween, TweenType
 from src.groups import Groups
 from src.globals import instance
 from src.spritesheet import Spritesheet, ShadowType
 
-class Side(ArrayEnum):
-    FRONT = auto()
-    BACK = auto()
-
 class BoardSprite(pg.sprite.DirtySprite):
 
-    def __init__(self, sheet, xy, scale):
+    def __init__(self, xy, scale):
         super().__init__()
         self.dirty = 2
-        self.image = sheet
+        self.image = instance(Spritesheet).get_sheet(scale)
         self._scale = scale
         self.source_rect = self.get_src_rect()
         self.rect = pg.Rect((0, 0), self.source_rect.size)
@@ -59,17 +53,17 @@ class BoardSprite(pg.sprite.DirtySprite):
 
 class Piece(BoardSprite):
 
-    def __init__(self, sheet, xy, colour, _type, side, scale):
+    def __init__(self, xy, colour, _type, side, scale):
         self.__colour = colour
         self.__type = _type
         self.__side = side
-        super().__init__(sheet, xy, scale)
+        super().__init__(xy, scale)
         self.__tags = set()
 
     def position_transform(self, xy):
         return (xy[0], xy[1] - self.rect.h)
     def get_src_rect(self):
-        return Spritesheet.get_piece_src_rect(self.__colour, self.__type, self._scale)
+        return Spritesheet.get_piece_src_rect(self.__colour, self.__type, self.__side, self._scale)
     def get_group(self):
         return instance(Groups).get_piece_group()
     def set_data(self, colour, _type, side, tags = None):
@@ -92,13 +86,13 @@ class Piece(BoardSprite):
     def get_type(self): return self.__type
     def get_side(self): return self.__side
     def get_data(self): return (self.__colour, self.__type, self.__side, self.__tags)
-    def get_bottom_left(self): return self.rect.bottomleft
+    def get_position(self): return self.rect.bottomleft
 
 class Shadow(BoardSprite):
 
-    def __init__(self, sheet, xy, _type, scale):
+    def __init__(self, xy, _type, scale):
         self.__type = _type
-        super().__init__(sheet, xy, scale)
+        super().__init__(xy, scale)
 
     def position_transform(self, xy):
         return (xy[0], xy[1] - self.rect.h - 2 * self._scale)
@@ -128,20 +122,20 @@ class CellInfo():
 
 class BoardCell(BoardSprite):
 
-    def __init__(self, sheet, gxy, xy, colour, _type, scale):
+    def __init__(self, gxy, xy, colour, _type, scale, child_scale):
         self.__colour = colour
         self.__type = _type
-        super().__init__(sheet, xy, scale)
+        super().__init__(xy, scale)
 
         self.__grid_position = gxy
         self.__selected = False
         self.__has_moved = False
         self.__fallback_type = None
+        self.__child_scale = child_scale
 
-        self.__piece = Piece(self.image, self.get_bottom_left(), 0, 0, 0, scale)
+        self.__piece = Piece(self.get_piece_position(), 0, 0, 0, child_scale)
+        self.__shadow = Shadow(self.get_piece_position(), ShadowType.LIGHT, child_scale)
         self.__piece.visible = 0
-        self.__shadow = Shadow(
-            sheet, self.get_bottom_left(), ShadowType.LIGHT, scale)
         self.__shadow.visible = 0
 
     def get_src_rect(self):
@@ -173,7 +167,7 @@ class BoardCell(BoardSprite):
     def remove_piece(self):
         self.__selected = False
         self.__piece.visible = 0
-        self.__piece.set_position(self.get_bottom_left())
+        self.__piece.set_position(self.get_piece_position())
     def move_piece(self, start, end, duration = 250, pause = 0):
         if self.has_piece():
             self.__piece.move(start, end, duration, pause)
@@ -183,13 +177,14 @@ class BoardCell(BoardSprite):
         if self.__selected:
             self.unselect()
         elif self.has_piece():
-            self.move_piece(self.get_bottom_left(),
-                            (self.rect.x, self.rect.y + self.rect.w / 2))
+            piece_x, piece_y = self.get_piece_position()
+            self.move_piece((piece_x, piece_y),
+                            (piece_x, piece_y - self.rect.w / 2))
             self.__selected = True
     def unselect(self):
         if self.__selected and self.has_piece():
-            self.move_piece(self.__piece.get_bottom_left(),
-                            self.get_bottom_left())
+            self.move_piece(self.__piece.get_position(),
+                            self.get_piece_position())
             self.__selected = False
     def transfer_to(self, cell):
         if self.has_piece():
@@ -198,8 +193,8 @@ class BoardCell(BoardSprite):
             else:
                 cell.set_moved(True)
                 cell.set_piece_data(self.__piece.get_data())
-                cell.move_piece(self.__piece.get_bottom_left(),
-                                cell.get_bottom_left())
+                cell.move_piece(self.__piece.get_position(),
+                                cell.get_piece_position())
                 self.remove_piece()
 
     def set_temporary_type(self, _type):
@@ -212,4 +207,6 @@ class BoardCell(BoardSprite):
             self.__fallback_type = None
 
     def get_grid_position(self): return self.__grid_position
-    def get_bottom_left(self): return (self.rect.x, self.rect.y + self.rect.w)
+    def get_piece_position(self):
+        offset = (self.rect.w - Spritesheet.PIECE_WIDTH * self.__child_scale) / 2
+        return (self.rect.x + offset, self.rect.y + self.rect.w - offset)
