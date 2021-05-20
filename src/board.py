@@ -1,17 +1,20 @@
-from enum import auto
 import pygame as pg
-from src.enum import ArrayEnum, enum_as_list
-from src.timer import Timer
+from src.enum import enum_as_list
 from src.groups import Groups
-from src.tweens import Tween, TweenType
 from src.globals import Globals, Singleton, MouseButton, instance
-from src.spritesheet import Spritesheet, BoardColour, BoardType, PieceColour, PieceType, Side
+from src.spritesheet import Spritesheet
+from src.board_enums import PieceTag, BoardColour, BoardType, PieceColour, PieceType, Side
 from src.board_sprites import BoardCell
 
 def v_add(x, y):
     return (x[0] + y[0], x[1] + y[1])
 def is_singular_vector(v):
     return isinstance(v, (list, tuple)) and any(not isinstance(w, (list, tuple)) for w in v)
+
+def inbounds(board_size, cell):
+    if isinstance(cell, tuple):
+        return all(map(lambda x: inbounds(board_size, x), cell))
+    return 0 <= cell < board_size
 
 class PieceData:
 
@@ -49,11 +52,6 @@ class PieceData:
             v = self.__flip_vectors(v)
         return v
 
-    def __inbounds(self, board_size, cell):
-        if isinstance(cell, tuple):
-            return all(map(lambda x: self.__inbounds(board_size, x), cell))
-        return 0 <= cell < board_size
-
     def get_move_and_challenge_cells(self, board, cell):
         moves = []
         challenges = []
@@ -61,7 +59,7 @@ class PieceData:
         info = board.at(*cell)
 
         def check_and_add_cell(c, challenge = False):
-            if not self.__inbounds(board_size, c):
+            if not inbounds(board_size, c):
                 return False
             if board.at(*c) is not None:
                 if challenge or self.__challenge_vectors is None:
@@ -86,9 +84,6 @@ class PieceData:
         return (tuple(moves), tuple(challenges))
 
     def get_char(self): return self.__char
-
-class PieceTag(ArrayEnum):
-    DOUBLE_MOVE = auto()
 
 class Logic(Singleton):
 
@@ -127,11 +122,12 @@ class Logic(Singleton):
         def double_move_callback(_src, dst, board):
             board.at(*dst).get_piece().add_tag(PieceTag.DOUBLE_MOVE)
         info = board.at(*cell)
+        size = board.get_size()
         data = self.get_data(info.get_piece())
-        if not info.has_moved():
+        if not info.has_tag(PieceTag.HAS_MOVED):
             v = data.vector_transform(info, (-1, 0))
             c = v_add(cell, v)
-            if board.at(*c) is None:
+            if inbounds(size, c) and board.at(*c) is None:
                 return ((v_add(c, v), double_move_callback),)
         return tuple()
     def __en_passant_manoeuvre(self, board, cell):
@@ -139,13 +135,17 @@ class Logic(Singleton):
             board.game_remove((src[0], dst[1]))
         manoeuvres = []
         info = board.at(*cell)
+        size = board.get_size()
         data = self.get_data(info.get_piece())
         ep_row = self.get_base_row(board, info.get_side()) \
-            + data.vector_transform(info, (4 - board.get_size(), 0))[0]
+            + data.vector_transform(info, (4 - size, 0))[0]
         forward_vector = data.vector_transform(info, (-1, 0))
         if cell[0] == ep_row:
             for v in ((0, -1), (0, 1)):
-                adj = board.at(*v_add(cell, v))
+                c = v_add(cell, v)
+                if not inbounds(size, c):
+                    continue
+                adj = board.at(*c)
                 if adj is None:
                     continue
                 if adj.get_piece() is PieceType.PAWN and adj.has_tag(PieceTag.DOUBLE_MOVE):
@@ -154,7 +154,7 @@ class Logic(Singleton):
         return tuple(manoeuvres)
     def __castle_manoeuvre(self, board, cell):
         king_info = board.at(*cell)
-        if king_info.has_moved():
+        if king_info.has_tag(PieceTag.HAS_MOVED):
             return tuple()
         def castle_callback(src, dst, board):
             direction = -1 if dst[1] < src[1] else 1
@@ -172,7 +172,7 @@ class Logic(Singleton):
         side = king_info.get_side()
         def rook_check(c):
             return c is not None \
-                and not c.has_moved() \
+                and not c.has_tag(PieceTag.HAS_MOVED) \
                 and c.get_piece() is PieceType.ROOK \
                 and c.get_side() is side
         rooks = map(lambda c : c.get_position()[1], filter(rook_check, board.row_at(row)))
@@ -199,10 +199,7 @@ class SimpleBoard():
             row = []
             for j in range(self.__size):
                 cell = board.at(i, j)
-                if cell.has_piece():
-                    row.append(cell.get_info())
-                else:
-                    row.append(None)
+                row.append(cell.get_info())
             self.__board.append(row)
 
     def at(self, i, j):
@@ -234,9 +231,9 @@ class Board():
 
         self.__pressed = None
         self.__selected = None
+        self.__inactive_timer = None
 
         self.__load_default_layout()
-        self.__drop_board()
 
     def __calculate_offsets(self):
         def get_offset(x):
@@ -262,7 +259,7 @@ class Board():
         self.__cell_types = (BoardType.LIGHT, BoardType.DARK)
         self.__fill_board()
 
-        colours = (PieceColour.RED, PieceColour.WHITE)
+        colours = (PieceColour.BLACK, PieceColour.WHITE)
         def colour(i): return colours[0 if i < self.__size / 2 else 1]
         def side(i): return Side.BACK if i < self.__size / 2 else Side.FRONT
 
@@ -277,35 +274,12 @@ class Board():
         for _type, cols in base_info:
             for i in base_rows:
                 for j in cols:
-                    self.__board[i][j].set_piece_data((colour(i), _type, side(i)))
+                    self.__board[i][j].place_piece(colour(i), _type, side(i))
 
         pawn_rows = (1, self.__size - 2)
         for i in pawn_rows:
             for j in range(self.__size):
-                self.__board[i][j].set_piece_data((colour(i), PieceType.PAWN, side(i)))
-    def __drop_board(self):
-        drop_duration = 750
-        delta_duration = 100
-        piece_pause = 500
-        self.__inactive_timer = Timer(drop_duration
-                                      + piece_pause
-                                      + 2 * (self.__size - 1) * delta_duration)
-        for i in range(self.__size):
-            for j in range(self.__size):
-                cell = self.at(i, j)
-                sx, sy = self.__get_cell_position(i, j)
-                delay_factor = self.__size - 1 - i + j
-                cell.set_position((sx, sy))
-                cell.move_piece(
-                    (sx, -Spritesheet.PIECE_HEIGHT * self.__cell_scale),
-                    cell.get_piece_position(),
-                    drop_duration,
-                    delay_factor * delta_duration + piece_pause)
-                cell.tween_position(Tween(TweenType.EASE_OUT_EXPO,
-                                          (sx, -Spritesheet.BOARD_HEIGHT * self.__cell_scale),
-                                          (sx, sy),
-                                          drop_duration,
-                                          delay_factor * delta_duration))
+                self.__board[i][j].place_piece(colour(i), PieceType.PAWN, side(i))
 
     def at(self, i, j):
         return self.__board[i][j]
@@ -327,23 +301,12 @@ class Board():
             return
 
     def game_move(self, a, b):
-        if not self.at(*a).has_piece():
+        if not self.at(*a).has_piece() or a == b:
             return
-        if self.at(*b).has_piece():
-            return
-        self.at(*a).transfer_to(self.at(*b))
+        self.at(*b).transfer_from(self.at(*a))
         for (xy, callback) in self.__moves[2]:
             if xy == b:
                 callback(a, b, self)
-    def game_take(self, a, b):
-        if not self.at(*a).has_piece():
-            return
-        if not self.at(*b).has_piece():
-            return
-        if self.at(*a).get_piece().get_side() == self.at(*b).get_piece().get_side():
-            return
-        self.game_remove(b)
-        self.game_move(a, b)
     def game_remove(self, a):
         self.at(*a).remove_piece()
 
@@ -409,4 +372,5 @@ class Board():
                         else:
                             cell.fallback_type()
 
-    def get_size(self): return self.__size
+    def get_size(self):
+        return self.__size

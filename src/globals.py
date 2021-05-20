@@ -38,3 +38,6 @@ class Globals(Singleton):
 
 def scale_rect(rect, scale):
     rect.update(rect.x * scale, rect.y * scale, rect.w * scale, rect.h * scale)
+
+def pad(arr, size, default = None):
+    return tuple([*arr] + [default] * (size - len(arr)))
