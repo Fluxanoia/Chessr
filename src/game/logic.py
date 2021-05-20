@@ -1,20 +1,15 @@
-import pygame as pg
 from src.enum import enum_as_list
-from src.groups import Groups
-from src.globals import Globals, Singleton, MouseButton, instance
-from src.spritesheet import Spritesheet
-from src.board_enums import PieceTag, BoardColour, BoardType, PieceColour, PieceType, Side
-from src.board_sprites import BoardCell
+from src.globals import Singleton, instance
+from src.game.enums import PieceTag, PieceType, Side
 
 def v_add(x, y):
     return (x[0] + y[0], x[1] + y[1])
 def is_singular_vector(v):
     return isinstance(v, (list, tuple)) and any(not isinstance(w, (list, tuple)) for w in v)
 
-def inbounds(board_size, cell):
-    if isinstance(cell, tuple):
-        return all(map(lambda x: inbounds(board_size, x), cell))
-    return 0 <= cell < board_size
+def inbounds(bw, bh, cell):
+    i, j = cell
+    return 0 <= i < bh and 0 <= j < bw
 
 class PieceData:
 
@@ -55,11 +50,11 @@ class PieceData:
     def get_move_and_challenge_cells(self, board, cell):
         moves = []
         challenges = []
-        board_size = board.get_size()
         info = board.at(*cell)
+        board_size = board.get_size()
 
         def check_and_add_cell(c, challenge = False):
-            if not inbounds(board_size, c):
+            if not inbounds(*board_size, c):
                 return False
             if board.at(*c) is not None:
                 if challenge or self.__challenge_vectors is None:
@@ -100,7 +95,7 @@ class Logic(Singleton):
             raise SystemExit("Not all piece types are categorised.")
 
     def get_base_row(self, board, side):
-        return 0 if side == Side.BACK else board.get_size() - 1
+        return 0 if side == Side.BACK else board.get_height() - 1
     def get_move_and_challenge_cells(self, board, cell):
         info = board.at(*cell)
         if info is None:
@@ -119,31 +114,31 @@ class Logic(Singleton):
         return tuple(manoeuvres)
 
     def __double_move_manoeuvre(self, board, cell):
-        def double_move_callback(_src, dst, board):
-            board.at(*dst).get_piece().add_tag(PieceTag.DOUBLE_MOVE)
+        def double_move_callback(_src, dst, controller):
+            controller.at(*dst).get_piece().add_tag(PieceTag.DOUBLE_MOVE)
         info = board.at(*cell)
         size = board.get_size()
         data = self.get_data(info.get_piece())
         if not info.has_tag(PieceTag.HAS_MOVED):
             v = data.vector_transform(info, (-1, 0))
             c = v_add(cell, v)
-            if inbounds(size, c) and board.at(*c) is None:
+            if inbounds(*size, c) and board.at(*c) is None:
                 return ((v_add(c, v), double_move_callback),)
         return tuple()
     def __en_passant_manoeuvre(self, board, cell):
-        def en_passant_callback(src, dst, board):
-            board.game_remove((src[0], dst[1]))
+        def en_passant_callback(src, dst, controller):
+            controller.remove((src[0], dst[1]))
         manoeuvres = []
         info = board.at(*cell)
         size = board.get_size()
         data = self.get_data(info.get_piece())
         ep_row = self.get_base_row(board, info.get_side()) \
-            + data.vector_transform(info, (4 - size, 0))[0]
+            + data.vector_transform(info, (4 - board.get_height(), 0))[0]
         forward_vector = data.vector_transform(info, (-1, 0))
         if cell[0] == ep_row:
             for v in ((0, -1), (0, 1)):
                 c = v_add(cell, v)
-                if not inbounds(size, c):
+                if not inbounds(*size, c):
                     continue
                 adj = board.at(*c)
                 if adj is None:
@@ -156,15 +151,15 @@ class Logic(Singleton):
         king_info = board.at(*cell)
         if king_info.has_tag(PieceTag.HAS_MOVED):
             return tuple()
-        def castle_callback(src, dst, board):
+        def castle_callback(src, dst, controller):
             direction = -1 if dst[1] < src[1] else 1
             b = (dst[0], dst[1] - direction)
             j = dst[1] + direction
-            while 0 <= j < board.get_size():
+            while 0 <= j < controller.get_width():
                 a = (dst[0], j)
-                cell = board.at(*a)
+                cell = controller.at(*a)
                 if cell.get_piece().get_type() is PieceType.ROOK:
-                    board.game_move(a, b)
+                    controller.move(a, b)
                     return
                 j += direction
         manoeuvres = []
@@ -193,11 +188,12 @@ class Logic(Singleton):
 class SimpleBoard():
 
     def __init__(self, board):
-        self.__size = board.get_size()
+        self.__width = board.get_width()
+        self.__height = board.get_height()
         self.__board = []
-        for i in range(self.__size):
+        for i in range(self.__height):
             row = []
-            for j in range(self.__size):
+            for j in range(self.__width):
                 cell = board.at(i, j)
                 row.append(cell.get_info())
             self.__board.append(row)
@@ -207,13 +203,17 @@ class SimpleBoard():
     def row_at(self, i):
         return self.__board[i]
 
+    def get_width(self):
+        return self.__width
+    def get_height(self):
+        return self.__height
     def get_size(self):
-        return self.__size
+        return (self.__width, self.__height)
 
     def __str__(self):
         s = ""
-        for i in range(self.__size):
-            for j in range(self.__size):
+        for i in range(self.__height):
+            for j in range(self.__width):
                 piece = self.__board[i][j]
                 if piece is not None:
                     piece = piece.get_piece()
@@ -221,156 +221,3 @@ class SimpleBoard():
                 s += c + ' '
             s += '\n'
         return s
-
-class Board():
-
-    def __init__(self, colour = BoardColour.BLACK_WHITE, scale = 3, cell_scale = 1.25):
-        self.__colour = colour
-        self.__scale = scale
-        self.__cell_scale = scale * cell_scale
-
-        self.__pressed = None
-        self.__selected = None
-        self.__inactive_timer = None
-
-        self.__load_default_layout()
-
-    def __calculate_offsets(self):
-        def get_offset(x):
-            return (x - Spritesheet.BOARD_WIDTH * self.__cell_scale * self.__size) / 2
-        self.__x_offset, self.__y_offset = map(get_offset, instance(Globals).get_window_size())
-    def __get_cell_type(self, i, j):
-        return self.__cell_types[(i + j) % len(self.__cell_types)]
-    def __fill_board(self):
-        self.__board = []
-        self.__calculate_offsets()
-        for i in range(self.__size):
-            row = []
-            for j in range(self.__size):
-                row.append(BoardCell((i, j),
-                                     self.__get_cell_position(i, j),
-                                     self.__colour,
-                                     self.__get_cell_type(i, j),
-                                     self.__cell_scale,
-                                     self.__scale))
-            self.__board.append(row)
-    def __load_default_layout(self):
-        self.__size = 8
-        self.__cell_types = (BoardType.LIGHT, BoardType.DARK)
-        self.__fill_board()
-
-        colours = (PieceColour.BLACK, PieceColour.WHITE)
-        def colour(i): return colours[0 if i < self.__size / 2 else 1]
-        def side(i): return Side.BACK if i < self.__size / 2 else Side.FRONT
-
-        base_rows = (0, self.__size - 1)
-        base_info = (
-            (PieceType.ROOK, (0, self.__size - 1)),
-            (PieceType.KNIGHT, (1, self.__size - 2)),
-            (PieceType.BISHOP, (2, self.__size - 3)),
-            (PieceType.QUEEN, (3,)),
-            (PieceType.KING, (self.__size - 4,)),
-        )
-        for _type, cols in base_info:
-            for i in base_rows:
-                for j in cols:
-                    self.__board[i][j].place_piece(colour(i), _type, side(i))
-
-        pawn_rows = (1, self.__size - 2)
-        for i in pawn_rows:
-            for j in range(self.__size):
-                self.__board[i][j].place_piece(colour(i), PieceType.PAWN, side(i))
-
-    def at(self, i, j):
-        return self.__board[i][j]
-    def __get_cell_position(self, i, j):
-        return (self.__x_offset + j * Spritesheet.BOARD_WIDTH * self.__cell_scale,
-                self.__y_offset + i * Spritesheet.BOARD_WIDTH * self.__cell_scale)
-
-    def __is_inactive(self):
-        if self.__inactive_timer is not None:
-            if self.__inactive_timer.has_not_started():
-                return False
-            if self.__inactive_timer.finished():
-                self.__inactive_timer = None
-                return False
-            return True
-        return False
-    def update(self):
-        if self.__is_inactive():
-            return
-
-    def game_move(self, a, b):
-        if not self.at(*a).has_piece() or a == b:
-            return
-        self.at(*b).transfer_from(self.at(*a))
-        for (xy, callback) in self.__moves[2]:
-            if xy == b:
-                callback(a, b, self)
-    def game_remove(self, a):
-        self.at(*a).remove_piece()
-
-    def __get_collision(self, pos):
-        for s in reversed(instance(Groups).get_board_cells()):
-            if s.collidepoint(pos):
-                return s.get_grid_position()
-        return None
-    def pressed(self, event):
-        if self.__is_inactive():
-            return
-        if event.button == MouseButton.LEFT:
-            self.__pressed = self.__get_collision(pg.mouse.get_pos())
-    def released(self, event):
-        if self.__is_inactive():
-            return
-        if event.button == MouseButton.LEFT:
-            _released = self.__get_collision(pg.mouse.get_pos())
-            if self.__pressed == _released:
-                self.__clicked(self.__pressed)
-    def __clicked(self, gxy):
-        if self.__is_inactive():
-            return
-        if gxy is not None:
-            if gxy == self.__selected:
-                pass
-            elif self.at(*gxy).has_piece():
-                if self.__selected is not None:
-                    self.at(*self.__selected).unselect()
-                self.__selected = gxy
-                self.at(*gxy).select()
-            elif self.__selected is not None:
-                self.game_move(self.__selected, gxy)
-                self.__selected = None
-        elif self.__selected is not None:
-            self.at(*self.__selected).unselect()
-            self.__selected = None
-        self.__update_highlighting()
-
-    def __get_all_moves(self, gxy):
-        logic = instance(Logic)
-        board = SimpleBoard(self)
-        return (*logic.get_move_and_challenge_cells(board, gxy),
-                logic.get_special_manoeuvres(board, gxy))
-    def __update_highlighting(self):
-        if self.__selected is None:
-            for i in range(self.__size):
-                for j in range(self.__size):
-                    self.at(i, j).fallback_type()
-        else:
-            self.__moves = self.__get_all_moves(self.__selected)
-            if self.__moves is not None:
-                moves, challenges, special = self.__moves
-                for i in range(self.__size):
-                    for j in range(self.__size):
-                        cell = self.at(i, j)
-                        if (i, j) in moves:
-                            cell.set_temporary_type(BoardType.MOVE)
-                        elif (i, j) in challenges:
-                            cell.set_temporary_type(BoardType.DANGER)
-                        elif (i, j) in map(lambda x: x[0], special):
-                            cell.set_temporary_type(BoardType.DEBUG)
-                        else:
-                            cell.fallback_type()
-
-    def get_size(self):
-        return self.__size
