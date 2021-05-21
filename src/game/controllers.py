@@ -1,8 +1,8 @@
 from src.game.logic import Logic, SimpleBoard
 from src.game.enums import BoardType, PieceColour, PieceType, Side
-from src.globals import Globals, instance
-from src.spritesheet import Spritesheet
 from src.game.sprites import BoardCell
+from src.utils.globals import Globals, instance
+from src.utils.spritesheet import Spritesheet
 
 class Controller:
 

@@ -1,5 +1,5 @@
 from enum import auto
-from src.enum import CountEnum
+from src.utils.enum import CountEnum
 
 def instance(_type):
     return Singleton.get_instance(_type)

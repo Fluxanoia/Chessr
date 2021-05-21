@@ -1,7 +1,7 @@
 import pygame as pg
-from src.groups import Groups
-from src.globals import MouseButton, instance
 from src.game.enums import BoardColour
+from src.utils.groups import Groups
+from src.utils.globals import MouseButton, instance
 from src.game.controllers import Controller
 
 class Board():

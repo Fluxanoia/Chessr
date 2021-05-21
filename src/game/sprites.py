@@ -1,9 +1,9 @@
 import pygame as pg
-from src.tweens import Tween, TweenType
-from src.groups import Groups
-from src.globals import clamp, instance
 from src.game.enums import PieceTag, ShadowType
-from src.spritesheet import Spritesheet
+from src.utils.groups import Groups
+from src.utils.tweens import Tween, TweenType
+from src.utils.globals import clamp, instance
+from src.utils.spritesheet import Spritesheet
 
 class BoardSprite(pg.sprite.DirtySprite):
 

@@ -1,6 +1,6 @@
 import os
 import pygame as pg
-from src.globals import Singleton
+from src.utils.globals import Singleton
 
 class FileManager(Singleton):
 
@@ -23,5 +23,6 @@ class FileManager(Singleton):
 
     @staticmethod
     def get_path(*args):
-        return os.path.join(os.path.dirname(os.path.dirname(__file__)), *args)
+        path = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        return os.path.join(path, *args)
     

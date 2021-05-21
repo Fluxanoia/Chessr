@@ -1,6 +1,7 @@
-from src.enum import enum_as_list
-from src.globals import Singleton, instance
+from src.utils.enum import enum_as_list
 from src.game.enums import PieceTag, PieceType, Side
+from src.utils.globals import Singleton, instance
+
 
 def v_add(x, y):
     return (x[0] + y[0], x[1] + y[1])

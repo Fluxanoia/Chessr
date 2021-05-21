@@ -1,5 +1,5 @@
 from enum import auto
-from src.enum import ArrayEnum
+from src.utils.enum import ArrayEnum
 
 class Side(ArrayEnum):
     FRONT = auto()

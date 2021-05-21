@@ -1,6 +1,6 @@
 from enum import Enum, unique
 import pytweening as pt
-from src.timer import Timer
+from src.utils.timer import Timer
 
 class Tween(Timer):
 

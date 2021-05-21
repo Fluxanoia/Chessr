@@ -1,10 +1,10 @@
 import pygame as pg
-from src.files import FileManager
-from src.groups import Groups
-from src.globals import Globals
 from src.game.board import Board
 from src.game.logic import Logic
-from src.spritesheet import Spritesheet
+from src.utils.files import FileManager
+from src.utils.groups import Groups
+from src.utils.globals import Globals
+from src.utils.spritesheet import Spritesheet
 
 class Master:
 

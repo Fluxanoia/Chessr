@@ -1,8 +1,8 @@
 import pygame as pg
-from src.enum import enum_as_list
-from src.files import FileManager
-from src.globals import Singleton, instance, scale_rect
 from src.game.enums import PieceType, Side
+from src.utils.enum import enum_as_list
+from src.utils.files import FileManager
+from src.utils.globals import Singleton, instance, scale_rect
 
 class Spritesheet(Singleton):
 

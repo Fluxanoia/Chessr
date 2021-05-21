@@ -1,5 +1,5 @@
 import pygame as pg
-from src.globals import Singleton
+from src.utils.globals import Singleton
 
 class Groups(Singleton):
 
