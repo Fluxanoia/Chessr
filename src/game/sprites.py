@@ -1,25 +1,26 @@
 import pygame as pg
 from src.tweens import Tween, TweenType
 from src.groups import Groups
-from src.globals import instance
+from src.globals import clamp, instance
 from src.game.enums import PieceTag, ShadowType
 from src.spritesheet import Spritesheet
 
 class BoardSprite(pg.sprite.DirtySprite):
 
-    def __init__(self, xy, scale):
+    def __init__(self, xy, scale, image = None):
         super().__init__()
         self.dirty = 2
-        self.image = instance(Spritesheet).get_sheet(scale)
         self._scale = scale
-        self.source_rect = self.get_src_rect()
-        self.rect = pg.Rect((0, 0), self.source_rect.size)
+        self.source_rect = self.get_src_rect() # pylint: disable=assignment-from-none
+        self.image = instance(Spritesheet).get_sheet(scale) if image is None else image
+        self.rect = pg.Rect((0, 0),
+            self.image.get_size() if self.source_rect is None else self.source_rect.size)
         self.layer = self.position_transform(xy)[1]
         self.get_group().add(self)
         self.set_position(xy)
         self._position_tween = None
 
-    def get_src_rect(self): return pg.Rect(0, 0, 0, 0)
+    def get_src_rect(self): return None
     def get_group(self): return None
 
     def set_position(self, xy, preserve_tween = False):
@@ -71,6 +72,7 @@ class Piece(BoardSprite):
         args = (cell.get_piece_position(), cell.get_child_scale())
         self.__shadow = Shadow(*args)
         self.__lift = 0
+        self.update_shadow_alpha()
         self.__lift_tween = None
         super().__init__(*args)
 
@@ -105,9 +107,14 @@ class Piece(BoardSprite):
         if self.__lift_tween is not None:
             force_position = True
             self.__lift = self.__lift_tween.value()
+            self.update_shadow_alpha()
             if self.__lift_tween.finished():
                 self.__lift_tween = None
         super().update(force_position)
+
+    def update_shadow_alpha(self):
+        alpha = 255 * (1 - self.__lift / 60.0) if self.__lift != 0 else 0
+        self.__shadow.set_alpha(clamp(alpha, 0, 255))
 
     def get_colour(self): return self.__colour
     def get_type(self): return self.__type
@@ -137,19 +144,22 @@ class Piece(BoardSprite):
 class Shadow(BoardSprite):
 
     def __init__(self, xy, scale):
-        self.__type = ShadowType.LIGHT
-        super().__init__(xy, scale)
+        self.__type = ShadowType.DARK
+        super().__init__(xy, scale, self.get_image(scale))
 
     def position_transform(self, xy):
         return (xy[0], xy[1] - self.rect.h - 2 * self._scale)
-    def get_src_rect(self):
-        return Spritesheet.get_shadow_src_rect(self.__type, self._scale)
     def get_group(self):
         return instance(Groups).get_shadow_group()
 
     def set_type(self, _type):
         self.__type = _type
         self.update_src_rect()
+
+    def get_image(self, scale):
+        return instance(Spritesheet).get_image(Spritesheet.get_shadow_src_rect(self.__type, scale), scale)
+    def set_alpha(self, alpha):
+        self.image.set_alpha(alpha)
 
     def is_active(self): return self.visible == 1
     def set_active(self, a): self.visible = int(a)

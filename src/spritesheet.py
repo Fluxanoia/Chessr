@@ -18,7 +18,7 @@ class Spritesheet(Singleton):
     def __init__(self):
         super().__init__()
         self.__sheets = { "1" : instance(FileManager).load_image("sprites.png", True) }
-
+#
     def get_sheet(self, scale = 1):
         key = str(scale)
         if key in self.__sheets:
@@ -28,6 +28,10 @@ class Spritesheet(Singleton):
         self.__sheets[key] = pg.transform.scale(src, scaled_size)
         return self.__sheets[key]
 
+    def get_image(self, srcrect, scale):
+        image = pg.Surface(srcrect.size, pg.SRCALPHA, 32).convert_alpha()
+        image.blit(self.get_sheet(scale), (0, 0), srcrect)
+        return image
     @staticmethod
     def get_piece_src_rect(colour, _type, side, scale = 1):
         sides = len(enum_as_list(Side))

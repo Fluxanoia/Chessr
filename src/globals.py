@@ -41,3 +41,6 @@ def scale_rect(rect, scale):
 
 def pad(arr, size, default = None):
     return tuple([*arr] + [default] * (size - len(arr)))
+
+def clamp(x, l, u):
+    return l if x < l else (u if x > u else x)
