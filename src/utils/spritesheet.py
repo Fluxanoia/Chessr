@@ -33,7 +33,7 @@ class Spritesheet(Singleton):
         image.blit(self.get_sheet(scale), (0, 0), srcrect)
         return image
     @staticmethod
-    def get_piece_src_rect(colour, _type, side, scale = 1):
+    def get_piece_srcrect(colour, _type, side, scale = 1):
         sides = len(enum_as_list(Side))
         r = pg.Rect((_type * sides + side) * Spritesheet.PIECE_WIDTH,
                     colour * Spritesheet.PIECE_HEIGHT,
@@ -45,7 +45,7 @@ class Spritesheet(Singleton):
         return len(enum_as_list(PieceType)) * len(enum_as_list(Side)) * Spritesheet.PIECE_WIDTH
 
     @staticmethod
-    def get_shadow_src_rect(_type, scale = 1):
+    def get_shadow_srcrect(_type, scale = 1):
         r = pg.Rect(Spritesheet.__piece_width(),
                     _type * Spritesheet.SHADOW_HEIGHT,
                     Spritesheet.SHADOW_WIDTH,
@@ -57,7 +57,7 @@ class Spritesheet(Singleton):
         return Spritesheet.__piece_width() + Spritesheet.SHADOW_WIDTH
 
     @staticmethod
-    def get_board_src_rect(colour, _type, scale = 1):
+    def get_board_srcrect(colour, _type, scale = 1):
         r = pg.Rect(Spritesheet.__shadow_width() + _type * Spritesheet.BOARD_WIDTH,
                     colour * Spritesheet.BOARD_HEIGHT,
                     Spritesheet.BOARD_WIDTH,

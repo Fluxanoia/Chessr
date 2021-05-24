@@ -1,6 +1,6 @@
 import pygame as pg
 from src.game.enums import BoardColour
-from src.utils.groups import Groups
+from src.utils.groups import GroupType, Groups
 from src.utils.globals import MouseButton, instance
 from src.game.controllers import Controller
 
@@ -32,7 +32,7 @@ class Board():
         self.__controller.update()
 
     def __get_collision(self, pos):
-        for s in reversed(instance(Groups).get_board_cells()):
+        for s in reversed(instance(Groups).get_sprites(GroupType.BOARD)):
             if s.collidepoint(pos):
                 return s.get_grid_position()
         return None

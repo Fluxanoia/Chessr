@@ -90,10 +90,23 @@ class Logic(Singleton):
         self.__data[PieceType.KING] = PieceData('K', ((1, 0), (1, 1)), True, False)
         self.__data[PieceType.BISHOP] = PieceData('B', ((1, 1),), True, True)
         self.__data[PieceType.ROOK] = PieceData('R', ((1, 0),), True, True)
-        self.__data[PieceType.KNIGHT] = PieceData('K', ((2, 1), (2, -1)), True, False)
-        self.__data[PieceType.PAWN] = PieceData('P', ((-1, 0),), False, False, ((-1, -1), (-1, 1)))
+        self.__data[PieceType.KNIGHT] = PieceData('N', ((2, 1), (2, -1)), True, False)
+        self.__data[PieceType.PAWN] = PieceData(' ', ((-1, 0),), False, False, ((-1, -1), (-1, 1)))
         if not all(map(lambda p: p in self.__data.keys(), enum_as_list(PieceType))):
             raise SystemExit("Not all piece types are categorised.")
+
+    def get_piece(self, c):
+        for key in self.__data:
+            if self.__data[key].get_char() == c:
+                return key
+        raise Exception("Invalid piece character.")
+
+    def get_coordinate(self, coord, board_height):
+        if len(coord) != 2:
+            raise Exception("Incorrect coordinate format.")
+        i = board_height - int(coord[1])
+        j = ord(coord[0].lower()) - ord('a')
+        return (i, j)
 
     def get_base_row(self, board, side):
         return 0 if side == Side.BACK else board.get_height() - 1

@@ -1,8 +1,24 @@
+from src.utils.groups import FluxSprite, GroupType
+from src.utils.files import FileManager
 from src.game.logic import Logic, SimpleBoard
-from src.game.enums import BoardType, PieceColour, PieceType, Side
-from src.game.sprites import BoardCell
+from src.game.enums import BoardType, PieceColour, Side
+from src.game.elements import BoardCell
 from src.utils.globals import Globals, instance
 from src.utils.spritesheet import Spritesheet
+
+class CoordinateText(FluxSprite):
+
+    def __init__(self, text, xy, scale):
+        self.group = GroupType.UI
+        self.scale = scale
+        font = instance(FileManager).load_default_font(8 * scale)
+        self.image = font.render(text, False, (255, 255, 255))
+        super().__init__(xy)
+
+    def position_transform(self, xy):
+        x, y = xy
+        w, h = self.rect.size
+        return (x - w / 2, y - h / 2)
 
 class Controller:
 
@@ -10,23 +26,19 @@ class Controller:
     CHALLENGE_KEY = "challenge"
     SPECIAL_KEY = "special"
 
-    def __init__(self, board, width = 8, height = 8):
+    def __init__(self, board):
         self.__board = board
-        self.__width, self.__height = width, height
-
-        sw, sh = instance(Globals).get_window_size()
-        cell_size = Spritesheet.BOARD_WIDTH * self.__board.get_cell_scale()
-        self.__x_offset = (sw - cell_size * self.__width) / 2
-        self.__y_offset = (sh - cell_size * self.__height) / 2
-
         self.__selected = None
+
         self.__moves = tuple()
 
     def __get_cell_type(self, i, j):
         cell_colours = (BoardType.LIGHT, BoardType.DARK)
         return cell_colours[(i + j) % len(cell_colours)]
+    def __get_cell_size(self):
+        return Spritesheet.BOARD_WIDTH * self.__board.get_cell_scale()
     def __get_cell_position(self, i, j):
-        cell_size = Spritesheet.BOARD_WIDTH * self.__board.get_cell_scale()
+        cell_size = self.__get_cell_size()
         return (self.__x_offset + j * cell_size, self.__y_offset + i * cell_size)
     def reset_board(self):
         self.__cells = []
@@ -40,32 +52,55 @@ class Controller:
                                      self.__board.get_cell_scale(),
                                      self.__board.get_scale()))
             self.__cells.append(row)
+        self.__texts = []
+        scale = self.__board.get_cell_scale()
+        cell_size = self.__get_cell_size()
+        left = self.__x_offset
+        bottom = self.__y_offset + self.__height * cell_size
+        buffer = int(3 * cell_size / 4)
+        for i in range(self.__height):
+            pos = (left - buffer, self.__y_offset + (i + 0.5) * cell_size)
+            self.__texts.append(CoordinateText(str(i + 1), pos, scale))
+        for j in range(self.__width):
+            pos = (left + (j + 0.5) * cell_size, bottom + buffer)
+            self.__texts.append(CoordinateText(chr(ord('a') + j), pos, scale))
 
     def start(self):
+        self.__width, self.__height = 0, 0
+
+        def side(c):
+            if c == 'w':
+                return Side.FRONT
+            if c == 'b':
+                return Side.BACK
+            raise Exception("Incorrect board format.")
+
+        data = {}
+        logic = instance(Logic)
+        for key, value in instance(FileManager).load_board("default.board").items():
+            if key == "w":
+                self.__width = int(value)
+            elif key == "h":
+                self.__height = int(value)
+            elif len(key) == 2:
+                def get_coord(c):
+                    return logic.get_coordinate(c, self.__height)
+                coords = tuple(map(get_coord, value.split(' ')))
+                data[(side(key[0]), logic.get_piece(key[1]))] = coords
+
+        sw, sh = instance(Globals).get_window_size()
+        cell_size = Spritesheet.BOARD_WIDTH * self.__board.get_cell_scale()
+        self.__x_offset = (sw - cell_size * self.__width) / 2
+        self.__y_offset = (sh - cell_size * self.__height) / 2
+
         self.reset_board()
 
-        def side(i):
-            return Side.BACK if i < self.__height / 2 else Side.FRONT
         def colour(side):
             return (PieceColour.BLACK, PieceColour.WHITE)[int(side == Side.FRONT)]
-
-        base_rows = (0, self.__height - 1)
-        base_info = (
-            (PieceType.ROOK, (0, self.__width - 1)),
-            (PieceType.KNIGHT, (1, self.__width - 2)),
-            (PieceType.BISHOP, (2, self.__width - 3)),
-            (PieceType.QUEEN, (3,)),
-            (PieceType.KING, (self.__width - 4,)),
-        )
-        for _type, cols in base_info:
-            for i in base_rows:
-                for j in cols:
-                    self.__cells[i][j].place_piece(colour(side(i)), _type, side(i))
-
-        pawn_rows = (1, self.__height - 2)
-        for i in pawn_rows:
-            for j in range(self.__width):
-                self.__cells[i][j].place_piece(colour(side(i)), PieceType.PAWN, side(i))
+        for key, values in data.items():
+            s, p = key
+            for (i, j) in values:
+                self.__cells[i][j].place_piece(colour(s), p, s)
 
     def update(self):
         pass

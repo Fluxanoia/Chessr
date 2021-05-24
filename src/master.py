@@ -11,15 +11,16 @@ class Master:
     def __init__(self):
         self.__globals = Globals()
         self.__files = FileManager()
-        self.__logic = Logic()
+        Logic()
 
         pg.init()
+        pg.font.init()
         pg.display.set_caption("Chessr")
         self.__screen = pg.display.set_mode(self.__globals.get_window_size())
         pg.display.set_icon(self.__files.load_image("icon.png", True))
 
         self.__groups = Groups()
-        self.__spritesheet = Spritesheet()
+        Spritesheet()
         self.__clock = pg.time.Clock()
         self.__board = Board()
 
