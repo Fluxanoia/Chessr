@@ -12,7 +12,7 @@ class CoordinateText(FluxSprite):
         self.group = GroupType.UI
         self.scale = scale
         font = instance(FileManager).load_default_font(8 * scale)
-        self.image = font.render(text, False, (255, 255, 255))
+        self.image = font.render(text, True, (255, 255, 255))
         super().__init__(xy)
 
     def position_transform(self, xy):
@@ -63,7 +63,7 @@ class Controller:
             self.__texts.append(CoordinateText(str(i + 1), pos, scale))
         for j in range(self.__width):
             pos = (left + (j + 0.5) * cell_size, bottom + buffer)
-            self.__texts.append(CoordinateText(chr(ord('a') + j), pos, scale))
+            self.__texts.append(CoordinateText(chr(ord('A') + j), pos, scale))
 
     def start(self):
         self.__width, self.__height = 0, 0

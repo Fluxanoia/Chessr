@@ -5,7 +5,7 @@ from src.utils.globals import Singleton
 class FileManager(Singleton):
 
     DELIM = ':'
-    DEFAULT_FONT = "Kenney Blocks.ttf"
+    DEFAULT_FONT = "Roboto-Black.ttf"
 
     def __init__(self):
         super().__init__()
