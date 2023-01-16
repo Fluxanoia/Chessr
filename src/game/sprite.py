@@ -39,18 +39,19 @@ class ChessrSprite(pg.sprite.DirtySprite):
         return xy
 
     def set_position(self, xy : FloatVector, preserve_tween : bool = False) -> None:
-        self.__raw_position = xy
-        xy = self.calculate_position(xy)
-        if self.alive() and isinstance(self.group, GroupType):
-            layer = self.calculate_layer(xy)
-            Factory.get().group_manager.get_group(self.group).change_layer(self, layer)
-
         if self.rect is None:
             if self.src_rect is None:
                 size = self.image.get_size() if not self.image is None else (0, 0)
             else:
                 size = self.src_rect.size
             self.rect = pg.Rect((0, 0), size)
+
+        self.__raw_position = xy
+        
+        xy = self.calculate_position(xy)
+        if self.alive() and isinstance(self.group, GroupType):
+            layer = self.calculate_layer(xy)
+            Factory.get().group_manager.get_group(self.group).change_layer(self, layer)
 
         self.rect.x, self.rect.y = int(xy[0]), int(xy[1])
         
@@ -74,11 +75,12 @@ class ChessrSprite(pg.sprite.DirtySprite):
         self.tween_position(Tween(tween_type, start, end, duration, pause))
 
     def update(self, *args : list[Any]) -> None:
+        position = self.__raw_position
         if self.__position_tween is not None:
-            tween_value = cast(FloatVector, self.__position_tween.value())
-            self.set_position(tween_value, True)
+            position = cast(FloatVector, self.__position_tween.value())
             if self.__position_tween.finished():
                 self.__position_tween = self.__position_tween.get_chained()
+        self.set_position(position, True)
 
     def point_intersects(self, point : FloatVector) -> bool:
         if self.rect is None:
