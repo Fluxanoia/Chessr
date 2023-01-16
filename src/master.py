@@ -1,42 +1,40 @@
 import pygame as pg
-from src.game.board import Board
-from src.game.logic import Logic
-from src.utils.files import FileManager
-from src.utils.groups import Groups
-from src.utils.globals import Globals
-from src.utils.spritesheet import Spritesheet
+
+from src.engine.config import Config
+from src.engine.factory import Factory
+from src.engine.game_manager import GameManager
+
 
 class Master:
 
     def __init__(self):
-        self.__globals = Globals()
-        self.__files = FileManager()
-        Logic()
+        factory = Factory.get()
 
         pg.init()
         pg.font.init()
-        pg.display.set_caption("Chessr")
-        self.__screen = pg.display.set_mode(self.__globals.get_window_size())
-        pg.display.set_icon(self.__files.load_image("icon.png", True))
+        pg.display.set_caption('Chessr')
+        screen = pg.display.set_mode(Config.get_window_dimensions())
+        pg.display.set_icon(factory.file_manager.load_image('icon.png', True))
 
-        self.__groups = Groups()
-        Spritesheet()
-        self.__clock = pg.time.Clock()
-        self.__board = Board()
+        game_manager = GameManager()
+        game_manager.start()
 
         running = True
+        clock = pg.time.Clock()
         while running:
             for event in pg.event.get():
                 if event.type == pg.QUIT:
                     running = False
                     continue
-                if event.type == pg.MOUSEBUTTONDOWN: self.__board.pressed(event)
-                if event.type == pg.MOUSEBUTTONUP: self.__board.released(event)
-            self.__board.update()
-            self.__groups.update()
-            self.__screen.fill((40, 40, 40))
-            self.__groups.draw(self.__screen)
+                game_manager.pass_event(event)
+                
+            game_manager.update()
+            factory.group_manager.update_groups()
+
+            screen.fill((40, 40, 40))
+            factory.group_manager.draw_groups(screen)
             pg.display.flip()
-            self.__clock.tick(self.__globals.get_fps())
+
+            clock.tick(Config.get_fps())
 
         pg.quit()

@@ -1,65 +1,158 @@
+from typing import Callable, Optional
+
 import pygame as pg
-from src.game.enums import BoardColour
-from src.utils.groups import GroupType, Groups
-from src.utils.globals import MouseButton, instance
-from src.game.controllers import Controller
+
+from src.engine.config import Config
+from src.engine.factory import Factory
+from src.engine.spritesheets.board_spritesheet import BoardSpritesheet
+from src.game.board_event import BoardDataType, BoardEvent, BoardEventType
+from src.game.sprite import GroupType
+from src.game.sprites.board_cell import BoardCell
+from src.game.sprites.coordinate_text import CoordinateText
+from src.game.sprites.piece import Piece
+from src.utils.enums import BoardColour, CellColour, MouseButton
+from src.utils.helpers import FloatVector, IntVector, inbounds
+
+Callbacks = tuple[tuple[IntVector, Callable[[IntVector, IntVector], None]]]
 
 class Board():
 
-    def __init__(self, colour = BoardColour.BLACK_WHITE, scale = 3, cell_scale = 1.25):
+    def __init__(
+        self,
+        colour : BoardColour = BoardColour.BLACK_WHITE,
+        scale : float = 3,
+        cell_scale : float = 1.25
+    ):
+        self.__width : int = 0
+        self.__height : int = 0
+        self.__cells : list[list[BoardCell]] = []
+
         self.__colour = colour
         self.__scale = scale
         self.__cell_scale = scale * cell_scale
 
-        self.__pressed = None
-        self.__inactive_timer = None
+        self.__events : list[BoardEvent] = [] 
+        self.__pressed_grid_position : Optional[IntVector] = None
+        self.__callbacks : Callbacks = tuple()
+    
+    def reset(self, width : int, height : int) -> None:
+        self.__width = width
+        self.__height = height
 
-        self.__controller = Controller(self)
-        self.__controller.start()
+        sw, sh = Config.get_window_dimensions()
+        cell_size = BoardSpritesheet.BOARD_WIDTH * self.__cell_scale
+        x_offset = (sw - cell_size * self.__width) / 2
+        y_offset = (sh - cell_size * self.__height) / 2
 
-    def __is_inactive(self):
-        if self.__inactive_timer is not None:
-            if self.__inactive_timer.has_not_started():
-                return False
-            if self.__inactive_timer.finished():
-                self.__inactive_timer = None
-                return False
-            return True
-        return False
-    def update(self):
-        if self.__is_inactive():
+        cell_colours = (CellColour.LIGHT, CellColour.DARK)
+        def calculate_cell_colour(i : int, j : int):
+            return cell_colours[(i + j) % len(cell_colours)]
+
+        def calculate_cell_position(i : int, j : int) -> FloatVector:
+            return (x_offset + j * cell_size, y_offset + i * cell_size)
+
+        # TODO: Clear out the old cells
+
+        self.__cells = []
+        for i in range(self.__height):
+            row : list[BoardCell] = []
+            for j in range(self.__width):
+                cell = BoardCell(
+                    (i, j),
+                    calculate_cell_position(i, j),
+                    self.__colour,
+                    calculate_cell_colour(i, j),
+                    self.__cell_scale,
+                    self.__scale
+                )
+                row.append(cell)
+            self.__cells.append(row)
+
+        buffer = int(3 * cell_size / 4)
+        bottom = y_offset + self.__height * cell_size
+
+        for i in range(self.__height):
+            pos = (x_offset - buffer, y_offset + (i + 0.5) * cell_size)
+            CoordinateText(str(i + 1), pos, self.__cell_scale)
+        
+        for j in range(self.__width):
+            pos = (x_offset + (j + 0.5) * cell_size, bottom + buffer)
+            CoordinateText(chr(ord('A') + j), pos, self.__cell_scale)
+
+    def at(self, i : int, j : int) -> Optional[BoardCell]:
+        if not inbounds(self.__width, self.__height, (i, j)):
+            return None
+        return self.__cells[i][j]
+
+    def row_at(self, i : int) -> Optional[list[BoardCell]]:
+        if not inbounds(self.__width, self.__height, (i, 0)):
+            return None
+        return self.__cells[i]
+
+    def piece_at(self, i : int, j : int) -> Optional[Piece]:
+        cell = self.at(i, j)
+        if cell is None:
+            return None
+        return cell.get_piece()
+
+    def mouse_down(self, event : pg.event.Event) -> None:
+        if event.button == MouseButton.LEFT:
+            self.__pressed_grid_position = self.__get_intersected_grid_position(pg.mouse.get_pos())
+    
+    def mouse_up(self, event : pg.event.Event) -> None:
+        if event.button == MouseButton.LEFT:
+            released = self.__get_intersected_grid_position(pg.mouse.get_pos())
+
+            if self.__pressed_grid_position == released:
+                data = { BoardDataType.GRID_POSITION: self.__pressed_grid_position }
+                self.__events.append(BoardEvent(BoardEventType.CLICK, data))
+            
+            self.__pressed_grid_position = None
+    
+    def pop_event(self) -> Optional[BoardEvent]:
+        if len(self.__events) == 0:
+            return None
+        return self.__events.pop(0)
+
+    def move(self, from_gxy : IntVector, to_gxy : IntVector) -> None:
+        from_cell = self.at(*from_gxy)
+        to_cell = self.at(*to_gxy)
+        piece = self.piece_at(*from_gxy)
+
+        if from_cell is None \
+            or to_cell is None \
+            or piece is None \
+            or from_gxy == to_gxy:
             return
-        self.__controller.update()
 
-    def __get_collision(self, pos):
-        for s in reversed(instance(Groups).get_sprites(GroupType.BOARD)):
-            if s.collidepoint(pos):
-                return s.get_grid_position()
+        to_cell.transfer_from(from_cell)
+        for (xy, callback) in self.__callbacks:
+            if not xy == to_gxy:
+                continue
+            callback(from_gxy, to_gxy)
+
+    def remove(self, i : int, j : int) -> None:
+        cell = self.at(i, j)
+        if cell is None:
+            return
+        cell.remove_piece()
+
+    def update_move_callbacks(self, callbacks : Callbacks):
+        self.__callbacks = callbacks
+    
+    @property
+    def width(self) -> int:
+        return self.__width
+
+    @property
+    def height(self) -> int:
+        return self.__height
+
+    def __get_intersected_grid_position(self, point : IntVector) -> Optional[IntVector]:
+        sprites = reversed(Factory.get().group_manager.get_sprites(GroupType.BOARD))
+        for sprite in sprites:
+            if not isinstance(sprite, BoardCell):
+                continue
+            if sprite.point_intersects(point):
+                return sprite.get_grid_position()
         return None
-    def pressed(self, event):
-        if self.__is_inactive():
-            return
-        if event.button == MouseButton.LEFT:
-            self.__pressed = self.__get_collision(pg.mouse.get_pos())
-    def released(self, event):
-        if self.__is_inactive():
-            return
-        if event.button == MouseButton.LEFT:
-            _released = self.__get_collision(pg.mouse.get_pos())
-            if self.__pressed == _released:
-                self.__clicked(self.__pressed)
-    def __clicked(self, gxy):
-        if self.__is_inactive():
-            return
-        self.__controller.click(gxy)
-
-    def get_board_colour(self):
-        return self.__colour
-    def get_scale(self):
-        return self.__scale
-    def get_cell_scale(self):
-        return self.__cell_scale
-    def get_width(self):
-        return self.__controller.get_width()
-    def get_height(self):
-        return self.__controller.get_height()

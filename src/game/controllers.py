@@ -1,169 +1,116 @@
-from src.utils.groups import FluxSprite, GroupType
-from src.utils.files import FileManager
-from src.game.logic import Logic, SimpleBoard
-from src.game.enums import BoardType, PieceColour, Side
-from src.game.elements import BoardCell
-from src.utils.globals import Globals, instance
-from src.utils.spritesheet import Spritesheet
+from enum import auto
+from typing import Optional
 
-class CoordinateText(FluxSprite):
+import pygame as pg
 
-    def __init__(self, text, xy, scale):
-        self.group = GroupType.UI
-        self.scale = scale
-        font = instance(FileManager).load_default_font(8 * scale)
-        self.image = font.render(text, True, (255, 255, 255))
-        super().__init__(xy)
+from src.game.board import Board, BoardEventType
+from src.game.logic.piece_data_manager import (ManoeuvreCallback,
+                                               PieceDataManager)
+from src.utils.enums import ArrayEnum, CellColour
+from src.utils.helpers import IntVector
 
-    def position_transform(self, xy):
-        x, y = xy
-        w, h = self.rect.size
-        return (x - w / 2, y - h / 2)
 
-class Controller:
+class MoveType(ArrayEnum):
+    NORMAL = auto()
+    ATTACK = auto()
+    MANOEUVRE = auto()
 
-    MOVE_KEY = "move"
-    CHALLENGE_KEY = "challenge"
-    SPECIAL_KEY = "special"
+MoveDictionary = dict[MoveType, tuple[IntVector | tuple[IntVector, ManoeuvreCallback], ...]]
 
-    def __init__(self, board):
+class ClassicController:
+
+    def __init__(self, board : Board):
         self.__board = board
-        self.__selected = None
 
-        self.__moves = tuple()
+        self.__piece_data_manager = PieceDataManager()
 
-    def __get_cell_type(self, i, j):
-        cell_colours = (BoardType.LIGHT, BoardType.DARK)
-        return cell_colours[(i + j) % len(cell_colours)]
-    def __get_cell_size(self):
-        return Spritesheet.BOARD_WIDTH * self.__board.get_cell_scale()
-    def __get_cell_position(self, i, j):
-        cell_size = self.__get_cell_size()
-        return (self.__x_offset + j * cell_size, self.__y_offset + i * cell_size)
-    def reset_board(self):
-        self.__cells = []
-        for i in range(self.__height):
-            row = []
-            for j in range(self.__width):
-                row.append(BoardCell((i, j),
-                                     self.__get_cell_position(i, j),
-                                     self.__board.get_board_colour(),
-                                     self.__get_cell_type(i, j),
-                                     self.__board.get_cell_scale(),
-                                     self.__board.get_scale()))
-            self.__cells.append(row)
-        self.__texts = []
-        scale = self.__board.get_cell_scale()
-        cell_size = self.__get_cell_size()
-        left = self.__x_offset
-        bottom = self.__y_offset + self.__height * cell_size
-        buffer = int(3 * cell_size / 4)
-        for i in range(self.__height):
-            pos = (left - buffer, self.__y_offset + (i + 0.5) * cell_size)
-            self.__texts.append(CoordinateText(str(i + 1), pos, scale))
-        for j in range(self.__width):
-            pos = (left + (j + 0.5) * cell_size, bottom + buffer)
-            self.__texts.append(CoordinateText(chr(ord('A') + j), pos, scale))
+        self.__moves : MoveDictionary = {}
+        self.__selected : Optional[IntVector] = None
 
+    def mouse_down(self, event : pg.event.Event) -> None:
+        self.__board.mouse_down(event)
+    
+    def mouse_up(self, event : pg.event.Event) -> None:
+        self.__board.mouse_up(event)
+
+    def update(self) -> None:
+        board_event = self.__board.pop_event()
+        while not board_event is None:
+            if board_event.type is BoardEventType.CLICK:
+                gxy = board_event.grid_position
+                self.__click(gxy)
+            board_event = self.__board.pop_event()
+    
     def start(self):
-        self.__width, self.__height = 0, 0
+        self.__piece_data_manager.load_board(self.__board)
 
-        def side(c):
-            if c == 'w':
-                return Side.FRONT
-            if c == 'b':
-                return Side.BACK
-            raise Exception("Incorrect board format.")
-
-        data = {}
-        logic = instance(Logic)
-        for key, value in instance(FileManager).load_board("default.board").items():
-            if key == "w":
-                self.__width = int(value)
-            elif key == "h":
-                self.__height = int(value)
-            elif len(key) == 2:
-                def get_coord(c):
-                    return logic.get_coordinate(c, self.__height)
-                coords = tuple(map(get_coord, value.split(' ')))
-                data[(side(key[0]), logic.get_piece(key[1]))] = coords
-
-        sw, sh = instance(Globals).get_window_size()
-        cell_size = Spritesheet.BOARD_WIDTH * self.__board.get_cell_scale()
-        self.__x_offset = (sw - cell_size * self.__width) / 2
-        self.__y_offset = (sh - cell_size * self.__height) / 2
-
-        self.reset_board()
-
-        def colour(side):
-            return (PieceColour.BLACK, PieceColour.WHITE)[int(side == Side.FRONT)]
-        for key, values in data.items():
-            s, p = key
-            for (i, j) in values:
-                self.__cells[i][j].place_piece(colour(s), p, s)
-
-    def update(self):
-        pass
-
-    def click(self, gxy):
-        if gxy is not None:
+    def __click(self, gxy : Optional[IntVector]):
+        if gxy is None:
+            self.__deselect()
+            return
+        else:
+            click_piece = self.__board.piece_at(*gxy)
             if gxy == self.__selected:
-                pass
-            elif self.at(*gxy).has_piece():
-                if self.__selected is not None:
-                    self.at(*self.__selected).unselect()
-                self.__selected = gxy
-                self.at(*gxy).select()
-            elif self.__selected is not None:
-                self.move(self.__selected, gxy)
+                self.__deselect()
+            elif not click_piece is None:
+                self.__deselect()
+                self.__select(gxy)
+            elif not self.__selected is None:
+                # TODO: Check the possible moves
+                self.__board.move(self.__selected, gxy)
                 self.__selected = None
-        elif self.__selected is not None:
-            self.at(*self.__selected).unselect()
-            self.__selected = None
+
         self.__update_highlighting()
 
-    def __get_all_moves(self, gxy):
-        logic = instance(Logic)
-        board = SimpleBoard(self)
-        moves, challenges = logic.get_move_and_challenge_cells(board, gxy)
-        special = logic.get_special_manoeuvres(board, gxy)
+    def __select(self, gxy : IntVector) -> None:
+        if not self.__selected is None:
+            self.__deselect()
+        self.__selected = gxy
+        cell = self.__board.at(*gxy)
+        if not cell is None:
+            cell.select()
+
+    def __deselect(self) -> None:
+        if self.__selected is None:
+            return
+        cell = self.__board.at(*self.__selected)
+        if not cell is None:
+            cell.unselect()
+        self.__selected = None
+
+    def __get_all_moves(self, gxy : IntVector) -> MoveDictionary:
+        moves, attacks = self.__piece_data_manager.get_normal_and_attack_cells(self.__board, gxy)
+        special = self.__piece_data_manager.get_special_manoeuvres(self.__board, gxy)
         return {
-            Controller.MOVE_KEY : moves,
-            Controller.CHALLENGE_KEY : challenges,
-            Controller.SPECIAL_KEY : special,
+            MoveType.NORMAL : moves,
+            MoveType.ATTACK : attacks,
+            MoveType.MANOEUVRE : special,
         }
+
     def __update_highlighting(self):
         if self.__selected is None:
-            for i in range(self.__height):
-                for j in range(self.__width):
-                    self.at(i, j).fallback_type()
+            self.__clear_highlights()
         else:
             self.__moves = self.__get_all_moves(self.__selected)
-            for i in range(self.__height):
-                for j in range(self.__width):
-                    cell = self.at(i, j)
-                    if (i, j) in self.__moves[Controller.MOVE_KEY]:
-                        cell.set_temporary_type(BoardType.MOVE)
-                    elif (i, j) in self.__moves[Controller.CHALLENGE_KEY]:
-                        cell.set_temporary_type(BoardType.DANGER)
-                    elif (i, j) in map(lambda x : x[0], self.__moves[Controller.SPECIAL_KEY]):
-                        cell.set_temporary_type(BoardType.DEBUG)
+            for i in range(self.__board.height):
+                for j in range(self.__board.width):
+                    cell = self.__board.at(i, j)
+                    if cell is None:
+                        continue
+
+                    if (i, j) in self.__moves.get(MoveType.NORMAL, []):
+                        cell.set_temporary_cell_colour(CellColour.MOVE)
+                    elif (i, j) in self.__moves.get(MoveType.ATTACK, []):
+                        cell.set_temporary_cell_colour(CellColour.DANGER)
+                    elif (i, j) in map(lambda x : x[0], self.__moves.get(MoveType.MANOEUVRE, [])):
+                        cell.set_temporary_cell_colour(CellColour.DEBUG)
                     else:
-                        cell.fallback_type()
-
-    def move(self, a, b):
-        if not self.at(*a).has_piece() or a == b:
-            return
-        self.at(*b).transfer_from(self.at(*a))
-        for (xy, callback) in self.__moves[Controller.SPECIAL_KEY]:
-            if xy == b:
-                callback(a, b, self)
-    def remove(self, gxy):
-        self.at(*gxy).remove_piece()
-
-    def at(self, i, j):
-        return self.__cells[i][j]
-    def get_width(self):
-        return self.__width
-    def get_height(self):
-        return self.__height
+                        cell.revert_cell_colour()
+    
+    def __clear_highlights(self):
+        for i in range(self.__board.height):
+            for j in range(self.__board.width):
+                cell = self.__board.at(i, j)
+                if cell is None:
+                    continue
+                cell.revert_cell_colour()
