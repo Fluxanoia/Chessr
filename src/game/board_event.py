@@ -15,7 +15,7 @@ T = TypeVar('T')
 
 class BoardEvent():
 
-    def __init__(self, event_type : BoardEventType, data : dict[BoardDataType, Any]):
+    def __init__(self, event_type : BoardEventType, data : dict[BoardDataType, Any]) -> None:
         self.__event_type = event_type
         self.__data = data
 

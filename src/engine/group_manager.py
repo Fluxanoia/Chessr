@@ -8,6 +8,7 @@ from src.utils.enums import ArrayEnum, enum_as_list
 
 class GroupType(ArrayEnum):
     BOARD = auto()
+    BOARD_HIGHLIGHT = auto()
     SHADOW = auto()
     PIECE = auto()
     UI = auto()

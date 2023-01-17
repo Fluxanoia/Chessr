@@ -15,7 +15,7 @@ class CoordinateText(ChessrSprite):
         image = font.render(text, True, (255, 255, 255))
         super().__init__(xy, GroupType.UI, image, scale = scale)
 
-    def calculate_position(self, xy : FloatVector):
+    def _calculate_position(self, xy : FloatVector) -> FloatVector:
         if self.rect is None:
             return xy
         x, y = xy

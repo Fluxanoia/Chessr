@@ -15,7 +15,7 @@ class PieceShadow(ChessrSprite):
 
         super().__init__(xy, GroupType.SHADOW, image, scale = scale)
 
-    def calculate_position(self, xy : FloatVector) -> FloatVector:
+    def _calculate_position(self, xy : FloatVector) -> FloatVector:
         rect_height = self.rect.h if not self.rect is None else 0
         return (xy[0], xy[1] - rect_height - 2 * self.scale)
 

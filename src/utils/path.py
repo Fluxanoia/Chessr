@@ -5,7 +5,7 @@ PathLike : TypeAlias = Union['Path', tuple[str, ...], str]
 
 class Path:
 
-    def __init__(self, pathlike : PathLike):
+    def __init__(self, pathlike : PathLike) -> None:
         self.__segments = self.__get_segments_from_pathlike(pathlike)
 
     def get_relative_path(self, pathlike : PathLike) -> 'Path':

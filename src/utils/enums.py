@@ -42,9 +42,9 @@ class ShadowType(ArrayEnum):
 class CellColour(ArrayEnum):
     LIGHT = auto()
     DARK = auto()
+
+class CellHighlightType(ArrayEnum):
     MOVE = auto()
-    DANGER = auto()
-    DEBUG = auto()
 
 class BoardColour(ArrayEnum):
     BEIGE = auto()

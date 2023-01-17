@@ -40,7 +40,11 @@ class PieceData:
             board_cell = board.at(*cell)
             if board_cell is None:
                 return False
-            if not board_cell.get_piece() is None:
+
+            piece = board_cell.get_piece()
+            if not piece is None:
+                if piece.side == side:
+                    return False
                 if attack or self.__attack_vectors is None:
                     moves.append(cell)
                 return False

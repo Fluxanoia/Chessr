@@ -7,7 +7,7 @@ from src.game.board import Board, BoardEventType
 from src.game.logic.piece_data_manager import (ManoeuvreCallback,
                                                PieceDataManager)
 from src.game.logic.piece_tag import PieceTag, PieceTagType
-from src.utils.enums import ArrayEnum, CellColour
+from src.utils.enums import ArrayEnum, CellHighlightType
 from src.utils.helpers import IntVector
 
 
@@ -20,7 +20,7 @@ Moves = tuple[tuple[IntVector], tuple[tuple[IntVector, ManoeuvreCallback]]]
 
 class ClassicController:
 
-    def __init__(self, board : Board):
+    def __init__(self, board : Board) -> None:
         self.__board = board
 
         self.__piece_data_manager = PieceDataManager()
@@ -42,10 +42,10 @@ class ClassicController:
                 self.__click(gxy)
             board_event = self.__board.pop_event()
     
-    def start(self):
+    def start(self) -> None:
         self.__piece_data_manager.load_board(self.__board)
 
-    def __click(self, gxy : Optional[IntVector]):
+    def __click(self, gxy : Optional[IntVector]) -> None:
         if gxy is None:
             self.__deselect()
             return
@@ -57,10 +57,15 @@ class ClassicController:
                 self.__deselect()
                 self.__select(gxy)
             elif not self.__selected is None:
-                self.__execute_move(self.__selected, gxy)
-                self.__selected = None
+                if self.__execute_move(self.__selected, gxy):
+                    self.__selected = None
 
-        self.__update_highlighting()
+        if self.__selected is None:
+            self.__moves = (tuple(), tuple())
+            self.__clear_highlights()
+        else:
+            self.__moves = self.__piece_data_manager.get_moves(self.__board, self.__selected)
+            self.__update_highlighting()
 
     def __select(self, gxy : IntVector) -> None:
         if not self.__selected is None:
@@ -78,8 +83,10 @@ class ClassicController:
             cell.unselect()
         self.__selected = None
 
-    def __execute_move(self, from_gxy : IntVector, to_gxy : IntVector):
-        # TODO: Check the possible moves
+    def __execute_move(self, from_gxy : IntVector, to_gxy : IntVector) -> bool:
+        if not to_gxy in self.__moves[0]:
+            return False
+
         self.__board.move(from_gxy, to_gxy)
         moved_piece = self.__board.piece_at(*to_gxy)
         if not moved_piece is None and not moved_piece.has_tag(PieceTagType.HAS_MOVED):
@@ -89,28 +96,39 @@ class ClassicController:
             if not xy == to_gxy:
                 continue
             callback(from_gxy, to_gxy)
+        
+        self.__board.update_tags()
 
-    def __update_highlighting(self):
-        if self.__selected is None:
-            self.__clear_highlights()
-        else:
-            self.__moves = self.__piece_data_manager.get_moves(self.__board, self.__selected)
+        return True
 
-            for i in range(self.__board.height):
-                for j in range(self.__board.width):
-                    cell = self.__board.at(i, j)
-                    if cell is None:
-                        continue
-
-                    if (i, j) in self.__moves[0]:
-                        cell.set_temporary_cell_colour(CellColour.MOVE)
-                    else:
-                        cell.revert_cell_colour()
-    
-    def __clear_highlights(self):
+    def __update_highlighting(self) -> None:
         for i in range(self.__board.height):
             for j in range(self.__board.width):
                 cell = self.__board.at(i, j)
                 if cell is None:
                     continue
-                cell.revert_cell_colour()
+
+                piece = cell.get_piece()
+
+                if (i, j) in self.__moves[0]:
+                    if piece is None:
+                        cell.highlight(CellHighlightType.MOVE)
+                    else:
+                        piece.highlight()
+                else:
+                    if not piece is None:
+                        piece.unhighlight()
+                    cell.unhighlight()
+    
+    def __clear_highlights(self) -> None:
+        for i in range(self.__board.height):
+            for j in range(self.__board.width):
+                cell = self.__board.at(i, j)
+                if cell is None:
+                    continue
+                cell.unhighlight()
+                piece = cell.get_piece()
+                if piece is None:
+                    continue
+                piece.unhighlight()
+

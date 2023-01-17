@@ -2,8 +2,9 @@ import pygame as pg
 
 from src.engine.file_manager import FileManager
 from src.engine.spritesheets.spritesheet import Spritesheet
-from src.utils.enums import (BoardColour, CellColour, PieceColour, PieceType,
-                             ShadowType, Side, enum_as_list)
+from src.utils.enums import (BoardColour, CellColour, CellHighlightType,
+                             PieceColour, PieceType, ShadowType, Side,
+                             enum_as_list)
 from src.utils.helpers import scale_rect
 
 
@@ -28,6 +29,10 @@ class BoardSpritesheet(Spritesheet):
     @staticmethod
     def __get_width_of_shadows() -> int:
         return BoardSpritesheet.SHADOW_WIDTH
+
+    @staticmethod
+    def __get_width_of_boards() -> int:
+        return len(enum_as_list(CellColour)) * BoardSpritesheet.BOARD_WIDTH
 
     @staticmethod
     def get_piece_srcrect(
@@ -62,6 +67,24 @@ class BoardSpritesheet(Spritesheet):
         base_x = BoardSpritesheet.__get_width_of_pieces() + BoardSpritesheet.__get_width_of_shadows()
         r = pg.Rect(
             base_x + cell_colour * BoardSpritesheet.BOARD_WIDTH,
+            colour_scheme * BoardSpritesheet.BOARD_HEIGHT,
+            BoardSpritesheet.BOARD_WIDTH,
+            BoardSpritesheet.BOARD_HEIGHT
+        )
+        scale_rect(r, scale)
+        return r
+
+    @staticmethod
+    def get_cell_highlight_srcrect(
+        colour_scheme : BoardColour,
+        cell_highlight : CellHighlightType,
+        scale : float = 1
+    ) -> pg.Rect:
+        base_x = BoardSpritesheet.__get_width_of_pieces() \
+            + BoardSpritesheet.__get_width_of_shadows() \
+            + BoardSpritesheet.__get_width_of_boards()
+        r = pg.Rect(
+            base_x + cell_highlight * BoardSpritesheet.BOARD_WIDTH,
             colour_scheme * BoardSpritesheet.BOARD_HEIGHT,
             BoardSpritesheet.BOARD_WIDTH,
             BoardSpritesheet.BOARD_HEIGHT

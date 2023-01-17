@@ -6,7 +6,7 @@ from src.engine.config import Config
 from src.engine.factory import Factory
 from src.engine.spritesheets.board_spritesheet import BoardSpritesheet
 from src.game.board_event import BoardDataType, BoardEvent, BoardEventType
-from src.game.sprite import GroupType
+from src.game.sprite import ChessrSprite, GroupType
 from src.game.sprites.board_cell import BoardCell
 from src.game.sprites.coordinate_text import CoordinateText
 from src.game.sprites.piece import Piece
@@ -25,6 +25,7 @@ class Board():
         self.__width : int = 0
         self.__height : int = 0
         self.__cells : list[list[BoardCell]] = []
+        self.__texts : list[CoordinateText] = []
 
         self.__colour = colour
         self.__scale = scale
@@ -43,15 +44,24 @@ class Board():
         y_offset = (sh - cell_size * self.__height) / 2
 
         cell_colours = (CellColour.LIGHT, CellColour.DARK)
-        def calculate_cell_colour(i : int, j : int):
+        def calculate_cell_colour(i : int, j : int) -> CellColour:
             return cell_colours[(i + j) % len(cell_colours)]
 
         def calculate_cell_position(i : int, j : int) -> FloatVector:
             return (x_offset + j * cell_size, y_offset + i * cell_size)
 
-        # TODO: Clear out the old cells and texts
+        sprites_to_removes : list[ChessrSprite] = [cell for row in self.__cells for cell in row]
+        sprites_to_removes.extend(self.__texts)
+        group_manager = Factory.get().group_manager
+        for sprite in sprites_to_removes:
+            group = sprite.group
+            if group is None:
+                continue
+            group_manager.get_group(group).remove(sprite)
 
         self.__cells = []
+        self.__texts = []
+
         for i in range(self.__height):
             row : list[BoardCell] = []
             for j in range(self.__width):
@@ -71,11 +81,11 @@ class Board():
 
         for i in range(self.__height):
             pos = (x_offset - buffer, bottom - (i + 0.5) * cell_size)
-            CoordinateText(str(i + 1), pos, self.__cell_scale)
+            self.__texts.append(CoordinateText(str(i + 1), pos, self.__cell_scale))
         
         for j in range(self.__width):
             pos = (x_offset + (j + 0.5) * cell_size, bottom + buffer)
-            CoordinateText(chr(ord('A') + j), pos, self.__cell_scale)
+            self.__texts.append(CoordinateText(chr(ord('A') + j), pos, self.__cell_scale))
 
     def at(self, i : int, j : int) -> Optional[BoardCell]:
         if not inbounds(self.__width, self.__height, (i, j)):
@@ -112,6 +122,14 @@ class Board():
             return None
         return self.__events.pop(0)
 
+    def update_tags(self) -> None:
+        for row in self.__cells:
+            for cell in row:
+                piece = cell.get_piece()
+                if piece is None:
+                    continue
+                piece.update_tags()
+
     def move(self, from_gxy : IntVector, to_gxy : IntVector) -> None:
         from_cell = self.at(*from_gxy)
         to_cell = self.at(*to_gxy)
@@ -145,5 +163,5 @@ class Board():
             if not isinstance(sprite, BoardCell):
                 continue
             if sprite.point_intersects(point):
-                return sprite.get_grid_position()
+                return sprite.grid_position
         return None

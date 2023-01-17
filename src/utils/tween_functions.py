@@ -207,7 +207,7 @@ def __ease_in_out_elastic(n : float, amplitude : float = 1, period : float = 0.5
     else:
         return __ease_out_elastic(n - 1, amplitude = amplitude, period = period) / 2 + 0.5
 
-def __ease_in_back(n : float, s : float = 1.70158):
+def __ease_in_back(n : float, s : float = 1.70158) -> float:
     return n * n * ((s + 1) * n - s)
 
 def __ease_out_back(n : float, s : float = 1.70158) -> float:

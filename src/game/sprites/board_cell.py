@@ -5,9 +5,10 @@ import pygame as pg
 from src.engine.factory import Factory
 from src.engine.spritesheets.board_spritesheet import BoardSpritesheet
 from src.game.sprite import ChessrSprite, GroupType
+from src.game.sprites.board_cell_highlight import BoardCellHighlight
 from src.game.sprites.piece import Piece
-from src.utils.enums import (BoardColour, CellColour, PieceColour, PieceType,
-                             Side)
+from src.utils.enums import (BoardColour, CellColour, CellHighlightType,
+                             PieceColour, PieceType, Side)
 from src.utils.helpers import FloatVector, IntVector
 
 
@@ -27,23 +28,18 @@ class BoardCell(ChessrSprite):
         self.__colour = colour
 
         image = Factory.get().board_spritesheet.get_sheet(scale)
-        super().__init__(xy, GroupType.BOARD, image, self.get_src_rect(scale), scale)
+        super().__init__(xy, GroupType.BOARD, image, self.__get_src_rect(scale), scale)
+
+        self.__selected = False
+        self.__highlight = BoardCellHighlight(xy, scale, self.__colour_scheme)
 
         self.__piece_scale = piece_scale
         self.__piece : Optional[Piece] = None
-        
-        self.__selected = False
-        self.__fallback_cell_colour : Optional[CellColour] = None
 
     def set_theme(self, colour_scheme : BoardColour, colour : CellColour) -> None:
         self.__colour_scheme = colour_scheme
         self.__colour = colour
-        self.src_rect = self.get_src_rect()
-
-    def get_src_rect(self, scale : Optional[float] = None) -> pg.Rect:
-        scale = scale if not scale is None else self.scale
-        spritesheet = Factory.get().board_spritesheet
-        return spritesheet.get_board_srcrect(self.__colour_scheme, self.__colour, scale)
+        self.src_rect = self.__get_src_rect()
 
     def get_piece(self) -> Optional[Piece]:
         return self.__piece
@@ -59,7 +55,7 @@ class BoardCell(ChessrSprite):
             Factory.get().group_manager.get_group(self.__piece.group).remove(self.__piece)
         self.__piece = None
 
-    def select(self):
+    def select(self) -> None:
         if self.__selected:
             self.unselect()
         elif not self.__piece is None:
@@ -67,14 +63,14 @@ class BoardCell(ChessrSprite):
             rect_width = self.rect.w if not self.rect is None else 0
             self.__piece.lift(None, rect_width / 2, 200)
 
-    def unselect(self):
+    def unselect(self) -> None:
         if self.__selected and not self.__piece is None:
             self.__selected = False
             duration = 100
             self.__piece.move(None, self.__get_piece_position(), duration)
             self.__piece.lift(None, 0, duration)
 
-    def transfer_from(self, cell : 'BoardCell'):
+    def transfer_from(self, cell : 'BoardCell') -> None:
         new_piece = cell.get_piece()
         if new_piece is None:
             return
@@ -89,19 +85,21 @@ class BoardCell(ChessrSprite):
         self.__piece.move(None, self.__get_piece_position(), duration)
         self.__piece.lift(None, 0, duration)
 
-    def set_temporary_cell_colour(self, cell_colour : CellColour):
-        if self.__fallback_cell_colour is None:
-            self.__fallback_cell_colour = self.__colour
-        self.set_theme(self.__colour_scheme, cell_colour)
+    def highlight(self, highlight_type : CellHighlightType) -> None:
+        self.__highlight.set_theme(highlight_type, self.__colour_scheme)
+        self.__highlight.set_visible(True)
 
-    def revert_cell_colour(self):
-        if self.__fallback_cell_colour is None:
-            return
-        self.set_theme(self.__colour_scheme, self.__fallback_cell_colour)
-        self.__fallback_cell_colour = None
+    def unhighlight(self) -> None:
+        self.__highlight.set_visible(False)
 
-    def get_grid_position(self):
+    @property
+    def grid_position(self) -> IntVector:
         return self.__grid_position
+
+    def __get_src_rect(self, scale : Optional[float] = None) -> pg.Rect:
+        scale = scale if not scale is None else self.scale
+        spritesheet = Factory.get().board_spritesheet
+        return spritesheet.get_board_srcrect(self.__colour_scheme, self.__colour, scale)
 
     def __get_piece_position(self) -> FloatVector:
         rect_x, rect_y, rect_width = 0, 0, 0

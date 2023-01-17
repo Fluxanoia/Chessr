@@ -9,10 +9,10 @@ class PieceTagType(ArrayEnum):
 
 class PieceTag():
 
-    def __init__(self, tag_type : PieceTagType):
+    def __init__(self, tag_type : PieceTagType) -> None:
         self.__tag_type = tag_type
 
-    def update_move(self) -> bool:
+    def update(self) -> bool:
         return True
 
     @property
@@ -29,13 +29,16 @@ class PieceTag():
 
 class HasMovedPieceTag(PieceTag):
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(PieceTagType.HAS_MOVED)
 
 class EnPassantPieceTag(PieceTag):
 
-    def __init__(self):
+    def __init__(self) -> None:
+        self.__lifespan = 2
         super().__init__(PieceTagType.EN_PASSANT)
 
-    def update_move(self) -> bool:
-        return False
+    def update(self) -> bool:
+        if self.__lifespan > 0:
+            self.__lifespan -= 1
+        return self.__lifespan > 0

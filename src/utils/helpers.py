@@ -6,7 +6,7 @@ Numeric = Union[int, float]
 FloatVector = tuple[float, float]
 IntVector = tuple[int, int]
 
-def add_vectors(x : IntVector, y : IntVector):
+def add_vectors(x : IntVector, y : IntVector) -> IntVector:
     return (x[0] + y[0], x[1] + y[1])
 
 def scale_rect(rect : pg.Rect, scale : float) -> None:
@@ -20,6 +20,6 @@ U = TypeVar('U', bound = Numeric)
 def clamp(x : U, l : U, u : U) -> U:
     return l if x < l else (u if x > u else x)
 
-def inbounds(grid_width : int, grid_height : int, cell : IntVector):
+def inbounds(grid_width : int, grid_height : int, cell : IntVector) -> bool:
     i, j = cell
     return 0 <= i < grid_height and 0 <= j < grid_width

@@ -21,7 +21,7 @@ class Piece(ChessrSprite):
         piece_type : PieceType,
         side : Side
     ):
-        self.__colour = colour
+        self.__colour = self.__fallback_colour = colour
         self.__type = piece_type
         self.__side = side
         self.__tags : list[PieceTag] = []
@@ -32,27 +32,27 @@ class Piece(ChessrSprite):
         self.__lift_tween : Optional[Tween] = None
 
         self.__shadow = PieceShadow(xy, scale)
-        self.update_shadow_alpha()
+        self.__update_shadow_alpha()
 
-        super().__init__(xy, GroupType.PIECE, image, self.get_src_rect(scale), scale)
+        super().__init__(xy, GroupType.PIECE, image, self.__get_src_rect(scale), scale)
 
     def update(self, *args : list[Any]) -> None:
         if not self.__lift_tween is None:
             self.__lift = self.__lift_tween.get_single_value()
-            self.update_shadow_alpha()
+            self.__update_shadow_alpha()
             if self.__lift_tween.finished():
                 self.__lift_tween = None
         super().update()
 
-    def calculate_position(self, xy : FloatVector) -> FloatVector:
-        rect_height = self.rect.h if not self.rect is None else 0
-        return (xy[0], xy[1] - rect_height - self.__lift)
-
-    def set_position(self, xy : FloatVector, preserve_tween : bool = False):
+    def set_position(self, xy : FloatVector, preserve_tween : bool = False) -> None:
         super().set_position(xy, preserve_tween)
         self.__shadow.set_position(xy, preserve_tween)
         if not preserve_tween:
             self.__lift_tween = None
+
+    def _calculate_position(self, xy : FloatVector) -> FloatVector:
+        rect_height = self.rect.h if not self.rect is None else 0
+        return (xy[0], xy[1] - rect_height - self.__lift)
 
     def lift(
         self,
@@ -70,25 +70,21 @@ class Piece(ChessrSprite):
             pause)
         self.__lift_tween.restart()
 
-    def set_data(self, colour : PieceColour, piece_type : PieceType, side : Side):
-        self.__colour = colour
-        self.__type = piece_type
-        self.__side = side
-        self.src_rect = self.get_src_rect()
+    def highlight(self) -> None:
+        self.__colour = PieceColour.RED
+        self.src_rect = self.__get_src_rect()
 
-    def get_src_rect(self, scale : Optional[float] = None) -> pg.Rect:
-        scale = scale if not scale is None else self.scale
-        spritesheet = Factory.get().board_spritesheet
-        return spritesheet.get_piece_srcrect(self.__colour, self.__type, self.__side, scale)
+    def unhighlight(self) -> None:
+        self.__colour = self.__fallback_colour
+        self.src_rect = self.__get_src_rect()
 
-    def update_shadow_alpha(self):
-        alpha = 255 * (1 - self.__lift / 60.0) if not self.__lift == 0 else 0
-        self.__shadow.set_alpha(clamp(int(alpha), 0, 255))
+    def update_tags(self) -> None:
+        self.__tags = list(filter(lambda x : x.update(), self.__tags))
 
-    def add_tag(self, tag : PieceTag):
+    def add_tag(self, tag : PieceTag) -> None:
         self.__tags.append(tag)
 
-    def has_tag(self, tag_type : PieceTagType):
+    def has_tag(self, tag_type : PieceTagType) -> bool:
         return tag_type in map(lambda x : x.type, self.__tags)
 
     @property
@@ -98,3 +94,12 @@ class Piece(ChessrSprite):
     @property
     def side(self) -> Side:
         return self.__side
+
+    def __get_src_rect(self, scale : Optional[float] = None) -> pg.Rect:
+        scale = scale if not scale is None else self.scale
+        spritesheet = Factory.get().board_spritesheet
+        return spritesheet.get_piece_srcrect(self.__colour, self.__type, self.__side, scale)
+
+    def __update_shadow_alpha(self) -> None:
+        alpha = 255 * (1 - self.__lift / 60.0) if not self.__lift == 0 else 0
+        self.__shadow.set_alpha(clamp(int(alpha), 0, 255))

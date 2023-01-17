@@ -11,7 +11,7 @@ ManoeuvreCallback = Callable[[IntVector, IntVector], None]
 
 class PieceDataManager():
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.__data : dict[PieceType, PieceData] = {
             PieceType.QUEEN  : PieceData('Q', ((1, 0), (1, 1)), True, True),
             PieceType.KING   : PieceData('K', ((1, 0), (1, 1)), True, False),
@@ -24,7 +24,7 @@ class PieceDataManager():
         if not all(map(lambda p : p in self.__data.keys(), enum_as_list(PieceType))):
             raise SystemExit('Some piece types are undefined.')
 
-    def load_board(self, board : Board, board_name : str = 'default'):
+    def load_board(self, board : Board, board_name : str = 'default') -> None:
         file_data = Factory.get().file_manager.load_board(f'{board_name}.board')
         if file_data is None:
             raise SystemExit('The board file data could not be found.')
@@ -74,29 +74,26 @@ class PieceDataManager():
             return Side.BACK
         raise SystemExit(f'Invalid side character \'{c}\'.')
 
-    def __get_coordinate_from_text(self, coord : str, board_height : int):
+    def __get_coordinate_from_text(self, coord : str, board_height : int) -> IntVector:
         if len(coord) != 2:
             raise SystemExit(f'Incorrect coordinate format \'{coord}\'.')
         i = board_height - int(coord[1])
         j = ord(coord[0].lower()) - ord('a')
         return (i, j)
 
-    def get_home_row(self, board_height : int, side : Side) -> int:
-        return 0 if side == Side.BACK else board_height - 1
-
     def get_moves(
         self,
         board : Board,
         gxy : IntVector
     ) -> tuple[tuple[IntVector], tuple[tuple[IntVector, ManoeuvreCallback]]]:
-        moves = list(self.get_normal_moves(board, gxy))
-        manoeuvres = self.get_manoeuvres(board, gxy)
+        moves = list(self.__get_normal_moves(board, gxy))
+        manoeuvres = self.__get_manoeuvres(board, gxy)
 
         moves.extend(map(lambda x : x[0], manoeuvres))
 
         return (tuple(moves), manoeuvres)
 
-    def get_normal_moves(
+    def __get_normal_moves(
         self,
         board : Board,
         gxy : IntVector
@@ -106,7 +103,7 @@ class PieceDataManager():
             return tuple([tuple(), tuple()])
         return self.__data[piece.type].get_normal_moves(board, piece.side, gxy)
 
-    def get_manoeuvres(
+    def __get_manoeuvres(
         self,
         board : Board,
         gxy : IntVector
@@ -142,14 +139,13 @@ class PieceDataManager():
             or not board.piece_at(*inbetween_gxy) is None:
             return tuple()
 
-        def double_move_callback(_src : IntVector, dst : IntVector):
+        def double_move_callback(_src : IntVector, dst : IntVector) -> None:
             piece = board.piece_at(*dst)
             if piece is None:
                 return
             piece.add_tag(PieceTag.get_tag(PieceTagType.EN_PASSANT))
 
         return tuple([(add_vectors(inbetween_gxy, forward_vector), double_move_callback,)])
-
 
     def __en_passant_manoeuvre(
         self,
@@ -179,7 +175,7 @@ class PieceDataManager():
                 move = add_vectors(en_passant_vector, forward_vector)
                 manoeuvres.append(add_vectors(gxy, move))
 
-        def en_passant_callback(src : IntVector, dst : IntVector):
+        def en_passant_callback(src : IntVector, dst : IntVector) -> None:
             board.remove(src[0], dst[1])
 
         return tuple(map(lambda x : (x, en_passant_callback), manoeuvres))
@@ -194,7 +190,7 @@ class PieceDataManager():
         if king_piece is None or king_row is None or king_piece.has_tag(PieceTagType.HAS_MOVED):
             return tuple()
 
-        def castle_callback(src : IntVector, dst : IntVector):
+        def castle_callback(src : IntVector, dst : IntVector) -> None:
             castle_direction = -1 if dst[1] < src[1] else 1
             rook_destination = (dst[0], dst[1] - castle_direction)
             j = dst[1] + castle_direction
@@ -218,7 +214,7 @@ class PieceDataManager():
                 or not piece.side == king_piece.side:
                 continue
 
-            rook_columns.append(cell.get_grid_position()[1])
+            rook_columns.append(cell.grid_position[1])
 
         row, column = gxy
         manoeuvres : list[IntVector] = []

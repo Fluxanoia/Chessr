@@ -7,7 +7,7 @@ from src.engine.game_manager import GameManager
 
 class Master:
 
-    def __init__(self):
+    def __init__(self) -> None:
         factory = Factory.get()
 
         pg.init()

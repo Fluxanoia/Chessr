@@ -26,7 +26,7 @@ class Tween(Timer):
         self.restart()
 
     def value(self) -> Tweenable:
-        percentage = tween(self.__type, self.percentage_done())
+        percentage = tween(self.__type, self.get_percentage_done())
 
         def interpolate(x : FloatVector) -> float:
             return x[0] + percentage * (x[1] - x[0])
