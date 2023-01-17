@@ -3,9 +3,10 @@ from typing import Any, Optional
 import pygame as pg
 
 from src.engine.factory import Factory
+from src.game.logic.piece_tag import PieceTag, PieceTagType
 from src.game.sprite import ChessrSprite, GroupType
 from src.game.sprites.piece_shadow import PieceShadow
-from src.utils.enums import PieceColour, PieceTag, PieceType, Side
+from src.utils.enums import PieceColour, PieceType, Side
 from src.utils.helpers import FloatVector, clamp
 from src.utils.tween import Tween, TweenType
 
@@ -23,7 +24,7 @@ class Piece(ChessrSprite):
         self.__colour = colour
         self.__type = piece_type
         self.__side = side
-        self.__tags : set[PieceTag] = set()
+        self.__tags : list[PieceTag] = []
 
         image = Factory.get().board_spritesheet.get_sheet(scale)
 
@@ -85,10 +86,10 @@ class Piece(ChessrSprite):
         self.__shadow.set_alpha(clamp(int(alpha), 0, 255))
 
     def add_tag(self, tag : PieceTag):
-        self.__tags.add(tag)
+        self.__tags.append(tag)
 
-    def has_tag(self, tag : PieceTag):
-        return tag in self.__tags
+    def has_tag(self, tag_type : PieceTagType):
+        return tag_type in map(lambda x : x.type, self.__tags)
 
     @property
     def type(self) -> PieceType:

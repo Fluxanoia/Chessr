@@ -3,8 +3,8 @@ from typing import Callable
 from src.engine.factory import Factory
 from src.game.board import Board
 from src.game.logic.piece_data import PieceData
-from src.utils.enums import (PieceColour, PieceTag, PieceType, Side,
-                             enum_as_list)
+from src.game.logic.piece_tag import PieceTag, PieceTagType
+from src.utils.enums import PieceColour, PieceType, Side, enum_as_list
 from src.utils.helpers import IntVector, add_vectors, inbounds
 
 ManoeuvreCallback = Callable[[IntVector, IntVector], None]
@@ -84,32 +84,44 @@ class PieceDataManager():
     def get_home_row(self, board_height : int, side : Side) -> int:
         return 0 if side == Side.BACK else board_height - 1
 
-    def get_normal_and_attack_cells(
+    def get_moves(
         self,
         board : Board,
         gxy : IntVector
-    ) -> tuple[tuple[IntVector,...], tuple[IntVector,...]]:
+    ) -> tuple[tuple[IntVector], tuple[tuple[IntVector, ManoeuvreCallback]]]:
+        moves = list(self.get_normal_moves(board, gxy))
+        manoeuvres = self.get_manoeuvres(board, gxy)
+
+        moves.extend(map(lambda x : x[0], manoeuvres))
+
+        return (tuple(moves), manoeuvres)
+
+    def get_normal_moves(
+        self,
+        board : Board,
+        gxy : IntVector
+    ) -> tuple[IntVector,...]:
         piece = board.piece_at(*gxy)
         if piece is None:
             return tuple([tuple(), tuple()])
+        return self.__data[piece.type].get_normal_moves(board, piece.side, gxy)
 
-        return self.__data[piece.type].get_normal_and_attack_cells(board, piece.side, gxy)
-
-    def get_special_manoeuvres(
+    def get_manoeuvres(
         self,
         board : Board,
         gxy : IntVector
     ) -> tuple[tuple[IntVector, ManoeuvreCallback]]:
         piece = board.piece_at(*gxy)
-        manoeuvres : list[tuple[IntVector, ManoeuvreCallback]] = []
         if piece is None:
             return tuple()
 
-        if piece is PieceType.PAWN:
+        manoeuvres : list[tuple[IntVector, ManoeuvreCallback]] = []
+
+        if piece.type == PieceType.PAWN:
             manoeuvres.extend(self.__double_move_manoeuvre(board, gxy))
             manoeuvres.extend(self.__en_passant_manoeuvre(board, gxy))
 
-        if piece is PieceType.KING:
+        if piece.type == PieceType.KING:
             manoeuvres.extend(self.__castle_manoeuvre(board, gxy))
 
         return tuple(manoeuvres)
@@ -120,16 +132,7 @@ class PieceDataManager():
         gxy : IntVector
     ) -> tuple[tuple[IntVector, ManoeuvreCallback]]:
         piece = board.piece_at(*gxy)
-        if piece is None:
-            return tuple()
-
-        def double_move_callback(_src : IntVector, dst : IntVector):
-            piece = board.piece_at(*dst)
-            if piece is None:
-                return
-            piece.add_tag(PieceTag.DOUBLE_MOVE)
-
-        if piece.has_tag(PieceTag.HAS_MOVED):
+        if piece is None or piece.has_tag(PieceTagType.HAS_MOVED):
             return tuple()
 
         piece_data = self.__data[piece.type]
@@ -138,6 +141,12 @@ class PieceDataManager():
         if not inbounds(board.width, board.height, inbetween_gxy) \
             or not board.piece_at(*inbetween_gxy) is None:
             return tuple()
+
+        def double_move_callback(_src : IntVector, dst : IntVector):
+            piece = board.piece_at(*dst)
+            if piece is None:
+                return
+            piece.add_tag(PieceTag.get_tag(PieceTagType.EN_PASSANT))
 
         return tuple([(add_vectors(inbetween_gxy, forward_vector), double_move_callback,)])
 
@@ -155,12 +164,6 @@ class PieceDataManager():
         piece_data = self.__data[piece.type]
 
         forward_vector = piece_data.side_transform_vector((-1, 0), piece.side)
-        en_passant_row = self.get_home_row(board.height, piece.side) \
-            + piece_data.side_transform_vector((4 - board.height, 0), piece.side)[0]
-
-        if not gxy[0] == en_passant_row:
-            return tuple()
-
         en_passant_vectors = ((0, -1), (0, 1))
         for en_passant_vector in en_passant_vectors:
             en_passant_gxy = add_vectors(gxy, en_passant_vector)
@@ -171,7 +174,8 @@ class PieceDataManager():
             if piece_to_take is None:
                 continue
 
-            if piece_to_take.type == PieceType.PAWN and piece_to_take.has_tag(PieceTag.DOUBLE_MOVE):
+            if piece_to_take.type == PieceType.PAWN \
+                and piece_to_take.has_tag(PieceTagType.EN_PASSANT):
                 move = add_vectors(en_passant_vector, forward_vector)
                 manoeuvres.append(add_vectors(gxy, move))
 
@@ -187,7 +191,7 @@ class PieceDataManager():
     ) -> tuple[tuple[IntVector, ManoeuvreCallback]]:
         king_piece = board.piece_at(*gxy)
         king_row = board.row_at(gxy[0])
-        if king_piece is None or king_row is None or king_piece.has_tag(PieceTag.HAS_MOVED):
+        if king_piece is None or king_row is None or king_piece.has_tag(PieceTagType.HAS_MOVED):
             return tuple()
 
         def castle_callback(src : IntVector, dst : IntVector):
@@ -197,11 +201,10 @@ class PieceDataManager():
             while 0 <= j < board.width:
                 position = (dst[0], j)
                 piece = board.piece_at(*position)
-                if not piece is None and piece.type is PieceType.ROOK:
+                if not piece is None and piece.type == PieceType.ROOK:
                     board.move(position, rook_destination)
                     return
                 j += castle_direction
-
 
         rook_columns : list[int] = []
         for cell in king_row:
@@ -210,9 +213,9 @@ class PieceDataManager():
 
             piece = cell.get_piece()
             if piece is None \
-                or piece.has_tag(PieceTag.HAS_MOVED) \
-                or piece.type == PieceType.ROOK \
-                or piece.side == king_piece.side:
+                or piece.has_tag(PieceTagType.HAS_MOVED) \
+                or not piece.type == PieceType.ROOK \
+                or not piece.side == king_piece.side:
                 continue
 
             rook_columns.append(cell.get_grid_position()[1])
@@ -226,6 +229,6 @@ class PieceDataManager():
             columns_between = range(column + castle_direction, rook_column, castle_direction)
             pieces_between = [board.piece_at(row, j) for j in columns_between]
             if all(map(lambda x : x is None, pieces_between)):
-                manoeuvres.append((row, column + 2 * castle_direction))
+                manoeuvres.append((row, rook_column - castle_direction))
 
         return tuple(map(lambda x : (x, castle_callback), manoeuvres))

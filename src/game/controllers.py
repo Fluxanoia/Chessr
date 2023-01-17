@@ -6,6 +6,7 @@ import pygame as pg
 from src.game.board import Board, BoardEventType
 from src.game.logic.piece_data_manager import (ManoeuvreCallback,
                                                PieceDataManager)
+from src.game.logic.piece_tag import PieceTag, PieceTagType
 from src.utils.enums import ArrayEnum, CellColour
 from src.utils.helpers import IntVector
 
@@ -15,7 +16,7 @@ class MoveType(ArrayEnum):
     ATTACK = auto()
     MANOEUVRE = auto()
 
-MoveDictionary = dict[MoveType, tuple[IntVector | tuple[IntVector, ManoeuvreCallback], ...]]
+Moves = tuple[tuple[IntVector], tuple[tuple[IntVector, ManoeuvreCallback]]]
 
 class ClassicController:
 
@@ -24,7 +25,7 @@ class ClassicController:
 
         self.__piece_data_manager = PieceDataManager()
 
-        self.__moves : MoveDictionary = {}
+        self.__moves : Moves = (tuple(), tuple())
         self.__selected : Optional[IntVector] = None
 
     def mouse_down(self, event : pg.event.Event) -> None:
@@ -56,8 +57,7 @@ class ClassicController:
                 self.__deselect()
                 self.__select(gxy)
             elif not self.__selected is None:
-                # TODO: Check the possible moves
-                self.__board.move(self.__selected, gxy)
+                self.__execute_move(self.__selected, gxy)
                 self.__selected = None
 
         self.__update_highlighting()
@@ -78,32 +78,32 @@ class ClassicController:
             cell.unselect()
         self.__selected = None
 
-    def __get_all_moves(self, gxy : IntVector) -> MoveDictionary:
-        moves, attacks = self.__piece_data_manager.get_normal_and_attack_cells(self.__board, gxy)
-        special = self.__piece_data_manager.get_special_manoeuvres(self.__board, gxy)
-        return {
-            MoveType.NORMAL : moves,
-            MoveType.ATTACK : attacks,
-            MoveType.MANOEUVRE : special,
-        }
+    def __execute_move(self, from_gxy : IntVector, to_gxy : IntVector):
+        # TODO: Check the possible moves
+        self.__board.move(from_gxy, to_gxy)
+        moved_piece = self.__board.piece_at(*to_gxy)
+        if not moved_piece is None and not moved_piece.has_tag(PieceTagType.HAS_MOVED):
+            moved_piece.add_tag(PieceTag.get_tag(PieceTagType.HAS_MOVED))
+
+        for (xy, callback) in self.__moves[1]:
+            if not xy == to_gxy:
+                continue
+            callback(from_gxy, to_gxy)
 
     def __update_highlighting(self):
         if self.__selected is None:
             self.__clear_highlights()
         else:
-            self.__moves = self.__get_all_moves(self.__selected)
+            self.__moves = self.__piece_data_manager.get_moves(self.__board, self.__selected)
+
             for i in range(self.__board.height):
                 for j in range(self.__board.width):
                     cell = self.__board.at(i, j)
                     if cell is None:
                         continue
 
-                    if (i, j) in self.__moves.get(MoveType.NORMAL, []):
+                    if (i, j) in self.__moves[0]:
                         cell.set_temporary_cell_colour(CellColour.MOVE)
-                    elif (i, j) in self.__moves.get(MoveType.ATTACK, []):
-                        cell.set_temporary_cell_colour(CellColour.DANGER)
-                    elif (i, j) in map(lambda x : x[0], self.__moves.get(MoveType.MANOEUVRE, [])):
-                        cell.set_temporary_cell_colour(CellColour.DEBUG)
                     else:
                         cell.revert_cell_colour()
     

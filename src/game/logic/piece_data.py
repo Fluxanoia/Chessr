@@ -28,14 +28,13 @@ class PieceData:
             if self.__attack_vectors is not None:
                 self.__attack_vectors = self.__revolve_vectors(self.__attack_vectors)
 
-    def get_normal_and_attack_cells(
+    def get_normal_moves(
         self,
         board : Board,
         side : Side,
         gxy : IntVector
-    ) -> tuple[tuple[IntVector,...], tuple[IntVector,...]]:
+    ) -> tuple[IntVector,...]:
         moves : list[IntVector] = []
-        attacks : list[IntVector] = []
 
         def check_cell(cell : IntVector, attack : bool) -> bool:
             board_cell = board.at(*cell)
@@ -43,7 +42,7 @@ class PieceData:
                 return False
             if not board_cell.get_piece() is None:
                 if attack or self.__attack_vectors is None:
-                    attacks.append(cell)
+                    moves.append(cell)
                 return False
             if not attack:
                 moves.append(cell)
@@ -61,7 +60,7 @@ class PieceData:
         iterate_vectors(move_vectors, False)
         iterate_vectors(attack_vectors, True)
 
-        return (tuple(moves), tuple(attacks))
+        return tuple(moves)
 
     def side_transform_vector(self, vector : IntVector, side : Side) -> IntVector:
         return self.side_transform_vectors((vector,), side)[0]

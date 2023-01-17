@@ -35,10 +35,6 @@ class PieceColour(ArrayEnum):
     BLACK = auto()
     RED = auto()
 
-class PieceTag(ArrayEnum):
-    HAS_MOVED = auto()
-    DOUBLE_MOVE = auto()
-
 class ShadowType(ArrayEnum):
     LIGHT = auto()
     DARK = auto()

@@ -1,4 +1,4 @@
-from typing import Callable, Optional
+from typing import Optional
 
 import pygame as pg
 
@@ -13,7 +13,6 @@ from src.game.sprites.piece import Piece
 from src.utils.enums import BoardColour, CellColour, MouseButton
 from src.utils.helpers import FloatVector, IntVector, inbounds
 
-Callbacks = tuple[tuple[IntVector, Callable[[IntVector, IntVector], None]]]
 
 class Board():
 
@@ -33,7 +32,6 @@ class Board():
 
         self.__events : list[BoardEvent] = [] 
         self.__pressed_grid_position : Optional[IntVector] = None
-        self.__callbacks : Callbacks = tuple()
     
     def reset(self, width : int, height : int) -> None:
         self.__width = width
@@ -51,7 +49,7 @@ class Board():
         def calculate_cell_position(i : int, j : int) -> FloatVector:
             return (x_offset + j * cell_size, y_offset + i * cell_size)
 
-        # TODO: Clear out the old cells
+        # TODO: Clear out the old cells and texts
 
         self.__cells = []
         for i in range(self.__height):
@@ -72,7 +70,7 @@ class Board():
         bottom = y_offset + self.__height * cell_size
 
         for i in range(self.__height):
-            pos = (x_offset - buffer, y_offset + (i + 0.5) * cell_size)
+            pos = (x_offset - buffer, bottom - (i + 0.5) * cell_size)
             CoordinateText(str(i + 1), pos, self.__cell_scale)
         
         for j in range(self.__width):
@@ -126,19 +124,12 @@ class Board():
             return
 
         to_cell.transfer_from(from_cell)
-        for (xy, callback) in self.__callbacks:
-            if not xy == to_gxy:
-                continue
-            callback(from_gxy, to_gxy)
 
     def remove(self, i : int, j : int) -> None:
         cell = self.at(i, j)
         if cell is None:
             return
-        cell.remove_piece()
-
-    def update_move_callbacks(self, callbacks : Callbacks):
-        self.__callbacks = callbacks
+        cell.remove_piece(True)
     
     @property
     def width(self) -> int:

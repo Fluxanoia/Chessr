@@ -6,8 +6,8 @@ from src.engine.factory import Factory
 from src.engine.spritesheets.board_spritesheet import BoardSpritesheet
 from src.game.sprite import ChessrSprite, GroupType
 from src.game.sprites.piece import Piece
-from src.utils.enums import (BoardColour, CellColour, PieceColour, PieceTag,
-                             PieceType, Side)
+from src.utils.enums import (BoardColour, CellColour, PieceColour, PieceType,
+                             Side)
 from src.utils.helpers import FloatVector, IntVector
 
 
@@ -53,8 +53,10 @@ class BoardCell(ChessrSprite):
             return
         self.__piece = Piece(self.__get_piece_position(), self.__piece_scale, colour, piece_type, side)
 
-    def remove_piece(self) -> None:
+    def remove_piece(self, delete_sprite : bool = False) -> None:
         self.__selected = False
+        if delete_sprite and not self.__piece is None and not self.__piece.group is None:
+            Factory.get().group_manager.get_group(self.__piece.group).remove(self.__piece)
         self.__piece = None
 
     def select(self):
@@ -86,7 +88,6 @@ class BoardCell(ChessrSprite):
         duration = 300
         self.__piece.move(None, self.__get_piece_position(), duration)
         self.__piece.lift(None, 0, duration)
-        self.__piece.add_tag(PieceTag.HAS_MOVED)
 
     def set_temporary_cell_colour(self, cell_colour : CellColour):
         if self.__fallback_cell_colour is None:
