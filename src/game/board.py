@@ -6,9 +6,8 @@ from src.engine.config import Config
 from src.engine.factory import Factory
 from src.engine.spritesheets.board_spritesheet import BoardSpritesheet
 from src.game.board_event import BoardDataType, BoardEvent, BoardEventType
-from src.game.sprite import ChessrSprite, GroupType
+from src.game.sprite import GroupType
 from src.game.sprites.board_cell import BoardCell
-from src.game.sprites.coordinate_text import CoordinateText
 from src.game.sprites.piece import Piece
 from src.utils.enums import BoardColour, CellColour, MouseButton
 from src.utils.helpers import FloatVector, IntVector, inbounds
@@ -24,8 +23,8 @@ class Board():
     ):
         self.__width : int = 0
         self.__height : int = 0
+        self.__bounds : pg.Rect = pg.Rect(0, 0, 0, 0)
         self.__cells : list[list[BoardCell]] = []
-        self.__texts : list[CoordinateText] = []
 
         self.__colour = colour
         self.__scale = scale
@@ -40,27 +39,27 @@ class Board():
 
         sw, sh = Config.get_window_dimensions()
         cell_size = BoardSpritesheet.BOARD_WIDTH * self.__cell_scale
-        x_offset = (sw - cell_size * self.__width) / 2
-        y_offset = (sh - cell_size * self.__height) / 2
+        pixel_width = cell_size * self.__width
+        pixel_height = cell_size * self.__height
+        left = (sw - pixel_width) / 2
+        top = (sh - pixel_height) / 2
+
+        self.__bounds = pg.Rect(left, top, pixel_width, pixel_height)
 
         cell_colours = (CellColour.LIGHT, CellColour.DARK)
         def calculate_cell_colour(i : int, j : int) -> CellColour:
             return cell_colours[(i + j) % len(cell_colours)]
 
         def calculate_cell_position(i : int, j : int) -> FloatVector:
-            return (x_offset + j * cell_size, y_offset + i * cell_size)
+            return (left + j * cell_size, top + i * cell_size)
 
-        sprites_to_removes : list[ChessrSprite] = [cell for row in self.__cells for cell in row]
-        sprites_to_removes.extend(self.__texts)
         group_manager = Factory.get().group_manager
-        for sprite in sprites_to_removes:
-            group = sprite.group
-            if group is None:
-                continue
-            group_manager.get_group(group).remove(sprite)
+        for group in [GroupType.BOARD, GroupType.BOARD_HIGHLIGHT, GroupType.PIECE, GroupType.SHADOW]:
+            sprites = group_manager.get_sprites(group)
+            for sprite in sprites:
+                group_manager.get_group(group).remove(sprite)
 
         self.__cells = []
-        self.__texts = []
 
         for i in range(self.__height):
             row : list[BoardCell] = []
@@ -75,17 +74,6 @@ class Board():
                 )
                 row.append(cell)
             self.__cells.append(row)
-
-        buffer = int(3 * cell_size / 4)
-        bottom = y_offset + self.__height * cell_size
-
-        for i in range(self.__height):
-            pos = (x_offset - buffer, bottom - (i + 0.5) * cell_size)
-            self.__texts.append(CoordinateText(str(i + 1), pos, self.__cell_scale))
-        
-        for j in range(self.__width):
-            pos = (x_offset + (j + 0.5) * cell_size, bottom + buffer)
-            self.__texts.append(CoordinateText(chr(ord('A') + j), pos, self.__cell_scale))
 
     def at(self, i : int, j : int) -> Optional[BoardCell]:
         if not inbounds(self.__width, self.__height, (i, j)):
@@ -105,11 +93,11 @@ class Board():
 
     def mouse_down(self, event : pg.event.Event) -> None:
         if event.button == MouseButton.LEFT:
-            self.__pressed_grid_position = self.__get_intersected_grid_position(pg.mouse.get_pos())
+            self.__pressed_grid_position = self.at_pixel_position(pg.mouse.get_pos())
     
     def mouse_up(self, event : pg.event.Event) -> None:
         if event.button == MouseButton.LEFT:
-            released = self.__get_intersected_grid_position(pg.mouse.get_pos())
+            released = self.at_pixel_position(pg.mouse.get_pos())
 
             if self.__pressed_grid_position == released:
                 data = { BoardDataType.GRID_POSITION: self.__pressed_grid_position }
@@ -131,17 +119,26 @@ class Board():
                 piece.update_tags()
 
     def move(self, from_gxy : IntVector, to_gxy : IntVector) -> None:
-        from_cell = self.at(*from_gxy)
-        to_cell = self.at(*to_gxy)
-        piece = self.piece_at(*from_gxy)
-
-        if from_cell is None \
-            or to_cell is None \
-            or piece is None \
-            or from_gxy == to_gxy:
+        if from_gxy == to_gxy:
             return
 
-        to_cell.transfer_from(from_cell)
+        from_cell = self.at(*from_gxy)
+        to_cell = self.at(*to_gxy)
+
+        if from_cell is None or to_cell is None:
+            return
+
+        piece_to_move = from_cell.get_piece()
+        piece_to_take = to_cell.get_piece()
+
+        if piece_to_move is None:
+            return
+
+        if not piece_to_take is None:
+            to_cell.remove_piece(True)
+
+        from_cell.remove_piece()
+        to_cell.set_piece(piece_to_move)
 
     def remove(self, i : int, j : int) -> None:
         cell = self.at(i, j)
@@ -149,6 +146,15 @@ class Board():
             return
         cell.remove_piece(True)
     
+    def at_pixel_position(self, point : IntVector) -> Optional[IntVector]:
+        sprites = reversed(Factory.get().group_manager.get_sprites(GroupType.BOARD))
+        for sprite in sprites:
+            if not isinstance(sprite, BoardCell):
+                continue
+            if sprite.point_intersects(point):
+                return sprite.grid_position
+        return None
+
     @property
     def width(self) -> int:
         return self.__width
@@ -157,11 +163,10 @@ class Board():
     def height(self) -> int:
         return self.__height
 
-    def __get_intersected_grid_position(self, point : IntVector) -> Optional[IntVector]:
-        sprites = reversed(Factory.get().group_manager.get_sprites(GroupType.BOARD))
-        for sprite in sprites:
-            if not isinstance(sprite, BoardCell):
-                continue
-            if sprite.point_intersects(point):
-                return sprite.grid_position
-        return None
+    @property
+    def scale(self) -> float:
+        return self.__scale
+
+    @property
+    def pixel_bounds(self) -> pg.Rect:
+        return self.__bounds

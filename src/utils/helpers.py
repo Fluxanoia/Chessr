@@ -6,6 +6,8 @@ Numeric = Union[int, float]
 FloatVector = tuple[float, float]
 IntVector = tuple[int, int]
 
+Colour = tuple[int, int, int]
+
 def add_vectors(x : IntVector, y : IntVector) -> IntVector:
     return (x[0] + y[0], x[1] + y[1])
 

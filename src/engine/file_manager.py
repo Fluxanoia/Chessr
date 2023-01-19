@@ -39,7 +39,7 @@ class FileManager():
             surface = pg.image.load(path)
         except pg.error as e:
             raise SystemExit(f'The image \'{path}\' could not be loaded.') from e
-
+        print(path)
         return surface.convert_alpha() if use_alpha else surface.convert()
 
     def load_board(

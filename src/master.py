@@ -12,9 +12,11 @@ class Master:
 
         pg.init()
         pg.font.init()
-        pg.display.set_caption('Chessr')
+
         screen = pg.display.set_mode(Config.get_window_dimensions())
+        
         pg.display.set_icon(factory.file_manager.load_image('icon.png', True))
+        pg.display.set_caption('Chessr')
 
         game_manager = GameManager()
         game_manager.start()

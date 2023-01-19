@@ -1,7 +1,7 @@
 import pygame as pg
 
 from src.game.board import Board
-from src.game.controllers import ClassicController
+from src.game.classic_controller import ClassicController
 
 
 class GameManager():
@@ -21,3 +21,5 @@ class GameManager():
             self.__controller.mouse_down(event)
         if event.type == pg.MOUSEBUTTONUP:
             self.__controller.mouse_up(event)
+        if event.type == pg.MOUSEMOTION:
+            self.__controller.mouse_move(event)

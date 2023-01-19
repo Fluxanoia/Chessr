@@ -42,12 +42,11 @@ class ChessrSprite(pg.sprite.DirtySprite):
         self.set_position(position, True)
 
     def set_position(self, xy : FloatVector, preserve_tween : bool = False) -> None:
-        if self.rect is None:
-            if self.src_rect is None:
-                size = self.image.get_size() if not self.image is None else (0, 0)
-            else:
-                size = self.src_rect.size
-            self.rect = pg.Rect((0, 0), size)
+        if self.src_rect is None:
+            size = self.image.get_size() if not self.image is None else (0, 0)
+        else:
+            size = self.src_rect.size
+        self.rect = pg.Rect((0, 0), size)
 
         self.__raw_position = xy
         

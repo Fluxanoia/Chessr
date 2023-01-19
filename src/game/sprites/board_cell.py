@@ -49,6 +49,14 @@ class BoardCell(ChessrSprite):
             return
         self.__piece = Piece(self.__get_piece_position(), self.__piece_scale, colour, piece_type, side)
 
+    def set_piece(self, piece : Piece):
+        if not self.__piece is None:
+            return
+        self.__piece = piece
+        duration = 300
+        piece.move(None, self.__get_piece_position(), duration)
+        piece.lift(None, 0, duration)
+
     def remove_piece(self, delete_sprite : bool = False) -> None:
         self.__selected = False
         if delete_sprite and not self.__piece is None and not self.__piece.group is None:
@@ -69,21 +77,6 @@ class BoardCell(ChessrSprite):
             duration = 100
             self.__piece.move(None, self.__get_piece_position(), duration)
             self.__piece.lift(None, 0, duration)
-
-    def transfer_from(self, cell : 'BoardCell') -> None:
-        new_piece = cell.get_piece()
-        if new_piece is None:
-            return
-        
-        if not self.__piece is None:
-            self.remove_piece()
-
-        cell.remove_piece()
-        self.__piece = new_piece
-
-        duration = 300
-        self.__piece.move(None, self.__get_piece_position(), duration)
-        self.__piece.lift(None, 0, duration)
 
     def highlight(self, highlight_type : CellHighlightType) -> None:
         self.__highlight.set_theme(highlight_type, self.__colour_scheme)
