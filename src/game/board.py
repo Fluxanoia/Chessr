@@ -6,6 +6,7 @@ from src.engine.config import Config
 from src.engine.factory import Factory
 from src.engine.spritesheets.board_spritesheet import BoardSpritesheet
 from src.game.board_event import BoardDataType, BoardEvent, BoardEventType
+from src.game.logic.move_data import Moves
 from src.game.sprite import GroupType
 from src.game.sprites.board_cell import BoardCell
 from src.game.sprites.piece import Piece
@@ -25,6 +26,7 @@ class Board():
         self.__height : int = 0
         self.__bounds : pg.Rect = pg.Rect(0, 0, 0, 0)
         self.__cells : list[list[BoardCell]] = []
+        self.__moves : list[list[Optional[Moves]]] = []
 
         self.__colour = colour
         self.__scale = scale
@@ -60,6 +62,7 @@ class Board():
                 group_manager.get_group(group).remove(sprite)
 
         self.__cells = []
+        self.__moves = [[None] * self.__width for _ in range(self.__height)]
 
         for i in range(self.__height):
             row : list[BoardCell] = []
@@ -90,6 +93,11 @@ class Board():
         if cell is None:
             return None
         return cell.get_piece()
+    
+    def moves_at(self, i : int, j : int) -> Optional[Moves]:
+        if not inbounds(self.__width, self.__height, (i, j)):
+            return None
+        return self.__moves[i][j]
 
     def mouse_down(self, event : pg.event.Event) -> None:
         if event.button == MouseButton.LEFT:
@@ -117,6 +125,10 @@ class Board():
                 if piece is None:
                     continue
                 piece.update_tags()
+
+    def update_moves(self, gxy : IntVector, moves : Optional[Moves]):
+        i, j = gxy
+        self.__moves[i][j] = moves
 
     def move(self, from_gxy : IntVector, to_gxy : IntVector) -> None:
         if from_gxy == to_gxy:
