@@ -1,14 +1,12 @@
 import pygame as pg
 
-from src.game.board import Board
-from src.game.classic_controller import ClassicController
+from src.game.controller import Controller
 
 
 class GameManager():
 
     def __init__(self) -> None:
-        self.__board = Board()
-        self.__controller = ClassicController(self.__board)
+        self.__controller = Controller()
 
     def start(self) -> None:
         self.__controller.start()

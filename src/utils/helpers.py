@@ -1,4 +1,4 @@
-from typing import Collection, TypeVar, Union
+from typing import Any, Collection, Iterable, TypeVar, Union
 
 import pygame as pg
 
@@ -29,3 +29,8 @@ def inbounds(grid_width : int, grid_height : int, cell : IntVector) -> bool:
 def get_coord_text(gxy : IntVector, board_height : int) -> str:
     i, j = gxy
     return chr(ord('A') + j) + str(board_height - i)
+
+def is_empty(x : Iterable[Any]) -> bool:
+    for _ in x:
+        return False
+    return True

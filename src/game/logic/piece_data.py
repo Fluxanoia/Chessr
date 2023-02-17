@@ -1,4 +1,4 @@
-from src.game.board import Board
+from src.game.board import LogicBoard
 from src.game.logic.move_data import Move, MoveData, Moves, MoveType
 from src.utils.enums import Side
 from src.utils.helpers import IntVector, add_vectors
@@ -16,21 +16,21 @@ class PieceData:
 
     def get_moves(
         self,
-        board : Board,
+        logic_board : LogicBoard,
         side : Side,
         gxy : IntVector
     ) -> Moves:
         moves : list[Move] = []
 
         def check_cell(cell : IntVector, move_data : MoveData) -> bool:
-            board_cell = board.at(*cell)
+            board_cell = logic_board.at(*cell)
             if board_cell is None:
                 return False
 
             is_move = MoveType.MOVE in move_data.types
             is_attack = MoveType.ATTACK in move_data.types
 
-            piece = board_cell.get_piece()
+            piece = board_cell.piece
             if piece is None:
                 if is_move:
                     moves.append(Move(cell, MoveType.MOVE, True))

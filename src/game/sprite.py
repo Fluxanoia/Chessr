@@ -101,7 +101,7 @@ class ChessrSprite(pg.sprite.DirtySprite):
             group_manager.get_group(self.__group).add(self)
 
     @property
-    def src_rect(self) -> pg.rect.Rect:
+    def src_rect(self) -> Optional[pg.rect.Rect]:
         return self.source_rect
 
     @src_rect.setter

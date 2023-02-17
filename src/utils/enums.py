@@ -22,6 +22,12 @@ class Side(ArrayEnum):
     FRONT = auto()
     BACK = auto()
 
+class LogicState(ArrayEnum):
+    NONE = auto()
+    CHECK = auto()
+    CHECKMATE = auto()
+    STALEMATE = auto()
+
 class PieceType(ArrayEnum):
     QUEEN = auto()
     KING = auto()
@@ -44,7 +50,7 @@ class CellColour(ArrayEnum):
     DARK = auto()
 
 class CellHighlightType(ArrayEnum):
-    MOVE = auto()
+    MOVE = auto()    
 
 class BoardColour(ArrayEnum):
     BEIGE = auto()

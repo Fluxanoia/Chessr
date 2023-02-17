@@ -2,20 +2,19 @@ from typing import Optional
 
 import pygame as pg
 
-from src.game.board import Board, BoardEventType
-from src.game.logic.move_data import MoveType
+from src.game.board import Board, BoardCell, BoardEventType
 from src.game.logic.piece_data_manager import PieceDataManager
-from src.game.logic.piece_tag import PieceTag, PieceTagType
 from src.game.sprites.hud_text import HudText
-from src.utils.enums import CellHighlightType, Side
+from src.game.sprites.piece import Piece
+from src.utils.enums import CellHighlightType, LogicState, Side
 from src.utils.helpers import IntVector, get_coord_text
 
 
-class ClassicController:
+class Controller:
 
-    def __init__(self, board : Board) -> None:
-        self.__board = board
+    def __init__(self) -> None:
         self.__piece_data_manager = PieceDataManager()
+        self.__board = Board(self.__piece_data_manager.get_moves)
 
     def mouse_down(self, event : pg.event.Event) -> None:
         self.__board.mouse_down(event)
@@ -45,21 +44,27 @@ class ClassicController:
         self.__turn : Side = Side.FRONT
         self.__selected : Optional[IntVector] = None
         self.__piece_data_manager.load_board(self.__board)
-        self.__piece_data_manager.update_moves(self.__board)
 
         scale = self.__board.scale
         board_bounds = self.__board.pixel_bounds
         left, bottom = board_bounds.bottomleft
 
         turn_text_size = 24
+        coord_text_size = 16
         buffer = 10
 
-        self.__turn_text = HudText((left - buffer * scale, bottom), turn_text_size, scale)
+        left = left - buffer * scale 
+
+        self.__turn_text = HudText((left, bottom), turn_text_size, scale)
         self.__turn_text.add_text(Side.FRONT, "WHITE", (240, 240, 240))
         self.__turn_text.add_text(Side.BACK, "BLACK", (5, 5, 5))
         self.__turn_text.set_text_by_key(self.__turn)
 
-        self.__coords_text : Optional[HudText] = HudText((left - buffer * scale, bottom - 24 * scale - buffer), 16, scale)
+        bottom = bottom - turn_text_size * scale - buffer
+        self.__coords_text : Optional[HudText] = HudText((left, bottom), coord_text_size, scale)
+        
+        bottom = bottom - coord_text_size * scale - buffer
+        self.__state_text : Optional[HudText] = HudText((left, bottom), 24, scale)
 
     def __click(self, gxy : Optional[IntVector]) -> None:
         if gxy is None:
@@ -86,6 +91,10 @@ class ClassicController:
             self.__deselect()
         self.__selected = gxy
         cell = self.__board.at(*gxy)
+
+        if not isinstance(cell, Optional[BoardCell]):
+            raise SystemExit('Expected display cell.')            
+
         if not cell is None:
             cell.select()
 
@@ -93,36 +102,38 @@ class ClassicController:
         if self.__selected is None:
             return
         cell = self.__board.at(*self.__selected)
+        
+        if not isinstance(cell, Optional[BoardCell]):
+            raise SystemExit('Expected display element.')    
+
         if not cell is None:
             cell.unselect()
+
         self.__selected = None
 
     def __execute_move(self, from_gxy : IntVector, to_gxy : IntVector) -> bool:
-        moves_object = self.__board.moves_at(*from_gxy)
-        piece_to_move = self.__board.piece_at(*from_gxy)
-        if moves_object is None or piece_to_move is None:
-            return False
-        
-        moves = self.get_valid_moves(from_gxy)
+        moves = self.__piece_data_manager.get_valid_moves(self.__board, from_gxy)
         if not to_gxy in moves:
             return False
 
         self.__board.move(from_gxy, to_gxy)
-        if not piece_to_move.has_tag(PieceTagType.HAS_MOVED):
-            piece_to_move.add_tag(PieceTag.get_tag(PieceTagType.HAS_MOVED))
-
-        moves_object.trigger_callbacks(from_gxy, to_gxy)
-        
-        self.__board.update_tags()
-        self.__piece_data_manager.update_moves(self.__board)
-
-#        state = self.__piece_data_manager.get_state(self.__board, self.__turn)
-#        print(self.__turn, "check:", state.check)
-#        print(self.__turn, "checkmate:", state.checkmate, "\n")
 
         self.__turn = Side.BACK if self.__turn == Side.FRONT else Side.FRONT
         self.__turn_text.set_text_by_key(self.__turn)
 
+        state = self.__piece_data_manager.get_state(self.__board, self.__turn)
+        if not self.__state_text is None:
+            if state == LogicState.NONE:
+                self.__state_text.clear()
+            else:
+                text = "Unknown"
+                if state == LogicState.CHECK:
+                    text = "Check"
+                elif state == LogicState.CHECKMATE:
+                    text = "Checkmate"
+                elif state == LogicState.STALEMATE:
+                    text = "Stalemate"
+                self.__state_text.set_text(text, (240, 240, 240))
 
         return True
     
@@ -131,14 +142,17 @@ class ClassicController:
             self.__clear_highlights()
             return
         
-        moves = self.get_valid_moves(self.__selected)
+        moves = self.__piece_data_manager.get_valid_moves(self.__board, self.__selected)
         for i in range(self.__board.height):
             for j in range(self.__board.width):
                 cell = self.__board.at(i, j)
                 if cell is None:
                     continue
 
-                piece = cell.get_piece()
+                piece = cell.piece
+                if not isinstance(cell, BoardCell) \
+                    or not isinstance(piece, Optional[Piece]):
+                    raise SystemExit('Expected display element.')   
 
                 if (i, j) in moves:
                     if piece is None:
@@ -156,26 +170,12 @@ class ClassicController:
                 cell = self.__board.at(i, j)
                 if cell is None:
                     continue
+                if not isinstance(cell, BoardCell):
+                    raise SystemExit('Expected display element.')   
                 cell.unhighlight()
-                piece = cell.get_piece()
+                piece = cell.piece
                 if piece is None:
                     continue
+                if not isinstance(piece, Piece):
+                    raise SystemExit('Expected display element.')   
                 piece.unhighlight()
-
-    def get_valid_moves(self, gxy : IntVector) -> tuple[IntVector, ...]:
-        moves_object = self.__board.moves_at(*gxy)
-        piece = self.__board.piece_at(*gxy)
-        if moves_object is None or piece is None:
-            return tuple()
-
-        moves = moves_object.get_moves(MoveType.MOVE, True)
-        attacks = moves_object.get_moves(MoveType.ATTACK, True)
-
-        for attack in attacks:
-            piece_to_take = self.__board.piece_at(*attack)
-            if piece_to_take is None or piece_to_take.side == piece.side:
-                continue
-
-            moves = (*moves, attack)
-
-        return moves

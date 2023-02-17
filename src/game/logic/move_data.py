@@ -75,9 +75,9 @@ class Moves:
         self.__moves = moves
         self.__callbacks : tuple[tuple[IntVector, ManoeuvreCallback], ...] = tuple()
 
-    def get_moves(self, move_type : MoveType, valid : bool) -> Vectors:
+    def get_moves(self, move_type : MoveType, valid : Optional[bool]) -> Vectors:
         filtered_moves = filter(
-            lambda x : x.move_type == move_type and x.valid == valid,
+            lambda x : x.move_type == move_type and (valid is None or x.valid == valid),
             self.__moves)
         return tuple(map(lambda x : x.gxy, filtered_moves))
 

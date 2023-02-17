@@ -3,7 +3,7 @@ from typing import Any, Optional
 import pygame as pg
 
 from src.engine.factory import Factory
-from src.game.logic.piece_tag import PieceTag, PieceTagType
+from src.game.logic.logic_piece import LogicPiece
 from src.game.sprite import ChessrSprite, GroupType
 from src.game.sprites.piece_shadow import PieceShadow
 from src.utils.enums import PieceColour, PieceType, Side
@@ -11,7 +11,7 @@ from src.utils.helpers import FloatVector, clamp
 from src.utils.tween import Tween, TweenType
 
 
-class Piece(ChessrSprite):
+class Piece(ChessrSprite, LogicPiece):
 
     def __init__(
         self,
@@ -21,10 +21,8 @@ class Piece(ChessrSprite):
         piece_type : PieceType,
         side : Side
     ):
+        LogicPiece.__init__(self, piece_type, side)
         self.__colour = self.__fallback_colour = colour
-        self.__type = piece_type
-        self.__side = side
-        self.__tags : list[PieceTag] = []
 
         image = Factory.get().board_spritesheet.get_sheet(scale)
 
@@ -34,7 +32,12 @@ class Piece(ChessrSprite):
         self.__shadow = PieceShadow(xy, scale)
         self.__update_shadow_alpha()
 
-        super().__init__(xy, GroupType.PIECE, image, self.__get_src_rect(scale), scale)
+        ChessrSprite.__init__(self, xy, GroupType.PIECE, image, self.__get_src_rect(scale), scale)
+
+    def delete(self) -> None:
+        if not self.group is None:
+            Factory.get().group_manager.get_group(self.group).remove(self)
+        LogicPiece.delete(self)
 
     def update(self, *args : list[Any]) -> None:
         if not self.__lift_tween is None:
@@ -78,27 +81,10 @@ class Piece(ChessrSprite):
         self.__colour = self.__fallback_colour
         self.src_rect = self.__get_src_rect()
 
-    def update_tags(self) -> None:
-        self.__tags = list(filter(lambda x : x.update(), self.__tags))
-
-    def add_tag(self, tag : PieceTag) -> None:
-        self.__tags.append(tag)
-
-    def has_tag(self, tag_type : PieceTagType) -> bool:
-        return tag_type in map(lambda x : x.type, self.__tags)
-
-    @property
-    def type(self) -> PieceType:
-        return self.__type
-    
-    @property
-    def side(self) -> Side:
-        return self.__side
-
     def __get_src_rect(self, scale : Optional[float] = None) -> pg.Rect:
         scale = scale if not scale is None else self.scale
         spritesheet = Factory.get().board_spritesheet
-        return spritesheet.get_piece_srcrect(self.__colour, self.__type, self.__side, scale)
+        return spritesheet.get_piece_srcrect(self.__colour, self.type, self.side, scale)
 
     def __update_shadow_alpha(self) -> None:
         alpha = 255 * (1 - self.__lift / 60.0) if not self.__lift == 0 else 0

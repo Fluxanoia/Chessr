@@ -1,3 +1,4 @@
+from abc import abstractmethod
 from enum import auto
 
 from src.utils.enums import ArrayEnum
@@ -14,6 +15,10 @@ class PieceTag():
 
     def update(self) -> bool:
         return True
+
+    @abstractmethod
+    def copy(self) -> "PieceTag":
+        return
 
     @property
     def type(self) -> PieceTagType:
@@ -32,11 +37,17 @@ class HasMovedPieceTag(PieceTag):
     def __init__(self) -> None:
         super().__init__(PieceTagType.HAS_MOVED)
 
+    def copy(self) -> "PieceTag":
+        return self
+
 class EnPassantPieceTag(PieceTag):
 
-    def __init__(self) -> None:
-        self.__lifespan = 2
+    def __init__(self, lifespan : int = 2) -> None:
+        self.__lifespan = lifespan
         super().__init__(PieceTagType.EN_PASSANT)
+
+    def copy(self) -> "PieceTag":
+        return EnPassantPieceTag(self.__lifespan)
 
     def update(self) -> bool:
         if self.__lifespan > 0:

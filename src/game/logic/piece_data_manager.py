@@ -1,26 +1,16 @@
+from typing import Optional
+
 from src.engine.factory import Factory
-from src.game.board import Board
-from src.game.logic.move_data import (ManoeuvreCallback, Move, MoveData,
+from src.game.board import Board, LogicBoard
+from src.game.logic.move_data import (ManoeuvreCallback, Move, MoveData, Moves,
                                       MoveType)
 from src.game.logic.piece_data import PieceData
 from src.game.logic.piece_tag import PieceTag, PieceTagType
-from src.utils.enums import PieceColour, PieceType, Side, enum_as_list
-from src.utils.helpers import IntVector, add_vectors, inbounds
+from src.game.sprites.board_cell import BoardCell
+from src.utils.enums import (LogicState, PieceColour, PieceType, Side,
+                             enum_as_list)
+from src.utils.helpers import IntVector, add_vectors, inbounds, is_empty
 
-
-class ChessState():
-
-    def __init__(self, check : bool, checkmate : bool) -> None:
-        self.__check = check
-        self.__checkmate = checkmate
-
-    @property
-    def check(self):
-        return self.__check
-    
-    @property
-    def checkmate(self):
-        return self.__checkmate
 
 class PieceDataManager():
 
@@ -89,6 +79,8 @@ class PieceDataManager():
                 cell = board.at(i, j)
                 if cell is None:
                     continue
+                if not isinstance(cell, BoardCell):
+                    raise SystemExit('Expected display element.')    
                 cell.add_piece(get_piece_colour(side), piece, side)
 
     def __get_piece_from_text(self, c : str) -> PieceType:
@@ -111,79 +103,156 @@ class PieceDataManager():
         j = ord(coord[0].lower()) - ord('a')
         return (i, j)
 
-#    def get_state(
-#        self,
-#        board : Board,
-#        side : Side
-#    ) -> ChessState:
-#        cells = self.__get_endangered_cells(board, side)
-#        king_cells = [gxy for gxy, piece in self.__get_all_pieces(board) 
-#            if piece.side == side and piece.type == PieceType.KING]
-#        lists_of_king_moves = map(lambda x : self.get_moves(board, x)[0], king_cells)
-#        king_moves = set([move for moves in lists_of_king_moves for move in moves])
-#        
-#        endangered_cells = list(map(lambda x : get_coord_text(x, board.height), cells))
-#        endangered_cells.sort()
-#        print(*endangered_cells, sep="\n")
-#
-#        check = any(map(lambda x : x in cells, king_cells))
-#        checkmate = check and all(map(lambda x : x in cells, king_moves))
-#
-#        return ChessState(check, checkmate)
+    ##################################
+    ###### MOVES AND GAME STATE ######
+    ##################################
 
-    def update_moves(
+    def __in_check(
         self,
-        board : Board,
-    ) -> None:
-        for i in range(board.height):
-            for j in range(board.width):
+        logic_board : LogicBoard,
+        side : Side
+    ) -> bool:
+        endangered_cells = self.get_endangered_cells(logic_board, side)
+        for i in range(logic_board.height):
+            for j in range(logic_board.width):
+                piece = logic_board.piece_at(i, j)
+                if piece is None or piece.type != PieceType.KING or piece.side != side:
+                    continue
+                if (i, j) in endangered_cells:
+                    return True
+        return False
+
+    def get_state(
+        self,
+        logic_board : LogicBoard,
+        side : Side
+    ) -> LogicState:
+        check = self.__in_check(logic_board, side)
+
+        if check:
+            for i in range(logic_board.height):
+                for j in range(logic_board.width):
+                    from_gxy = (i, j)
+                    piece = logic_board.piece_at(*from_gxy)
+                    if piece is None or piece.side != side:
+                        continue
+                    moves = self.get_valid_moves(logic_board, from_gxy)
+                    for to_gxy in moves:
+                        copy = logic_board.copy()
+                        copy.move(from_gxy, to_gxy)
+                        if not self.__in_check(copy, side):
+                            return LogicState.CHECK
+            return LogicState.CHECKMATE
+            
+        for i in range(logic_board.height):
+            for j in range(logic_board.width):
                 gxy = (i, j)
-                piece = board.piece_at(*gxy)
+                piece = logic_board.piece_at(*gxy)
+                if piece is None or piece.side != side:
+                    continue
+                moves = self.get_valid_moves(logic_board, gxy)
+                if not is_empty(moves):
+                    return LogicState.NONE
+
+        return LogicState.STALEMATE
+
+    def get_endangered_cells(self, logic_board : LogicBoard, side : Side):
+        def get_possible_attacks(i : int, j : int) -> tuple[IntVector, ...]:
+            moves = logic_board.moves_at(i, j)
+            return tuple() if moves is None else moves.get_moves(MoveType.ATTACK, None)
+    
+        attacks : list[IntVector] = []
+
+        for i in range(logic_board.height):
+            for j in range(logic_board.width):
+                piece = logic_board.piece_at(i, j)
+                if piece is None or piece.side == side:
+                    continue
+                attacks.extend(get_possible_attacks(i, j))
+
+        return tuple(set(attacks))
+
+    def get_valid_moves(self, logic_board : LogicBoard, gxy : IntVector) -> tuple[IntVector, ...]:
+        moves_object = logic_board.moves_at(*gxy)
+        piece = logic_board.piece_at(*gxy)
+        if moves_object is None or piece is None:
+            return tuple()
+
+        moves = moves_object.get_moves(MoveType.MOVE, True)
+        attacks = moves_object.get_moves(MoveType.ATTACK, True)
+
+        for attack in attacks:
+            piece_to_take = logic_board.piece_at(*attack)
+            if piece_to_take is None or piece_to_take.side == piece.side:
+                continue
+
+            moves = (*moves, attack)
+
+        if piece.type == PieceType.KING:
+            def is_valid_move(move : IntVector):
+                copy = logic_board.copy()
+                copy.move(gxy, move)
+                return not self.__in_check(copy, piece.side)
+            moves = tuple(filter(is_valid_move, moves))
+
+        return moves
+    
+    def get_moves(
+        self,
+        logic_board : LogicBoard,
+    ) -> tuple[tuple[Optional[Moves]]]:
+        moves : list[tuple[Optional[Moves]]] = []
+
+        for i in range(logic_board.height):
+            row : list[Optional[Moves]] = []
+            for j in range(logic_board.width):
+                gxy = (i, j)
+                piece = logic_board.piece_at(*gxy)
                 if piece is None:
-                    board.update_moves(gxy, None)
+                    row.append(None)
                 else:
-                    moves = self.__data[piece.type].get_moves(board, piece.side, gxy)
-                    for (move, callback) in self.__get_manoeuvres(board, gxy):
-                        moves.add_move(move, callback)
-                    board.update_moves(gxy, moves)
+                    moves_object = self.__data[piece.type].get_moves(logic_board, piece.side, gxy)
+                    for (move, callback) in self.__get_manoeuvres(logic_board, gxy):
+                        moves_object.add_move(move, callback)
+                    row.append(moves_object)
+            moves.append(tuple(row))
+
+        return tuple(moves)
+
+    ##########################
+    ####### MANOEUVRES #######
+    ##########################
 
     def __get_manoeuvres(
         self,
-        board : Board,
+        logic_board : LogicBoard,
         gxy : IntVector
     ) -> tuple[tuple[Move, ManoeuvreCallback]]:
-        piece = board.piece_at(*gxy)
-        if piece is None:
-            return tuple()
-
         manoeuvres : list[tuple[Move, ManoeuvreCallback]] = []
-
-        if piece.type == PieceType.PAWN:
-            manoeuvres.extend(self.__double_move_manoeuvre(board, gxy))
-            manoeuvres.extend(self.__en_passant_manoeuvre(board, gxy))
-
-        if piece.type == PieceType.KING:
-            manoeuvres.extend(self.__castle_manoeuvre(board, gxy))
-
+        manoeuvres.extend(self.__double_move_manoeuvre(logic_board, gxy))
+        manoeuvres.extend(self.__en_passant_manoeuvre(logic_board, gxy))
+        manoeuvres.extend(self.__castle_manoeuvre(logic_board, gxy))
         return tuple(manoeuvres)
 
     def __double_move_manoeuvre(
         self,
-        board : Board,
+        logic_board : LogicBoard,
         gxy : IntVector
     ) -> tuple[tuple[Move, ManoeuvreCallback]]:
-        piece = board.piece_at(*gxy)
-        if piece is None or piece.has_tag(PieceTagType.HAS_MOVED):
+        piece = logic_board.piece_at(*gxy)
+        if piece is None \
+            or not piece.type == PieceType.PAWN \
+            or piece.has_tag(PieceTagType.HAS_MOVED):
             return tuple()
 
         forward_vector = PieceData.get_forward_vector(piece.side)
         inbetween_gxy = add_vectors(gxy, forward_vector)
-        if not inbounds(board.width, board.height, inbetween_gxy) \
-            or not board.piece_at(*inbetween_gxy) is None:
+        if not inbounds(logic_board.width, logic_board.height, inbetween_gxy) \
+            or not logic_board.piece_at(*inbetween_gxy) is None:
             return tuple()
 
         def double_move_callback(_src : IntVector, dst : IntVector) -> None:
-            piece = board.piece_at(*dst)
+            piece = logic_board.piece_at(*dst)
             if piece is None:
                 return
             piece.add_tag(PieceTag.get_tag(PieceTagType.EN_PASSANT))
@@ -197,11 +266,11 @@ class PieceDataManager():
 
     def __en_passant_manoeuvre(
         self,
-        board : Board,
+        logic_board : LogicBoard,
         gxy : IntVector
     ) -> tuple[tuple[Move, ManoeuvreCallback]]:
-        piece = board.piece_at(*gxy)
-        if piece is None:
+        piece = logic_board.piece_at(*gxy)
+        if piece is None or not piece.type == PieceType.PAWN:
             return tuple()
 
         manoeuvres : list[IntVector] = []
@@ -210,10 +279,10 @@ class PieceDataManager():
         en_passant_vectors = ((0, -1), (0, 1))
         for en_passant_vector in en_passant_vectors:
             en_passant_gxy = add_vectors(gxy, en_passant_vector)
-            if not inbounds(board.width, board.height, en_passant_gxy):
+            if not inbounds(logic_board.width, logic_board.height, en_passant_gxy):
                 continue
 
-            piece_to_take = board.piece_at(*en_passant_gxy)
+            piece_to_take = logic_board.piece_at(*en_passant_gxy)
             if piece_to_take is None:
                 continue
 
@@ -223,7 +292,7 @@ class PieceDataManager():
                 manoeuvres.append(add_vectors(gxy, move))
 
         def en_passant_callback(src : IntVector, dst : IntVector) -> None:
-            board.remove(src[0], dst[1])
+            logic_board.remove(src[0], dst[1])
 
         return tuple(map(
             lambda x : (Move(x, MoveType.MOVE, True), en_passant_callback),
@@ -231,36 +300,39 @@ class PieceDataManager():
 
     def __castle_manoeuvre(
         self,
-        board : Board,
+        logic_board : LogicBoard,
         gxy : IntVector
     ) -> tuple[tuple[Move, ManoeuvreCallback]]:
-        king_piece = board.piece_at(*gxy)
-        king_row = board.row_at(gxy[0])
-        if king_piece is None or king_row is None or king_piece.has_tag(PieceTagType.HAS_MOVED):
+        king_piece = logic_board.piece_at(*gxy)
+        king_row = logic_board.row_at(gxy[0])
+        if king_piece is None \
+            or not king_piece.type == PieceType.KING \
+            or king_row is None \
+            or king_piece.has_tag(PieceTagType.HAS_MOVED):
             return tuple()
 
         def castle_callback(src : IntVector, dst : IntVector) -> None:
             castle_direction = -1 if dst[1] < src[1] else 1
             rook_destination = (dst[0], dst[1] - castle_direction)
             j = dst[1] + castle_direction
-            while 0 <= j < board.width:
+            while 0 <= j < logic_board.width:
                 position = (dst[0], j)
-                piece = board.piece_at(*position)
+                piece = logic_board.piece_at(*position)
                 if not piece is None and piece.type == PieceType.ROOK:
-                    board.move(position, rook_destination)
+                    logic_board.move(position, rook_destination)
                     return
                 j += castle_direction
 
         rook_columns : list[int] = []
         for cell in king_row:
-            piece = cell.get_piece()
+            piece = cell.piece
             if piece is None \
                 or piece.has_tag(PieceTagType.HAS_MOVED) \
                 or not piece.type == PieceType.ROOK \
                 or not piece.side == king_piece.side:
                 continue
 
-            rook_columns.append(cell.grid_position[1])
+            rook_columns.append(cell.gxy[1])
 
         row, column = gxy
         manoeuvres : list[IntVector] = []
@@ -269,7 +341,7 @@ class PieceDataManager():
                 continue
             castle_direction = 1 if rook_column > column else -1
             columns_between = range(column + castle_direction, rook_column, castle_direction)
-            pieces_between = [board.piece_at(row, j) for j in columns_between]
+            pieces_between = [logic_board.piece_at(row, j) for j in columns_between]
             if all(map(lambda x : x is None, pieces_between)):
                 manoeuvres.append((row, rook_column - castle_direction))
 
