@@ -4,6 +4,7 @@ import pygame as pg
 
 from src.engine.factory import Factory
 from src.engine.group_manager import GroupType
+from src.utils.enums import Anchor
 from src.utils.helpers import FloatVector
 from src.utils.tween import Tween, TweenType
 
@@ -16,7 +17,8 @@ class ChessrSprite(pg.sprite.DirtySprite):
         group : Optional[GroupType],
         image : pg.surface.Surface,
         src_rect : Optional[pg.Rect] = None,
-        scale : float = 1
+        scale : float = 1,
+        anchor : Anchor = Anchor.TOP_LEFT
     ):
         super().__init__()
 
@@ -29,6 +31,7 @@ class ChessrSprite(pg.sprite.DirtySprite):
         self.src_rect = src_rect
         self.scale = scale
 
+        self._anchor = anchor
         self.__position_tween : Optional[Tween] = None
         
         self.set_position(xy)
@@ -36,17 +39,13 @@ class ChessrSprite(pg.sprite.DirtySprite):
     def update(self, *args : list[Any]) -> None:
         position = self.__raw_position
         if self.__position_tween is not None:
-            position = cast(FloatVector, self.__position_tween.value())
+            position = cast(FloatVector, self.__position_tween.values)
             if self.__position_tween.finished():
                 self.__position_tween = self.__position_tween.get_chained()
         self.set_position(position, True)
 
     def set_position(self, xy : FloatVector, preserve_tween : bool = False) -> None:
-        if self.src_rect is None:
-            size = self.image.get_size() if not self.image is None else (0, 0)
-        else:
-            size = self.src_rect.size
-        self.rect = pg.Rect((0, 0), size)
+        self.rect = pg.Rect((0, 0), self._calculate_size())
 
         self.__raw_position = xy
         
@@ -80,7 +79,25 @@ class ChessrSprite(pg.sprite.DirtySprite):
         return int(xy[1])
 
     def _calculate_position(self, xy : FloatVector) -> FloatVector:
-        return xy
+        x, y = xy
+        w, h = self._calculate_size() if self.rect is None else self.rect.size
+        if self._anchor == Anchor.TOP_LEFT:
+            return xy
+        if self._anchor == Anchor.TOP_RIGHT:
+            return (x - w, y)
+        if self._anchor == Anchor.BOTTOM_LEFT:
+            return (x, y - h)
+        if self._anchor == Anchor.BOTTOM_RIGHT:
+            return (x - w, y - h)
+        if self._anchor == Anchor.CENTER:
+            return (x - w / 2, y - h / 2)
+        raise SystemExit('Unexpected anchor value.')
+    
+    def _calculate_size(self) -> FloatVector:
+        if self.src_rect is None:
+            return self.image.get_size() if not self.image is None else (0, 0)
+        else:
+            return self.src_rect.size
 
     def point_intersects(self, point : FloatVector) -> bool:
         if self.rect is None:

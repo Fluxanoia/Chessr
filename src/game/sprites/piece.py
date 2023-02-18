@@ -6,7 +6,7 @@ from src.engine.factory import Factory
 from src.game.logic.logic_piece import LogicPiece
 from src.game.sprite import ChessrSprite, GroupType
 from src.game.sprites.piece_shadow import PieceShadow
-from src.utils.enums import PieceColour, PieceType, Side
+from src.utils.enums import Anchor, PieceColour, PieceType, Side
 from src.utils.helpers import FloatVector, clamp
 from src.utils.tween import Tween, TweenType
 
@@ -32,16 +32,17 @@ class Piece(ChessrSprite, LogicPiece):
         self.__shadow = PieceShadow(xy, scale)
         self.__update_shadow_alpha()
 
-        ChessrSprite.__init__(self, xy, GroupType.PIECE, image, self.__get_src_rect(scale), scale)
+        ChessrSprite.__init__(self, xy, GroupType.PIECE, image, self.__get_src_rect(scale), scale, Anchor.BOTTOM_LEFT)
 
     def delete(self) -> None:
         if not self.group is None:
             Factory.get().group_manager.get_group(self.group).remove(self)
+        self.__shadow.delete()
         LogicPiece.delete(self)
 
     def update(self, *args : list[Any]) -> None:
         if not self.__lift_tween is None:
-            self.__lift = self.__lift_tween.get_single_value()
+            self.__lift = self.__lift_tween.value
             self.__update_shadow_alpha()
             if self.__lift_tween.finished():
                 self.__lift_tween = None
@@ -54,8 +55,8 @@ class Piece(ChessrSprite, LogicPiece):
             self.__lift_tween = None
 
     def _calculate_position(self, xy : FloatVector) -> FloatVector:
-        rect_height = self.rect.h if not self.rect is None else 0
-        return (xy[0], xy[1] - rect_height - self.__lift)
+        x, y = xy
+        return super()._calculate_position((x, y - self.__lift))
 
     def lift(
         self,

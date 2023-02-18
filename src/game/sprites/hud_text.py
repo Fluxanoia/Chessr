@@ -1,10 +1,12 @@
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 
 import pygame as pg
 
 from src.engine.factory import Factory
 from src.game.sprite import ChessrSprite, GroupType
+from src.utils.enums import Anchor, Direction, ViewState
 from src.utils.helpers import Colour, FloatVector, add_vectors
+from src.utils.tween import Tween, TweenType
 
 
 class HudText(ChessrSprite):
@@ -14,11 +16,54 @@ class HudText(ChessrSprite):
         xy : FloatVector,
         size : float,
         scale : float,
+        anchor : Anchor,
+        slide_direction : Optional[Direction] = None
     ):
+        self.__slide : float = 1
+        self.__slide_direction : Optional[Direction] = slide_direction
+        self.__slide_tween : Optional[Tween] = None
+
         self.__font = Factory.get().file_manager.load_default_font(int(size * scale))
         self.__cache : dict[Any, pg.surface.Surface] = {}
 
-        super().__init__(xy, GroupType.UI, pg.Surface((0, 0)), scale = scale)
+        super().__init__(xy, GroupType.UI, pg.Surface((0, 0)), scale=scale, anchor=anchor)
+
+#region Super Class Methods
+
+    def update(self, *args : list[Any]) -> None:
+        if not self.__slide_tween is None:
+            self.__slide = self.__slide_tween.value
+            if self.__slide_tween.finished():
+                self.__slide_tween.get_callback()()
+                self.__slide_tween = self.__slide_tween.get_chained()
+        super().update()
+
+    def _calculate_size(self) -> FloatVector:
+        if self.image is None:
+            return (0, 0)
+        
+        size = self.image.get_size()
+        w, h = size
+        if self.__slide_direction in (Direction.LEFT, Direction.RIGHT):
+            size = (self.__slide * w, h)
+            x = 0 if self.__slide_direction == Direction.RIGHT else w - size[0]
+            self.src_rect = pg.Rect(x, 0, *size)
+        elif self.__slide_direction in (Direction.TOP, Direction.BOTTOM):
+            size = (w, self.__slide * h)
+            y = 0 if self.__slide_direction == Direction.BOTTOM else h - size[1]
+            self.src_rect = pg.Rect(0, y, *size)
+
+        return size
+    
+    def _calculate_position(self, xy : FloatVector) -> FloatVector:
+        x, y = xy
+        if self._anchor in (Anchor.BOTTOM_LEFT, Anchor.BOTTOM_RIGHT):
+            y = y - self.__font.get_descent()
+        return super()._calculate_position((x, y))
+    
+#endregion
+
+#region Image Logic
 
     def add_text(
         self,
@@ -83,9 +128,60 @@ class HudText(ChessrSprite):
         surface.blit(rendered_text, (outline_size, outline_size))
         return surface
 
-    def _calculate_position(self, xy : FloatVector) -> FloatVector:
-        if self.rect is None:
-            return xy
-        x, y = xy
-        w, h = self.rect.size
-        return (x - w, y - h - self.__font.get_descent())
+#endregion
+
+#region Sliding Logic
+
+    def in_state(self, state : ViewState):
+        if state == ViewState.VISIBLE:
+            return self.__slide == 1 if self.__slide_tween is None else self.__slide_tween.end_value == 1
+        return self.__slide == 0 if self.__slide_tween is None else self.__slide_tween.end_value == 0
+    
+    def do_slide(self, state : ViewState, direction : Optional[Direction] = None, pause : int = 0) -> None:
+        if self.in_state(state):
+            return
+        self.__do_slide(state, direction, pause=pause)
+
+    def set_text_with_slide_by_key(self, key : Any, direction : Optional[Direction] = None) -> None:
+        self.__slide_with_callback(direction, lambda : self.set_text_by_key(key))
+
+    def set_text_with_slide(
+        self,
+        text : str,
+        colour : Colour,
+        direction : Optional[Direction] = None,
+        outline_size : Optional[int] = None,
+        outline_colour : Optional[Colour] = None
+    ) -> None:
+        self.__slide_with_callback(direction, lambda : self.set_text(text, colour, outline_size, outline_colour))
+
+    def __get_slide_tween(
+        self,
+        state : ViewState,
+        chain : Optional[Tween] = None,
+        callback : Optional[Callable[[], None]] = None,
+        pause : int = 0,
+        start : Optional[float] = None
+    ) -> Tween:
+        tween_type = TweenType.EASE_IN_QUAD if state == ViewState.VISIBLE else TweenType.EASE_OUT_QUAD
+        start = self.__slide if start is None else start
+        end = 1 if state == ViewState.VISIBLE else 0
+        return Tween(tween_type, start, end, 300, pause, chain, callback)
+
+    def __do_slide(
+        self,
+        state : ViewState,
+        direction : Optional[Direction] = None,
+        chain : Optional[Tween] = None,
+        callback : Optional[Callable[[], None]] = None,
+        pause : int = 0
+    ) -> None:
+        self.__slide_tween = self.__get_slide_tween(state, chain, callback, pause)
+        if not direction is None:
+            self.__slide_direction = direction
+
+    def __slide_with_callback(self, direction : Optional[Direction], callback : Callable[[], None]):
+        chain = self.__get_slide_tween(ViewState.VISIBLE, start=0, callback=callback)
+        self.__do_slide(ViewState.INVISIBLE, direction, chain, callback)
+
+#endregion
