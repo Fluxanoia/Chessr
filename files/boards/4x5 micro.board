@@ -1,0 +1,16 @@
+# A board for testing that you can block a checkmate with a double move.
+
+w:4
+h:5
+
+w :d2
+wR:a1
+wB:b1
+wN:c1
+wK:d1
+
+b :a4
+bR:d5
+bB:c5
+bN:b5
+bK:a5

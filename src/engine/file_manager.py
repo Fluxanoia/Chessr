@@ -64,6 +64,8 @@ class FileManager():
         data : dict[str, str] = {}
         with open(path, 'r') as file:
             for line in file:
+                if len(line) == 0 or line[0] == '#':
+                    continue
                 args = line.split(FileManager.DELIM, 1)
                 if len(args) == 2:
                     data[args[0]] = args[1].strip('\n')

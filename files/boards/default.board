@@ -1,3 +1,5 @@
+# The default standard chess board.
+
 w:8
 h:8
 b :a7 b7 c7 d7 e7 f7 g7 h7

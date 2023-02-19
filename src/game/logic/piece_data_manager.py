@@ -1,9 +1,11 @@
-from typing import Optional
+from functools import reduce
+from typing import Callable, Optional
 
 from src.engine.factory import Factory
-from src.game.board import Board, LogicBoard
-from src.game.logic.move_data import (ManoeuvreCallback, Move, MoveData, Moves,
-                                      MoveType)
+from src.engine.file_manager import PathLike
+from src.game.board import Board
+from src.game.logic.logic_board import LogicBoard, Move, Moves
+from src.game.logic.move_data import MoveData, MoveType
 from src.game.logic.piece_data import PieceData
 from src.game.logic.piece_tag import PieceTag, PieceTagType
 from src.game.sprites.board_cell import BoardCell
@@ -44,8 +46,11 @@ class PieceDataManager():
         if not all(map(lambda p : p in self.__data.keys(), enum_as_list(PieceType))):
             raise SystemExit('Some piece types are undefined.')
 
-    def load_board(self, board : Board, board_name : str = 'default') -> None:
-        file_data = Factory.get().file_manager.load_board(f'{board_name}.board')
+#region Board Creation
+
+    def load_board(self, board : Board, path : PathLike = 'default.board') -> Side:
+        file_data = Factory.get().file_manager.load_board(path)
+
         if file_data is None:
             raise SystemExit('The board file data could not be found.')
 
@@ -69,19 +74,25 @@ class PieceDataManager():
                 return PieceColour.BLACK
             raise SystemExit(f'Unexpected side value \'{side}\'.')
 
+        turn = Side.FRONT
+
         for key, value in file_data.items():
             if not len(key) == 2:
-                continue
-            side = self.__get_side_from_text(key[0])
-            piece = self.__get_piece_from_text(key[1])
-            coords = map(lambda c : self.__get_coordinate_from_text(c, height), value.split(' '))
-            for (i, j) in coords:
-                cell = board.at(i, j)
-                if cell is None:
-                    continue
-                if not isinstance(cell, BoardCell):
-                    raise SystemExit('Expected display element.')    
-                cell.add_piece(get_piece_colour(side), piece, side)
+                if key == 'turn':
+                    turn = self.__get_side_from_text(value)
+            else:
+                side = self.__get_side_from_text(key[0])
+                piece = self.__get_piece_from_text(key[1])
+                coords = map(lambda c : self.__get_coordinate_from_text(c, height), value.split(' '))
+                for (i, j) in coords:
+                    cell = board.at(i, j)
+                    if cell is None:
+                        continue
+                    if not isinstance(cell, BoardCell):
+                        raise SystemExit('Expected display element.')    
+                    cell.add_piece(get_piece_colour(side), piece, side)
+
+        return turn
 
     def __get_piece_from_text(self, c : str) -> PieceType:
         for piece_type, piece_data in self.__data.items():
@@ -97,36 +108,42 @@ class PieceDataManager():
         raise SystemExit(f'Invalid side character \'{c}\'.')
 
     def __get_coordinate_from_text(self, coord : str, board_height : int) -> IntVector:
-        if len(coord) != 2:
+        row = ''
+        column = ''
+        for char in coord:
+            alpha = char.isalpha()
+            if (not char.isdigit() and not alpha) \
+                or (alpha and len(row) > 0):
+                raise SystemExit(f'Incorrect coordinate format \'{coord}\'.')
+            if char.isalpha():
+                column += char
+            else:
+                row += char
+
+        if len(row) == 0 or len(column) == 0:
             raise SystemExit(f'Incorrect coordinate format \'{coord}\'.')
-        i = board_height - int(coord[1])
-        j = ord(coord[0].lower()) - ord('a')
+         
+        i = board_height - int(row)
+        j = reduce(lambda r, x: r * 26 + x, map(lambda x : ord(x.lower()) - ord('a'), column), 0)
         return (i, j)
 
-    ##################################
-    ###### MOVES AND GAME STATE ######
-    ##################################
+#endregion
 
-    def __in_check(
-        self,
-        logic_board : LogicBoard,
-        side : Side
-    ) -> bool:
-        endangered_cells = self.get_endangered_cells(logic_board, side)
-        for i in range(logic_board.height):
-            for j in range(logic_board.width):
-                piece = logic_board.piece_at(i, j)
-                if piece is None or piece.type != PieceType.KING or piece.side != side:
-                    continue
-                if (i, j) in endangered_cells:
-                    return True
-        return False
+#region Moves and Game State
 
     def get_state(
         self,
         logic_board : LogicBoard,
         side : Side
     ) -> LogicState:
+        '''
+            Calculates the state of the game, whether the given side is in
+            check, checkmated, stalemated, or none of the above.
+        '''
+
+        if logic_board.is_dirty():
+            logic_board.clean()
+
         check = self.__in_check(logic_board, side)
 
         if check:
@@ -136,11 +153,11 @@ class PieceDataManager():
                     piece = logic_board.piece_at(*from_gxy)
                     if piece is None or piece.side != side:
                         continue
-                    moves = self.get_valid_moves(logic_board, from_gxy)
-                    for to_gxy in moves:
-                        copy = logic_board.copy()
-                        copy.move(from_gxy, to_gxy)
-                        if not self.__in_check(copy, side):
+                    moves = logic_board.moves_at(*from_gxy)
+                    if moves is None:
+                        continue
+                    for move in moves.get_valid_moves():
+                        if not self.__move_results_in_check(logic_board, from_gxy, move.gxy, side):
                             return LogicState.CHECK
             return LogicState.CHECKMATE
             
@@ -150,58 +167,55 @@ class PieceDataManager():
                 piece = logic_board.piece_at(*gxy)
                 if piece is None or piece.side != side:
                     continue
-                moves = self.get_valid_moves(logic_board, gxy)
-                if not is_empty(moves):
+                moves = logic_board.moves_at(*gxy)
+                if moves is None:
+                    continue
+                if not is_empty(moves.get_valid_moves()):
                     return LogicState.NONE
 
         return LogicState.STALEMATE
-
-    def get_endangered_cells(self, logic_board : LogicBoard, side : Side):
-        def get_possible_attacks(i : int, j : int) -> tuple[IntVector, ...]:
-            moves = logic_board.moves_at(i, j)
-            return tuple() if moves is None else moves.get_moves(MoveType.ATTACK, None)
     
-        attacks : list[IntVector] = []
+    def supply_moves(
+        self,
+        logic_board : LogicBoard
+    ) -> None:
+        '''
+            Using the PieceData logic, we can draft a list of possible moves
+            per piece. These moves don't take into account the moves of other
+            pieces. As such, we need to reiterate over the set of moves to
+            ensure the moves comply with check/checkmating rules.
+        '''
+
+        self.__supply_partial_moves(logic_board)
 
         for i in range(logic_board.height):
             for j in range(logic_board.width):
-                piece = logic_board.piece_at(i, j)
-                if piece is None or piece.side == side:
+                gxy = (i, j)
+                piece = logic_board.piece_at(*gxy)
+                moves = logic_board.moves_at(*gxy)
+                if piece is None or moves is None:
                     continue
-                attacks.extend(get_possible_attacks(i, j))
+                for move in moves.get_valid_moves():
+                    if self.__move_results_in_check(logic_board, gxy, move.gxy, piece.side):
+                        move.invalidate()
 
-        return tuple(set(attacks))
+        self.__supply_manoeuvres(logic_board, self.__get_complex_manoeuvres)
 
-    def get_valid_moves(self, logic_board : LogicBoard, gxy : IntVector) -> tuple[IntVector, ...]:
-        moves_object = logic_board.moves_at(*gxy)
-        piece = logic_board.piece_at(*gxy)
-        if moves_object is None or piece is None:
-            return tuple()
-
-        moves = moves_object.get_moves(MoveType.MOVE, True)
-        attacks = moves_object.get_moves(MoveType.ATTACK, True)
-
-        for attack in attacks:
-            piece_to_take = logic_board.piece_at(*attack)
-            if piece_to_take is None or piece_to_take.side == piece.side:
-                continue
-
-            moves = (*moves, attack)
-
-        if piece.type == PieceType.KING:
-            def is_valid_move(move : IntVector):
-                copy = logic_board.copy()
-                copy.move(gxy, move)
-                return not self.__in_check(copy, piece.side)
-            moves = tuple(filter(is_valid_move, moves))
-
-        return moves
-    
-    def get_moves(
+    def __supply_partial_moves(
         self,
-        logic_board : LogicBoard,
-    ) -> tuple[tuple[Optional[Moves]]]:
-        moves : list[tuple[Optional[Moves]]] = []
+        logic_board : LogicBoard
+    ) -> None:
+        '''
+            When checking if a future move puts a side into check, we don't
+            need to account for moves made invalid by putting the other side
+            into check. You can check the opposition with a move that would
+            put yourself in check.
+
+            As such, here we supply the moves as-is from the PieceData, and
+            that's all.
+        '''
+
+        moves_grid : list[tuple[Optional[Moves]]] = []
 
         for i in range(logic_board.height):
             row : list[Optional[Moves]] = []
@@ -211,34 +225,123 @@ class PieceDataManager():
                 if piece is None:
                     row.append(None)
                 else:
-                    moves_object = self.__data[piece.type].get_moves(logic_board, piece.side, gxy)
-                    for (move, callback) in self.__get_manoeuvres(logic_board, gxy):
-                        moves_object.add_move(move, callback)
-                    row.append(moves_object)
-            moves.append(tuple(row))
+                    moves = self.__data[piece.type].get_moves(logic_board, piece.side, gxy)
+                    row.append(moves)
+            moves_grid.append(tuple(row))
 
-        return tuple(moves)
+        logic_board.supply_moves(tuple(moves_grid))
 
-    ##########################
-    ####### MANOEUVRES #######
-    ##########################
+        self.__supply_manoeuvres(logic_board, self.__get_manoeuvres)
+
+    def __supply_manoeuvres(
+        self,
+        logic_board : LogicBoard,
+        get_manoeuvres : Callable[[LogicBoard, IntVector], tuple[Move]]
+    ):
+        '''
+            Adds manoeuvres to the available moves of a board.
+        '''
+
+        for i in range(logic_board.height):
+            for j in range(logic_board.width):
+                gxy = (i, j)
+                moves = logic_board.moves_at(*gxy)
+                if moves is None:
+                    continue
+                for move in get_manoeuvres(logic_board, gxy):
+                    moves.add_move(move)
+
+    def __move_results_in_check(
+        self,
+        logic_board : LogicBoard,
+        from_gxy : IntVector,
+        to_gxy : IntVector,
+        side : Side
+    ):
+        copy = logic_board.copy()
+        copy.move(from_gxy, to_gxy)
+        self.__supply_partial_moves(copy)
+        return self.__in_check(copy, side)
+
+    def __get_endangered_cells(self, logic_board : LogicBoard, side : Side) -> tuple[IntVector, ...]:
+        '''
+            Returns all the grid positions that are under attack by the opposing side.
+        '''
+
+        attacks : list[IntVector] = []
+
+        for i in range(logic_board.height):
+            for j in range(logic_board.width):
+                piece = logic_board.piece_at(i, j)
+                if piece is None or piece.side == side:
+                    continue
+                moves = logic_board.moves_at(i, j)
+                if moves is None:
+                    continue
+                possible_attacks = moves.get_possible_attacks()
+                attacks.extend(map(lambda x : x.gxy, possible_attacks))
+
+        return tuple(set(attacks))
+    
+    def __in_check(
+        self,
+        logic_board : LogicBoard,
+        side : Side
+    ) -> bool:
+        '''
+            Returns whether this side is in check or not.
+        '''
+
+        endangered_cells = self.__get_endangered_cells(logic_board, side)
+        for i in range(logic_board.height):
+            for j in range(logic_board.width):
+                piece = logic_board.piece_at(i, j)
+                if piece is None or piece.type != PieceType.KING or piece.side != side:
+                    continue
+                if (i, j) in endangered_cells:
+                    return True
+        return False
+
+#endregion
+
+#region Manoeuvres
+
+    '''
+        Manoeuvres are a way of implementing moves that depend on complex conditions
+        such as the state of other pieces or cells on the board.
+        They must self-validate as they are added to the board without any validation.
+    '''
 
     def __get_manoeuvres(
         self,
         logic_board : LogicBoard,
         gxy : IntVector
-    ) -> tuple[tuple[Move, ManoeuvreCallback]]:
-        manoeuvres : list[tuple[Move, ManoeuvreCallback]] = []
+    ) -> tuple[Move]:
+        '''
+            These manoeuvres only rely on PieceTags and the piece positions
+            on the board.
+        '''
+        manoeuvres : list[Move] = []
         manoeuvres.extend(self.__double_move_manoeuvre(logic_board, gxy))
         manoeuvres.extend(self.__en_passant_manoeuvre(logic_board, gxy))
-        manoeuvres.extend(self.__castle_manoeuvre(logic_board, gxy))
         return tuple(manoeuvres)
+    
+    def __get_complex_manoeuvres(
+        self,
+        logic_board : LogicBoard,
+        gxy : IntVector
+    ) -> tuple[Move]:
+        '''
+            These manoeuvres rely on the available moves of the opposition,
+            so can't be run on partial move supplying.
+        '''
+        return tuple(self.__castle_manoeuvre(logic_board, gxy))
 
     def __double_move_manoeuvre(
         self,
         logic_board : LogicBoard,
         gxy : IntVector
-    ) -> tuple[tuple[Move, ManoeuvreCallback]]:
+    ) -> tuple[Move]:
         piece = logic_board.piece_at(*gxy)
         if piece is None \
             or not piece.type == PieceType.PAWN \
@@ -247,28 +350,32 @@ class PieceDataManager():
 
         forward_vector = PieceData.get_forward_vector(piece.side)
         inbetween_gxy = add_vectors(gxy, forward_vector)
+        final_gxy = add_vectors(inbetween_gxy, forward_vector)
         if not inbounds(logic_board.width, logic_board.height, inbetween_gxy) \
-            or not logic_board.piece_at(*inbetween_gxy) is None:
+            or not inbounds(logic_board.width, logic_board.height, final_gxy) \
+            or not logic_board.piece_at(*inbetween_gxy) is None \
+            or not logic_board.piece_at(*final_gxy) is None:
             return tuple()
 
-        def double_move_callback(_src : IntVector, dst : IntVector) -> None:
+        def double_move_callback(logic_board : LogicBoard, _src : IntVector, dst : IntVector) -> None:
             piece = logic_board.piece_at(*dst)
             if piece is None:
                 return
             piece.add_tag(PieceTag.get_tag(PieceTagType.EN_PASSANT))
 
         move = Move(
-            add_vectors(inbetween_gxy, forward_vector),
+            final_gxy,
             MoveType.MOVE,
-            True
+            True,
+            double_move_callback
         )
-        return tuple([(move, double_move_callback)])
+        return tuple([move])
 
     def __en_passant_manoeuvre(
         self,
         logic_board : LogicBoard,
         gxy : IntVector
-    ) -> tuple[tuple[Move, ManoeuvreCallback]]:
+    ) -> tuple[Move]:
         piece = logic_board.piece_at(*gxy)
         if piece is None or not piece.type == PieceType.PAWN:
             return tuple()
@@ -291,18 +398,18 @@ class PieceDataManager():
                 move = add_vectors(en_passant_vector, forward_vector)
                 manoeuvres.append(add_vectors(gxy, move))
 
-        def en_passant_callback(src : IntVector, dst : IntVector) -> None:
+        def en_passant_callback(logic_board : LogicBoard, src : IntVector, dst : IntVector) -> None:
             logic_board.remove(src[0], dst[1])
 
         return tuple(map(
-            lambda x : (Move(x, MoveType.MOVE, True), en_passant_callback),
+            lambda x : Move(x, MoveType.MOVE, True, en_passant_callback),
             manoeuvres))
 
     def __castle_manoeuvre(
         self,
         logic_board : LogicBoard,
         gxy : IntVector
-    ) -> tuple[tuple[Move, ManoeuvreCallback]]:
+    ) -> tuple[Move]:
         king_piece = logic_board.piece_at(*gxy)
         king_row = logic_board.row_at(gxy[0])
         if king_piece is None \
@@ -310,19 +417,11 @@ class PieceDataManager():
             or king_row is None \
             or king_piece.has_tag(PieceTagType.HAS_MOVED):
             return tuple()
-
-        def castle_callback(src : IntVector, dst : IntVector) -> None:
-            castle_direction = -1 if dst[1] < src[1] else 1
-            rook_destination = (dst[0], dst[1] - castle_direction)
-            j = dst[1] + castle_direction
-            while 0 <= j < logic_board.width:
-                position = (dst[0], j)
-                piece = logic_board.piece_at(*position)
-                if not piece is None and piece.type == PieceType.ROOK:
-                    logic_board.move(position, rook_destination)
-                    return
-                j += castle_direction
-
+        
+        endangered_cells = self.__get_endangered_cells(logic_board, king_piece.side)
+        if gxy in endangered_cells:
+            return tuple()
+        
         rook_columns : list[int] = []
         for cell in king_row:
             piece = cell.piece
@@ -334,17 +433,35 @@ class PieceDataManager():
 
             rook_columns.append(cell.gxy[1])
 
+        if is_empty(rook_columns):
+            return tuple()
+
         row, column = gxy
         manoeuvres : list[IntVector] = []
         for rook_column in rook_columns:
             if abs(column - rook_column) < 2:
                 continue
             castle_direction = 1 if rook_column > column else -1
-            columns_between = range(column + castle_direction, rook_column, castle_direction)
-            pieces_between = [logic_board.piece_at(row, j) for j in columns_between]
-            if all(map(lambda x : x is None, pieces_between)):
+            cells_between = [(row, x) for x in range(column + castle_direction, rook_column, castle_direction)]
+            if any(map(lambda x : x in endangered_cells, cells_between)):
+                continue
+            if all(map(lambda x : x is None, [logic_board.piece_at(*x) for x in cells_between])):
                 manoeuvres.append((row, rook_column - castle_direction))
 
+        def castle_callback(logic_board : LogicBoard, src : IntVector, dst : IntVector) -> None:
+            castle_direction = -1 if dst[1] < src[1] else 1
+            rook_destination = (dst[0], dst[1] - castle_direction)
+            j = dst[1] + castle_direction
+            while 0 <= j < logic_board.width:
+                position = (dst[0], j)
+                piece = logic_board.piece_at(*position)
+                if not piece is None and piece.type == PieceType.ROOK:
+                    logic_board.move(position, rook_destination, True)
+                    return
+                j += castle_direction
+
         return tuple(map(
-            lambda x : (Move(x, MoveType.MOVE, True), castle_callback),
+            lambda x : Move(x, MoveType.MOVE, True, castle_callback),
             manoeuvres))
+
+#endregion

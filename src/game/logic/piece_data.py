@@ -1,5 +1,5 @@
-from src.game.board import LogicBoard
-from src.game.logic.move_data import Move, MoveData, Moves, MoveType
+from src.game.logic.logic_board import LogicBoard, Move, Moves
+from src.game.logic.move_data import MoveData, MoveType
 from src.utils.enums import Side
 from src.utils.helpers import IntVector, add_vectors
 

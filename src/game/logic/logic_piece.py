@@ -6,7 +6,12 @@ from src.utils.enums import PieceType, Side
 
 class LogicPiece():
 
-    def __init__(self, piece_type : PieceType, side : Side, tags : Optional[Iterable[PieceTag]] = None):
+    def __init__(
+        self,
+        piece_type : PieceType,
+        side : Side,
+        tags : Optional[Iterable[PieceTag]] = None
+    ):
         self.__piece_type = piece_type
         self.__side = side
         self.__tags : list[PieceTag] = [] if tags is None else list(tags)

@@ -1,0 +1,6 @@
+# A board for testing en passant and double moves.
+
+w:2
+h:3
+b :a3
+w :b1

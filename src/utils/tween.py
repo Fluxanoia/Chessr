@@ -51,9 +51,7 @@ class Tween(Timer):
     def end_values(self) -> Tweenable:
         return self.__end
 
-    def get_callback(self) -> Callable[[], None]:
-        if self.__callback is None:
-            return lambda : None
+    def get_callback(self) -> Optional[Callable[[], None]]:
         return self.__callback
 
     def get_chained(self) -> Optional['Tween']:

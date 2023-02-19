@@ -6,10 +6,10 @@ from src.utils.helpers import IntVector
 
 class LogicCell():
 
-    def __init__(self, gxy : IntVector, piece : Optional[LogicPiece]):
+    def __init__(self, gxy : IntVector, piece : Optional[LogicPiece], dirty : bool = True):
         self.__gxy = gxy
         self.__piece = piece
-        self.__dirty = True
+        self.__dirty = dirty
 
     def is_dirty(self):
         return self.__dirty
@@ -37,7 +37,7 @@ class LogicCell():
 
     def copy(self) -> "LogicCell":
         piece = None if self.__piece is None else self.__piece.copy()
-        return LogicCell(self.__gxy, piece)
+        return LogicCell(self.__gxy, piece, self.__dirty)
 
     @property
     def gxy(self) -> IntVector:

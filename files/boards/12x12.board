@@ -1,0 +1,16 @@
+# The 12x12 chess variant.
+
+w:12
+h:12
+b :c9 d9 e9 f9 g9 h9 i9 j9
+bQ:f10
+bK:g10
+bB:e10 h10
+bR:c10 j10
+bN:d10 i10
+w :c4 d4 e4 f4 g4 h4 i4 j4
+wQ:f3
+wK:g3
+wB:e3 h3
+wR:c3 j3
+wN:d3 i3
