@@ -3,9 +3,9 @@ from typing import Optional
 import pygame as pg
 
 from src.engine.factory import Factory
-from src.game.sprite import ChessrSprite, GroupType
 from src.utils.enums import BoardColour, CellHighlightType
 from src.utils.helpers import FloatVector
+from src.utils.sprite import ChessrSprite, GroupType
 
 
 class BoardCellHighlight(ChessrSprite):
@@ -16,7 +16,7 @@ class BoardCellHighlight(ChessrSprite):
 
         image = Factory.get().board_spritesheet.get_sheet(scale)
 
-        super().__init__(xy, GroupType.BOARD_HIGHLIGHT, image, self.__get_src_rect(scale), scale)
+        super().__init__(xy, GroupType.GAME_BOARD_HIGHLIGHT, image, self.__get_src_rect(scale), scale)
 
         self.set_visible(False)
 

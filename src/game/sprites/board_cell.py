@@ -5,12 +5,12 @@ import pygame as pg
 from src.engine.factory import Factory
 from src.engine.spritesheets.board_spritesheet import BoardSpritesheet
 from src.game.logic.logic_cell import LogicCell
-from src.game.sprite import ChessrSprite, GroupType
 from src.game.sprites.board_cell_highlight import BoardCellHighlight
 from src.game.sprites.piece import LogicPiece, Piece
 from src.utils.enums import (BoardColour, CellColour, CellHighlightType,
                              PieceColour, PieceType, Side)
 from src.utils.helpers import FloatVector, IntVector
+from src.utils.sprite import ChessrSprite, GroupType
 
 
 class BoardCell(ChessrSprite, LogicCell):
@@ -29,7 +29,7 @@ class BoardCell(ChessrSprite, LogicCell):
         self.__colour = colour
 
         image = Factory.get().board_spritesheet.get_sheet(scale)
-        ChessrSprite.__init__(self, xy, GroupType.BOARD, image, self.__get_src_rect(scale), scale)
+        ChessrSprite.__init__(self, xy, GroupType.GAME_BOARD, image, self.__get_src_rect(scale), scale)
 
         self.__selected = False
         self.__highlight = BoardCellHighlight(xy, scale, self.__colour_scheme)

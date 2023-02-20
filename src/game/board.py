@@ -7,10 +7,10 @@ from src.engine.factory import Factory
 from src.engine.spritesheets.board_spritesheet import BoardSpritesheet
 from src.game.board_event import BoardDataType, BoardEvent, BoardEventType
 from src.game.logic.logic_board import LogicBoard, MoveSupplier
-from src.game.sprite import GroupType
 from src.game.sprites.board_cell import BoardCell
 from src.utils.enums import BoardColour, CellColour, MouseButton
 from src.utils.helpers import FloatVector, IntVector
+from src.utils.sprite import GroupType
 
 
 class Board(LogicBoard):
@@ -53,7 +53,7 @@ class Board(LogicBoard):
             return (left + j * cell_size, top + i * cell_size)
 
         group_manager = Factory.get().group_manager
-        for group in [GroupType.BOARD, GroupType.BOARD_HIGHLIGHT, GroupType.PIECE, GroupType.SHADOW]:
+        for group in [GroupType.GAME_BOARD, GroupType.GAME_BOARD_HIGHLIGHT, GroupType.GAME_PIECE, GroupType.GAME_SHADOW]:
             sprites = group_manager.get_sprites(group)
             for sprite in sprites:
                 group_manager.get_group(group).remove(sprite)
@@ -96,7 +96,7 @@ class Board(LogicBoard):
         return self.__events.pop(0)
     
     def at_pixel_position(self, point : IntVector) -> Optional[IntVector]:
-        sprites = reversed(Factory.get().group_manager.get_sprites(GroupType.BOARD))
+        sprites = reversed(Factory.get().group_manager.get_sprites(GroupType.GAME_BOARD))
         for sprite in sprites:
             if not isinstance(sprite, BoardCell):
                 continue

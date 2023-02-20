@@ -1,7 +1,7 @@
 from src.engine.factory import Factory
-from src.game.sprite import ChessrSprite, GroupType
 from src.utils.enums import Anchor, ShadowType
 from src.utils.helpers import FloatVector
+from src.utils.sprite import ChessrSprite, GroupType
 
 
 class PieceShadow(ChessrSprite):
@@ -13,7 +13,7 @@ class PieceShadow(ChessrSprite):
         image_src_rect = spritesheet.get_shadow_srcrect(self.__type, scale)
         image = spritesheet.get_image(image_src_rect, scale)
 
-        super().__init__(xy, GroupType.SHADOW, image, scale=scale, anchor=Anchor.BOTTOM_LEFT)
+        super().__init__(xy, GroupType.GAME_SHADOW, image, scale=scale, anchor=Anchor.BOTTOM_LEFT)
 
     def _calculate_position(self, xy : FloatVector) -> FloatVector:
         x, y = xy

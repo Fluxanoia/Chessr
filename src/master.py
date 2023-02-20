@@ -2,7 +2,7 @@ import pygame as pg
 
 from src.engine.config import Config
 from src.engine.factory import Factory
-from src.engine.game_manager import GameManager
+from src.engine.state_manager import StateManager
 
 
 class Master:
@@ -18,8 +18,7 @@ class Master:
         pg.display.set_icon(factory.file_manager.load_image('icon.png', True))
         pg.display.set_caption('Chessr')
 
-        game_manager = GameManager()
-        game_manager.start()
+        state_manager = StateManager()
 
         running = True
         clock = pg.time.Clock()
@@ -28,13 +27,13 @@ class Master:
                 if event.type == pg.QUIT:
                     running = False
                     continue
-                game_manager.pass_event(event)
+                state_manager.pass_event(event)
                 
-            game_manager.update()
-            factory.group_manager.update_groups()
+            state_manager.update()
+            factory.group_manager.update_groups(state_manager.state_type)
 
             screen.fill((40, 40, 40))
-            factory.group_manager.draw_groups(screen)
+            factory.group_manager.draw_groups(screen, state_manager.state_type)
             pg.display.flip()
 
             clock.tick(Config.get_fps())

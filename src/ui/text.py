@@ -3,13 +3,13 @@ from typing import Any, Callable, Optional
 import pygame as pg
 
 from src.engine.factory import Factory
-from src.game.sprite import ChessrSprite, GroupType
 from src.utils.enums import Anchor, Direction, ViewState
-from src.utils.helpers import Colour, FloatVector, add_vectors
+from src.utils.helpers import Colour, FloatVector, IntVector, add_vectors
+from src.utils.sprite import ChessrSprite, GroupType
 from src.utils.tween import Tween, TweenType
 
 
-class HudText(ChessrSprite):
+class Text(ChessrSprite):
 
     def __init__(
         self,
@@ -17,6 +17,7 @@ class HudText(ChessrSprite):
         size : float,
         scale : float,
         anchor : Anchor,
+        group_type : GroupType,
         state : ViewState = ViewState.VISIBLE,
         slide_direction : Optional[Direction] = None
     ):
@@ -27,7 +28,7 @@ class HudText(ChessrSprite):
         self.__font = Factory.get().file_manager.load_default_font(int(size * scale))
         self.__cache : dict[Any, pg.surface.Surface] = {}
 
-        super().__init__(xy, GroupType.UI, pg.Surface((0, 0)), scale=scale, anchor=anchor)
+        super().__init__(xy, group_type, pg.Surface((0, 0)), scale=scale, anchor=anchor)
 
 #region Super Class Methods
 
@@ -75,13 +76,14 @@ class HudText(ChessrSprite):
         colour : Colour,
         outline_size : Optional[int] = None,
         outline_colour : Optional[Colour] = None
-    ) -> None:
+    ) -> IntVector:
         surface = self.__get_text(text, colour, outline_size, outline_colour)
         
         if not self.__cache.get(key, None) is None:
             raise SystemExit('This cache key is already populated.')
 
         self.__cache[key] = surface
+        return surface.get_size()
 
     def set_text_by_key(self, key : Any) -> None:
         surface = self.__cache.get(key, None)
@@ -95,8 +97,10 @@ class HudText(ChessrSprite):
         colour : Colour,
         outline_size : Optional[int] = None,
         outline_colour : Optional[Colour] = None
-    ) -> None:
-        self.image = self.__get_text(text, colour, outline_size, outline_colour)
+    ) -> IntVector:
+        surface = self.__get_text(text, colour, outline_size, outline_colour)
+        self.image = surface
+        return surface.get_size()
 
     def __get_text(
         self,
@@ -132,6 +136,9 @@ class HudText(ChessrSprite):
     def is_visible(self) -> bool:
         return self.__slide > 0
     
+    def is_completely_visible(self) -> bool:
+        return self.__slide == 1
+    
     def is_tweening_to(self, state : ViewState) -> bool:
         if self.__slide_tween is None:
             return False
@@ -152,7 +159,9 @@ class HudText(ChessrSprite):
         outline_size : Optional[int] = None,
         outline_colour : Optional[Colour] = None
     ) -> None:
-        self.__slide_with_callback(direction, lambda : self.set_text(text, colour, outline_size, outline_colour))
+        def callback():
+            self.set_text(text, colour, outline_size, outline_colour)
+        self.__slide_with_callback(direction, callback)
 
     def do_slide(
         self,

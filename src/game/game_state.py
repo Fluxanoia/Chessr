@@ -3,38 +3,52 @@ from typing import Optional
 
 import pygame as pg
 
+from src.engine.group_manager import GroupType
+from src.engine.state.state import State, StateType
 from src.game.board import Board, BoardCell, BoardEventType
 from src.game.logic.piece_data_manager import PieceDataManager
-from src.game.sprites.hud_text import HudText
 from src.game.sprites.piece import Piece
+from src.ui.button import Button
+from src.ui.text import Text
 from src.utils.enums import (Anchor, CellHighlightType, Direction, LogicState,
                              Side, ViewState)
 from src.utils.helpers import IntVector, get_coord_text
 
 PROCESSING = -1
 
-class Controller:
+class GameState(State):
 
     def __init__(self) -> None:
+        super().__init__(StateType.GAME)
+
         self.__piece_data_manager = PieceDataManager()
         self.__board = Board(self.__piece_data_manager.supply_moves)
 
         scale = self.__board.scale
-        self.__turn_text = HudText(
-            (0, 0), 24, scale, Anchor.BOTTOM_RIGHT, ViewState.INVISIBLE, Direction.RIGHT)
+        self.__turn_text = Text(
+            (0, 0), 24, scale, Anchor.BOTTOM_RIGHT, GroupType.GAME_UI_LOWER, ViewState.INVISIBLE, Direction.RIGHT)
         self.__turn_text.add_text(Side.FRONT, "WHITE", (240, 240, 240))
         self.__turn_text.add_text(Side.BACK, "BLACK", (240, 240, 240))
 
-        self.__state_text : HudText = HudText(
-            (0, 0), 24, scale, Anchor.TOP_LEFT, ViewState.INVISIBLE, Direction.TOP)
+        self.__state_text : Text = Text(
+            (0, 0), 24, scale, Anchor.TOP_LEFT, GroupType.GAME_UI_LOWER, ViewState.INVISIBLE, Direction.TOP)
         self.__state_text.add_text(PROCESSING, "Processing...", (240, 240, 240))
         self.__state_text.add_text(LogicState.CHECK, "Check", (240, 240, 240))
         self.__state_text.add_text(LogicState.CHECKMATE, "Checkmate", (240, 240, 240))
         self.__state_text.add_text(LogicState.STALEMATE, "Stalemate", (240, 240, 240))
 
-        self.__coords_text : HudText = HudText(
-            (0, 0), 16, scale, Anchor.BOTTOM_LEFT, ViewState.INVISIBLE, Direction.LEFT)
-    
+        self.__coords_text : Text = Text(
+            (0, 0), 16, scale, Anchor.BOTTOM_LEFT, GroupType.GAME_UI_LOWER, ViewState.INVISIBLE, Direction.LEFT)
+        
+        self.__back_button = Button(
+            (50, 50),
+            "Back",
+            lambda : self.change_state(StateType.MAIN_MENU),
+            12,
+            scale,
+            Anchor.TOP_LEFT,
+            GroupType.GAME_UI_LOWER)
+
 #region Game Loop Methods
 
     def start(self) -> None:
@@ -42,7 +56,7 @@ class Controller:
         self.__processing_thread : Optional[Thread] = None
         self.__selected : Optional[IntVector] = None
 
-        self.__turn = self.__piece_data_manager.load_board(self.__board, '4x5 micro.board')
+        self.__turn = self.__piece_data_manager.load_board(self.__board, '5x5.board')
 
         scale = self.__board.scale
         board_bounds = self.__board.pixel_bounds
@@ -82,16 +96,20 @@ class Controller:
 #region User Input
 
     def mouse_down(self, event : pg.event.Event) -> None:
+        self.__back_button.mouse_down(event)
         self.__board.mouse_down(event)
     
     def mouse_up(self, event : pg.event.Event) -> None:
+        self.__back_button.mouse_up(event)
         self.__board.mouse_up(event)
 
-    def mouse_move(self, _event : pg.event.Event) -> None:
+    def mouse_move(self, event : pg.event.Event) -> None:
+        self.__back_button.mouse_move(event)
         gxy = self.__board.at_pixel_position(pg.mouse.get_pos())
         if gxy is None:
             if not self.__coords_text.is_tweening_to(ViewState.INVISIBLE):
-                self.__coords_text.do_slide(ViewState.INVISIBLE, pause=500)
+                pause = 500 if self.__coords_text.is_completely_visible() else 0
+                self.__coords_text.do_slide(ViewState.INVISIBLE, pause=pause)
         else:
             coords = get_coord_text(gxy, self.__board.height)
             self.__coords_text.set_text(coords, (240, 240, 240))

@@ -4,10 +4,10 @@ import pygame as pg
 
 from src.engine.factory import Factory
 from src.game.logic.logic_piece import LogicPiece
-from src.game.sprite import ChessrSprite, GroupType
 from src.game.sprites.piece_shadow import PieceShadow
 from src.utils.enums import Anchor, PieceColour, PieceType, Side
 from src.utils.helpers import FloatVector, clamp
+from src.utils.sprite import ChessrSprite, GroupType
 from src.utils.tween import Tween, TweenType
 
 
@@ -32,7 +32,7 @@ class Piece(ChessrSprite, LogicPiece):
         self.__shadow = PieceShadow(xy, scale)
         self.__update_shadow_alpha()
 
-        ChessrSprite.__init__(self, xy, GroupType.PIECE, image, self.__get_src_rect(scale), scale, Anchor.BOTTOM_LEFT)
+        ChessrSprite.__init__(self, xy, GroupType.GAME_PIECE, image, self.__get_src_rect(scale), scale, Anchor.BOTTOM_LEFT)
 
     def delete(self) -> None:
         if not self.group is None:
