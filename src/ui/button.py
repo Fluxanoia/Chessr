@@ -1,8 +1,9 @@
 from enum import auto
-from typing import Callable, cast
+from typing import Callable
 
 import pygame as pg
 
+from src.engine.group_manager import DrawingPriority
 from src.ui.text import Text
 from src.utils.enums import Anchor, ArrayEnum
 from src.utils.helpers import Colour, FloatVector, IntVector
@@ -27,11 +28,11 @@ class Button(ChessrSprite):
         text_size : float,
         scale : float,
         anchor : Anchor,
-        group_type : GroupType
+        group_type : GroupType,
     ):
         self.__action = action
 
-        self.__text = Text(xy, text_size, scale, Anchor.CENTER, cast(GroupType, group_type + 1))
+        self.__text = Text(xy, text_size, scale, Anchor.CENTER, group_type, DrawingPriority.PLUS_ONE)
         self.__text.add_text(ButtonDisplayType.DEFAULT, text, TEXT_COLOUR)
         size = self.__text.add_text(ButtonDisplayType.ALTERNATE, text, ALT_TEXT_COLOUR)
         self.__text.set_text_by_key(ButtonDisplayType.DEFAULT)
@@ -44,6 +45,7 @@ class Button(ChessrSprite):
         super().__init__(
             xy,
             group_type,
+            None,
             self.__images[ButtonDisplayType.DEFAULT],
             scale=scale,
             anchor=anchor

@@ -18,7 +18,8 @@ class MainMenuState(State):
             32,
             scale,
             Anchor.TOP_LEFT,
-            GroupType.MAIN_MENU_UI_LOWER,
+            GroupType.MAIN_MENU_UI,
+            None,
             ViewState.INVISIBLE,
             Direction.LEFT
         )
@@ -34,7 +35,7 @@ class MainMenuState(State):
             12,
             scale,
             Anchor.BOTTOM_LEFT,
-            GroupType.MAIN_MENU_UI_LOWER)
+            GroupType.MAIN_MENU_UI)
 
 #region Game Loop Methods
 

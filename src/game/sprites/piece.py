@@ -32,11 +32,11 @@ class Piece(ChessrSprite, LogicPiece):
         self.__shadow = PieceShadow(xy, scale)
         self.__update_shadow_alpha()
 
-        ChessrSprite.__init__(self, xy, GroupType.GAME_PIECE, image, self.__get_src_rect(scale), scale, Anchor.BOTTOM_LEFT)
+        ChessrSprite.__init__(self, xy, GroupType.GAME_PIECE, None, image, self.__get_src_rect(scale), scale, Anchor.BOTTOM_LEFT)
 
     def delete(self) -> None:
         if not self.group is None:
-            Factory.get().group_manager.get_group(self.group).remove(self)
+            Factory.get().group_manager.get_group(self.group, self.drawing_priority).remove(self)
         self.__shadow.delete()
         LogicPiece.delete(self)
 

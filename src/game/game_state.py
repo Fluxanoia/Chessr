@@ -26,19 +26,19 @@ class GameState(State):
 
         scale = self.__board.scale
         self.__turn_text = Text(
-            (0, 0), 24, scale, Anchor.BOTTOM_RIGHT, GroupType.GAME_UI_LOWER, ViewState.INVISIBLE, Direction.RIGHT)
+            (0, 0), 24, scale, Anchor.BOTTOM_RIGHT, GroupType.GAME_UI, None, ViewState.INVISIBLE, Direction.RIGHT)
         self.__turn_text.add_text(Side.FRONT, "WHITE", (240, 240, 240))
         self.__turn_text.add_text(Side.BACK, "BLACK", (240, 240, 240))
 
         self.__state_text : Text = Text(
-            (0, 0), 24, scale, Anchor.TOP_LEFT, GroupType.GAME_UI_LOWER, ViewState.INVISIBLE, Direction.TOP)
+            (0, 0), 24, scale, Anchor.TOP_LEFT, GroupType.GAME_UI, None, ViewState.INVISIBLE, Direction.TOP)
         self.__state_text.add_text(PROCESSING, "Processing...", (240, 240, 240))
         self.__state_text.add_text(LogicState.CHECK, "Check", (240, 240, 240))
         self.__state_text.add_text(LogicState.CHECKMATE, "Checkmate", (240, 240, 240))
         self.__state_text.add_text(LogicState.STALEMATE, "Stalemate", (240, 240, 240))
 
         self.__coords_text : Text = Text(
-            (0, 0), 16, scale, Anchor.BOTTOM_LEFT, GroupType.GAME_UI_LOWER, ViewState.INVISIBLE, Direction.LEFT)
+            (0, 0), 16, scale, Anchor.BOTTOM_LEFT, GroupType.GAME_UI, None, ViewState.INVISIBLE, Direction.LEFT)
         
         self.__back_button = Button(
             (50, 50),
@@ -47,7 +47,7 @@ class GameState(State):
             12,
             scale,
             Anchor.TOP_LEFT,
-            GroupType.GAME_UI_LOWER)
+            GroupType.GAME_UI)
 
 #region Game Loop Methods
 

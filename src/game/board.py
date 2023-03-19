@@ -53,10 +53,11 @@ class Board(LogicBoard):
             return (left + j * cell_size, top + i * cell_size)
 
         group_manager = Factory.get().group_manager
-        for group in [GroupType.GAME_BOARD, GroupType.GAME_BOARD_HIGHLIGHT, GroupType.GAME_PIECE, GroupType.GAME_SHADOW]:
+        for group in [GroupType.GAME_BOARD, GroupType.GAME_PIECE]:
             sprites = group_manager.get_sprites(group)
-            for sprite in sprites:
-                group_manager.get_group(group).remove(sprite)
+            for priority, sprites in sprites.items():
+                for sprite in sprites:
+                    group_manager.get_group(group, priority).remove(sprite)
 
         cells : list[tuple[BoardCell]] = []
 
@@ -96,7 +97,7 @@ class Board(LogicBoard):
         return self.__events.pop(0)
     
     def at_pixel_position(self, point : IntVector) -> Optional[IntVector]:
-        sprites = reversed(Factory.get().group_manager.get_sprites(GroupType.GAME_BOARD))
+        sprites = reversed(Factory.get().group_manager.get_flattened_sprites(GroupType.GAME_BOARD))
         for sprite in sprites:
             if not isinstance(sprite, BoardCell):
                 continue

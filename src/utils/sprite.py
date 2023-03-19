@@ -3,7 +3,7 @@ from typing import Any, Optional, cast
 import pygame as pg
 
 from src.engine.factory import Factory
-from src.engine.group_manager import GroupType
+from src.engine.group_manager import DrawingPriority, GroupType
 from src.utils.enums import Anchor
 from src.utils.helpers import FloatVector
 from src.utils.tween import Tween, TweenType
@@ -15,6 +15,7 @@ class ChessrSprite(pg.sprite.DirtySprite):
         self,
         xy : FloatVector,
         group : Optional[GroupType],
+        drawing_priority : Optional[DrawingPriority],
         image : pg.surface.Surface,
         src_rect : Optional[pg.Rect] = None,
         scale : float = 1,
@@ -24,6 +25,7 @@ class ChessrSprite(pg.sprite.DirtySprite):
 
         self.rect = None
         self.__group = None
+        self.__drawing_priority = drawing_priority
 
         self.dirty = 2
         self.group = group
@@ -52,7 +54,7 @@ class ChessrSprite(pg.sprite.DirtySprite):
         xy = self._calculate_position(xy)
         if self.alive() and isinstance(self.group, GroupType):
             layer = self._calculate_layer(xy)
-            Factory.get().group_manager.get_group(self.group).change_layer(self, layer)
+            Factory.get().group_manager.get_group(self.group, self.__drawing_priority).change_layer(self, layer)
 
         self.rect.x, self.rect.y = int(xy[0]), int(xy[1])
         
@@ -104,18 +106,31 @@ class ChessrSprite(pg.sprite.DirtySprite):
             return False
         return self.rect.collidepoint(point)
 
+
+    def __update_grouping(self, group : Optional[GroupType], drawing_priority : Optional[DrawingPriority]):
+        group_manager = Factory.get().group_manager
+        if not self.__group is None:
+            group_manager.get_group(self.__group, self.__drawing_priority).remove(self)
+        self.__group = group
+        self.__drawing_priority = drawing_priority
+        if not self.__group is None:
+            group_manager.get_group(self.__group, self.__drawing_priority).add(self)
+
+    @property
+    def drawing_priority(self) -> Optional[DrawingPriority]:
+        return self.__drawing_priority
+    
+    @drawing_priority.setter
+    def drawing_priority(self, drawing_priority : Optional[DrawingPriority]) -> None:
+        self.__update_grouping(self.__group, drawing_priority)
+
     @property
     def group(self) -> Optional[GroupType]:
         return self.__group
 
     @group.setter
     def group(self, group : Optional[GroupType]) -> None:
-        group_manager = Factory.get().group_manager
-        if not self.__group is None:
-            group_manager.get_group(self.__group).remove(self)
-        self.__group = group
-        if not self.__group is None:
-            group_manager.get_group(self.__group).add(self)
+        self.__update_grouping(group, self.__drawing_priority)
 
     @property
     def src_rect(self) -> Optional[pg.rect.Rect]:

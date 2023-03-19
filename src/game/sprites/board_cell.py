@@ -29,7 +29,7 @@ class BoardCell(ChessrSprite, LogicCell):
         self.__colour = colour
 
         image = Factory.get().board_spritesheet.get_sheet(scale)
-        ChessrSprite.__init__(self, xy, GroupType.GAME_BOARD, image, self.__get_src_rect(scale), scale)
+        ChessrSprite.__init__(self, xy, GroupType.GAME_BOARD, None, image, self.__get_src_rect(scale), scale)
 
         self.__selected = False
         self.__highlight = BoardCellHighlight(xy, scale, self.__colour_scheme)

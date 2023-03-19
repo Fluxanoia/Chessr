@@ -3,6 +3,7 @@ from typing import Any, Callable, Optional
 import pygame as pg
 
 from src.engine.factory import Factory
+from src.engine.group_manager import DrawingPriority
 from src.utils.enums import Anchor, Direction, ViewState
 from src.utils.helpers import Colour, FloatVector, IntVector, add_vectors
 from src.utils.sprite import ChessrSprite, GroupType
@@ -18,6 +19,7 @@ class Text(ChessrSprite):
         scale : float,
         anchor : Anchor,
         group_type : GroupType,
+        drawing_priority : Optional[DrawingPriority],
         state : ViewState = ViewState.VISIBLE,
         slide_direction : Optional[Direction] = None
     ):
@@ -28,7 +30,7 @@ class Text(ChessrSprite):
         self.__font = Factory.get().file_manager.load_default_font(int(size * scale))
         self.__cache : dict[Any, pg.surface.Surface] = {}
 
-        super().__init__(xy, group_type, pg.Surface((0, 0)), scale=scale, anchor=anchor)
+        super().__init__(xy, group_type, drawing_priority, pg.Surface((0, 0)), scale=scale, anchor=anchor)
 
 #region Super Class Methods
 

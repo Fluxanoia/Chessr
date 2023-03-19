@@ -1,4 +1,5 @@
 from src.engine.factory import Factory
+from src.engine.group_manager import DrawingPriority
 from src.utils.enums import Anchor, ShadowType
 from src.utils.helpers import FloatVector
 from src.utils.sprite import ChessrSprite, GroupType
@@ -13,7 +14,7 @@ class PieceShadow(ChessrSprite):
         image_src_rect = spritesheet.get_shadow_srcrect(self.__type, scale)
         image = spritesheet.get_image(image_src_rect, scale)
 
-        super().__init__(xy, GroupType.GAME_SHADOW, image, scale=scale, anchor=Anchor.BOTTOM_LEFT)
+        super().__init__(xy, GroupType.GAME_PIECE, DrawingPriority.MINUS_ONE, image, scale=scale, anchor=Anchor.BOTTOM_LEFT)
 
     def _calculate_position(self, xy : FloatVector) -> FloatVector:
         x, y = xy
@@ -21,7 +22,7 @@ class PieceShadow(ChessrSprite):
 
     def delete(self) -> None:
         if not self.group is None:
-            Factory.get().group_manager.get_group(self.group).remove(self)
+            Factory.get().group_manager.get_group(self.group, self.drawing_priority).remove(self)
 
     def set_alpha(self, alpha : int) -> None:
         if self.image is None:
