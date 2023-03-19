@@ -1,0 +1,12 @@
+{
+    "configurations": [
+        {
+            "name": "Chessr",
+            "type": "python",
+            "request": "launch",
+            "program": "__init__.py",
+            "console": "integratedTerminal",
+            "postDebugTask": "clearCache",
+        }
+    ]
+}
