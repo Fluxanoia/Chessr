@@ -46,6 +46,10 @@ class ChessrSprite(pg.sprite.DirtySprite):
                 self.__position_tween = self.__position_tween.get_chained()
         self.set_position(position, True)
 
+    def delete(self) -> None:
+        if not self.group is None:
+            Factory.get().group_manager.get_group(self.group, self.drawing_priority).remove(self)
+
     def set_position(self, xy : FloatVector, preserve_tween : bool = False) -> None:
         self.rect = pg.Rect((0, 0), self._calculate_size())
 
@@ -106,8 +110,11 @@ class ChessrSprite(pg.sprite.DirtySprite):
             return False
         return self.rect.collidepoint(point)
 
-
-    def __update_grouping(self, group : Optional[GroupType], drawing_priority : Optional[DrawingPriority]):
+    def __update_grouping(
+        self,
+        group : Optional[GroupType],
+        drawing_priority : Optional[DrawingPriority]
+    ):
         group_manager = Factory.get().group_manager
         if not self.__group is None:
             group_manager.get_group(self.__group, self.__drawing_priority).remove(self)
@@ -115,6 +122,21 @@ class ChessrSprite(pg.sprite.DirtySprite):
         self.__drawing_priority = drawing_priority
         if not self.__group is None:
             group_manager.get_group(self.__group, self.__drawing_priority).add(self)
+
+#region User Input
+
+    def mouse_down(self, _event : pg.event.Event) -> bool:
+        return False
+    
+    def mouse_up(self, _event : pg.event.Event) -> bool:
+        return False
+
+    def mouse_move(self, _event : pg.event.Event) -> None:
+        pass
+
+#endregion
+
+#region Properties
 
     @property
     def drawing_priority(self) -> Optional[DrawingPriority]:
@@ -144,3 +166,9 @@ class ChessrSprite(pg.sprite.DirtySprite):
             self.source_rect = src_rect
         else:
             self.source_rect.update(src_rect)
+
+    @property
+    def pixel_bounds(self) -> Optional[pg.rect.Rect]:
+        return self.rect
+
+#endregion

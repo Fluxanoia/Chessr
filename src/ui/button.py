@@ -32,7 +32,11 @@ class Button(ChessrSprite):
     ):
         self.__action = action
 
-        self.__text = Text(xy, text_size, scale, Anchor.CENTER, group_type, DrawingPriority.PLUS_ONE)
+        self.__text = Text(xy,
+                           text_size,
+                           scale,Anchor.CENTER,
+                           group_type,
+                           DrawingPriority.PLUS_ONE)
         self.__text.add_text(ButtonDisplayType.DEFAULT, text, TEXT_COLOUR)
         size = self.__text.add_text(ButtonDisplayType.ALTERNATE, text, ALT_TEXT_COLOUR)
         self.__text.set_text_by_key(ButtonDisplayType.DEFAULT)
@@ -78,22 +82,30 @@ class Button(ChessrSprite):
         w, h = self.rect.size
         self.__text.set_position((x + w / 2, y + h / 2), preserve_tween)
 
+    def delete(self) -> None:
+        self.__text.delete()
+        super().delete()
+
 #endregion
 
 #region User Input
 
-    def mouse_down(self, _event : pg.event.Event) -> None:
+    def mouse_down(self, _event : pg.event.Event) -> bool:
         if self.__mouse_intersects():
             self.__mouse_down = True
             self.image = self.__images[ButtonDisplayType.ALTERNATE]
             self.__text.set_text_by_key(ButtonDisplayType.ALTERNATE)
+            return True
+        return False
     
-    def mouse_up(self, _event : pg.event.Event) -> None:
+    def mouse_up(self, _event : pg.event.Event) -> bool:
         if self.__mouse_intersects() and self.__mouse_down:
             self.__action()
             self.__mouse_down = False
             self.image = self.__images[ButtonDisplayType.DEFAULT]
             self.__text.set_text_by_key(ButtonDisplayType.DEFAULT)
+            return True
+        return False
 
     def mouse_move(self, _event : pg.event.Event) -> None:
         if not self.__mouse_intersects() and self.__mouse_down:

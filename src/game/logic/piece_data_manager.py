@@ -5,12 +5,13 @@ from src.engine.factory import Factory
 from src.engine.file_manager import PathLike
 from src.game.board import Board
 from src.game.logic.logic_board import LogicBoard, Move, Moves
+from src.game.logic.logic_piece import LogicPiece
 from src.game.logic.move_data import MoveData, MoveType
 from src.game.logic.piece_data import PieceData
 from src.game.logic.piece_tag import PieceTag, PieceTagType
 from src.game.sprites.board_cell import BoardCell
-from src.utils.enums import (LogicState, PieceColour, PieceType, Side,
-                             enum_as_list)
+from src.utils.enums import (LogicState, PendingMoveType, PieceColour,
+                             PieceType, Side, enum_as_list)
 from src.utils.helpers import IntVector, add_vectors, inbounds, is_empty
 
 
@@ -129,7 +130,7 @@ class PieceDataManager():
 
 #endregion
 
-#region Moves and Game State
+#region Game State
 
     def get_state(
         self,
@@ -175,6 +176,10 @@ class PieceDataManager():
 
         return LogicState.STALEMATE
     
+#endregion
+
+#region Moves
+
     def supply_moves(
         self,
         logic_board : LogicBoard
@@ -226,12 +231,26 @@ class PieceDataManager():
                     row.append(None)
                 else:
                     moves = self.__data[piece.type].get_moves(logic_board, piece.side, gxy)
+
+                    for move in moves.get_all_moves():
+                        self.__supply_pending_action(logic_board, piece, move)
+
                     row.append(moves)
             moves_grid.append(tuple(row))
 
         logic_board.supply_moves(tuple(moves_grid))
 
         self.__supply_manoeuvres(logic_board, self.__get_manoeuvres)
+
+    def __supply_pending_action(
+        self,
+        logic_board : LogicBoard,
+        piece : LogicPiece,
+        move : Move
+    ) -> None:
+        if (piece.type == PieceType.PAWN
+            and PieceData.get_away_row(logic_board, piece.side) == move.gxy[0]):
+            move.set_pending_action(PendingMoveType.PIECE_PROMOTION)
 
     def __supply_manoeuvres(
         self,
@@ -251,6 +270,10 @@ class PieceDataManager():
                 for move in get_manoeuvres(logic_board, gxy):
                     moves.add_move(move)
 
+#endregion
+
+#region Board State
+
     def __move_results_in_check(
         self,
         logic_board : LogicBoard,
@@ -263,7 +286,11 @@ class PieceDataManager():
         self.__supply_partial_moves(copy)
         return self.__in_check(copy, side)
 
-    def __get_endangered_cells(self, logic_board : LogicBoard, side : Side) -> tuple[IntVector, ...]:
+    def __get_endangered_cells(
+        self,
+        logic_board : LogicBoard,
+        side : Side
+    ) -> tuple[IntVector, ...]:
         '''
             Returns all the grid positions that are under attack by the opposing side.
         '''

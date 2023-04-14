@@ -51,6 +51,9 @@ class MouseButton(CountEnum):
 
 #region Chess Enums
 
+class PendingMoveType(ArrayEnum):
+    PIECE_PROMOTION = auto()
+
 class Side(ArrayEnum):
     FRONT = auto()
     BACK = auto()

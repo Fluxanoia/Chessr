@@ -32,11 +32,18 @@ class Piece(ChessrSprite, LogicPiece):
         self.__shadow = PieceShadow(xy, scale)
         self.__update_shadow_alpha()
 
-        ChessrSprite.__init__(self, xy, GroupType.GAME_PIECE, None, image, self.__get_src_rect(scale), scale, Anchor.BOTTOM_LEFT)
+        ChessrSprite.__init__(
+            self,
+            xy,
+            GroupType.GAME_PIECE,
+            None,
+            image,
+            self.__get_src_rect(scale),
+            scale,
+            Anchor.BOTTOM_LEFT)
 
     def delete(self) -> None:
-        if not self.group is None:
-            Factory.get().group_manager.get_group(self.group, self.drawing_priority).remove(self)
+        ChessrSprite.delete(self)
         self.__shadow.delete()
         LogicPiece.delete(self)
 
@@ -73,6 +80,10 @@ class Piece(ChessrSprite, LogicPiece):
             duration,
             pause)
         self.__lift_tween.restart()
+
+    def change_type(self, piece_type : PieceType) -> None:
+        LogicPiece.change_type(self, piece_type)
+        self.src_rect = self.__get_src_rect()
 
     def highlight(self) -> None:
         self.__colour = PieceColour.RED

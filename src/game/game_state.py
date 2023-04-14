@@ -6,6 +6,7 @@ import pygame as pg
 from src.engine.group_manager import GroupType
 from src.engine.state.state import State, StateType
 from src.game.board import Board, BoardCell, BoardEventType
+from src.game.logic.pending_move_action import PendingMoveAction
 from src.game.logic.piece_data_manager import PieceDataManager
 from src.game.sprites.piece import Piece
 from src.ui.button import Button
@@ -26,19 +27,40 @@ class GameState(State):
 
         scale = self.__board.scale
         self.__turn_text = Text(
-            (0, 0), 24, scale, Anchor.BOTTOM_RIGHT, GroupType.GAME_UI, None, ViewState.INVISIBLE, Direction.RIGHT)
+            (0, 0),
+            24,
+            scale,
+            Anchor.BOTTOM_RIGHT,
+            GroupType.GAME_UI,
+            None,
+            ViewState.INVISIBLE,
+            Direction.RIGHT)
         self.__turn_text.add_text(Side.FRONT, "WHITE", (240, 240, 240))
         self.__turn_text.add_text(Side.BACK, "BLACK", (240, 240, 240))
 
         self.__state_text : Text = Text(
-            (0, 0), 24, scale, Anchor.TOP_LEFT, GroupType.GAME_UI, None, ViewState.INVISIBLE, Direction.TOP)
+            (0, 0),
+            24,
+            scale,
+            Anchor.TOP_LEFT,
+            GroupType.GAME_UI,
+            None,
+            ViewState.INVISIBLE,
+            Direction.TOP)
         self.__state_text.add_text(PROCESSING, "Processing...", (240, 240, 240))
         self.__state_text.add_text(LogicState.CHECK, "Check", (240, 240, 240))
         self.__state_text.add_text(LogicState.CHECKMATE, "Checkmate", (240, 240, 240))
         self.__state_text.add_text(LogicState.STALEMATE, "Stalemate", (240, 240, 240))
 
         self.__coords_text : Text = Text(
-            (0, 0), 16, scale, Anchor.BOTTOM_LEFT, GroupType.GAME_UI, None, ViewState.INVISIBLE, Direction.LEFT)
+            (0, 0),
+            16,
+            scale,
+            Anchor.BOTTOM_LEFT,
+            GroupType.GAME_UI,
+            None,
+            ViewState.INVISIBLE,
+            Direction.LEFT)
         
         self.__back_button = Button(
             (50, 50),
@@ -53,6 +75,7 @@ class GameState(State):
 
     def start(self) -> None:
         self.__state : LogicState = LogicState.NONE
+        self.__pending_move_action : Optional[PendingMoveAction] = None 
         self.__processing_thread : Optional[Thread] = None
         self.__selected : Optional[IntVector] = None
 
@@ -95,15 +118,28 @@ class GameState(State):
 
 #region User Input
 
-    def mouse_down(self, event : pg.event.Event) -> None:
-        self.__back_button.mouse_down(event)
-        self.__board.mouse_down(event)
+    def mouse_down(self, event : pg.event.Event) -> bool:
+        if not self.__pending_move_action is None \
+            and self.__pending_move_action.mouse_down(event):
+            return True
+        if self.__back_button.mouse_down(event):
+            return True
+        return self.__board.mouse_down(event)
     
-    def mouse_up(self, event : pg.event.Event) -> None:
-        self.__back_button.mouse_up(event)
-        self.__board.mouse_up(event)
+    def mouse_up(self, event : pg.event.Event) -> bool:
+        if not self.__pending_move_action is None \
+            and self.__pending_move_action.mouse_up(event):
+            return True
+        
+        if self.__back_button.mouse_up(event):
+            return True
+        
+        return self.__board.mouse_up(event)
 
     def mouse_move(self, event : pg.event.Event) -> None:
+        if not self.__pending_move_action is None:
+            self.__pending_move_action.mouse_move(event)
+
         self.__back_button.mouse_move(event)
         gxy = self.__board.at_pixel_position(pg.mouse.get_pos())
         if gxy is None:
@@ -121,6 +157,9 @@ class GameState(State):
 #region Private Game Logic Methods
 
     def __click(self, gxy : Optional[IntVector]) -> None:
+        if self.__is_pending_action():
+            return
+
         if gxy is None:
             self.__deselect()
         else:
@@ -131,10 +170,7 @@ class GameState(State):
                 self.__select(gxy)
             elif not self.__selected is None \
                 and (click_piece is None or not click_piece.side == self.__turn):
-                if self.__execute_move(self.__selected, gxy):
-                    self.__selected = None
-                else:
-                    self.__deselect()
+                self.__execute_move(self.__selected, gxy)
 
         self.__update_highlighting()
 
@@ -167,26 +203,45 @@ class GameState(State):
 
         self.__selected = None
 
-    def __execute_move(self, from_gxy : IntVector, to_gxy : IntVector) -> bool:
-        if self.__is_processing():
-            return False
+    def __execute_move(self, from_gxy : IntVector, to_gxy : IntVector) -> None:
+        if self.__is_pending_action() or self.__is_processing():
+            return
 
         moves = self.__board.moves_at(*from_gxy)
         if moves is None:
-            return False
+            return
         
-        valid_moves = map(lambda x : x.gxy, moves.get_valid_moves())
-        if not to_gxy in valid_moves:
-            return False
-
-        self.__board.move(from_gxy, to_gxy)
+        valid_move = next((x for x in moves.get_valid_moves() if x.gxy == to_gxy), None)
+        if valid_move is None:
+            return
         
-        self.__turn = Side.BACK if self.__turn == Side.FRONT else Side.FRONT
-        self.__turn_text.set_text_with_slide_by_key(self.__turn)
+        def clear_action():
+            if not self.__pending_move_action is None:
+                self.__pending_move_action.delete()
+                self.__pending_move_action = None
 
-        self.__process_state()
+        def finalise():
+            clear_action()
+            self.__board.move(from_gxy, to_gxy)
+            self.__deselect()
+            self.__update_highlighting()
+        
+            self.__turn = Side.BACK if self.__turn == Side.FRONT else Side.FRONT
+            self.__turn_text.set_text_with_slide_by_key(self.__turn)
 
-        return True
+            self.__process_state()
+
+        if valid_move.pending_action is None:
+            finalise()
+        else:
+            self.__pending_move_action = PendingMoveAction.get_action(
+                valid_move.pending_action,
+                self.__board,
+                from_gxy,
+                to_gxy,
+                finalise,
+                clear_action
+            )
     
     def __process_state(self):
         if self.__state_text.is_visible():
@@ -201,6 +256,9 @@ class GameState(State):
         self.__processing_thread.start()
 
     def __update_highlighting(self) -> None:
+        if self.__is_pending_action():
+            return
+
         if self.__selected is None or self.__is_processing():
             self.__clear_highlights()
             return
@@ -250,5 +308,8 @@ class GameState(State):
 
     def __is_processing(self) -> bool:
         return not self.__processing_thread is None or self.__board.is_dirty()
+    
+    def __is_pending_action(self) -> bool:
+        return not self.__pending_move_action is None
 
 #endregion

@@ -63,8 +63,13 @@ class BoardSpritesheet(Spritesheet):
         return r
 
     @staticmethod
-    def get_board_srcrect(colour_scheme : BoardColour, cell_colour : CellColour, scale : float = 1) -> pg.Rect:
-        base_x = BoardSpritesheet.__get_width_of_pieces() + BoardSpritesheet.__get_width_of_shadows()
+    def get_board_srcrect(
+        colour_scheme : BoardColour,
+        cell_colour : CellColour,
+        scale : float = 1
+    ) -> pg.Rect:
+        base_x = BoardSpritesheet.__get_width_of_pieces() \
+            + BoardSpritesheet.__get_width_of_shadows()
         r = pg.Rect(
             base_x + cell_colour * BoardSpritesheet.BOARD_WIDTH,
             colour_scheme * BoardSpritesheet.BOARD_HEIGHT,

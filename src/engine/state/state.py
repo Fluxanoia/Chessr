@@ -40,11 +40,11 @@ class State():
 
 #region User Input
 
-    def mouse_down(self, _event : pg.event.Event) -> None:
-        pass
+    def mouse_down(self, _event : pg.event.Event) -> bool:
+        return False
     
-    def mouse_up(self, _event : pg.event.Event) -> None:
-        pass
+    def mouse_up(self, _event : pg.event.Event) -> bool:
+        return False
 
     def mouse_move(self, _event : pg.event.Event) -> None:
         pass

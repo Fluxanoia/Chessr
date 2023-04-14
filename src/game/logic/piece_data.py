@@ -44,7 +44,7 @@ class PieceData:
                     moves.append(Move(cell, MoveType.ATTACK, True))
                 return False
 
-        flip = self.flip(side)
+        flip = self.do_flip(side)
 
         for move_data in self.__moves:
             for vector in move_data.get_vectors(flip):
@@ -56,10 +56,18 @@ class PieceData:
 
     @staticmethod
     def get_forward_vector(side : Side):
-        return (1, 0) if PieceData.flip(side) else (-1, 0)
+        return (1, 0) if PieceData.do_flip(side) else (-1, 0)
+    
+    @staticmethod
+    def get_home_row(logic_board : LogicBoard, side : Side):
+        return 0 if PieceData.do_flip(side) else logic_board.height - 1
+    
+    @staticmethod
+    def get_away_row(logic_board : LogicBoard, side : Side):
+        return 0 if not PieceData.do_flip(side) else logic_board.height - 1
 
     @staticmethod
-    def flip(side : Side):
+    def do_flip(side : Side):
         return side == Side.BACK
 
     @property

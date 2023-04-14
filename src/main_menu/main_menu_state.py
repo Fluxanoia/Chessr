@@ -52,11 +52,11 @@ class MainMenuState(State):
 
 #region User Input
 
-    def mouse_down(self, event : pg.event.Event) -> None:
-        self.__button.mouse_down(event)
+    def mouse_down(self, event : pg.event.Event) -> bool:
+        return self.__button.mouse_down(event)
     
-    def mouse_up(self, event : pg.event.Event) -> None:
-        self.__button.mouse_up(event)
+    def mouse_up(self, event : pg.event.Event) -> bool:
+        return self.__button.mouse_up(event)
 
     def mouse_move(self, event : pg.event.Event) -> None:
         self.__button.mouse_move(event)

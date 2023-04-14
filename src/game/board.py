@@ -77,19 +77,26 @@ class Board(LogicBoard):
 
         self._set_cells(tuple(cells))
 
-    def mouse_down(self, event : pg.event.Event) -> None:
+    def mouse_down(self, event : pg.event.Event) -> bool:
         if event.button == MouseButton.LEFT:
             self.__pressed_grid_position = self.at_pixel_position(pg.mouse.get_pos())
+            if not self.__pressed_grid_position is None:
+                return True
+        return False
     
-    def mouse_up(self, event : pg.event.Event) -> None:
+    def mouse_up(self, event : pg.event.Event) -> bool:
         if event.button == MouseButton.LEFT:
+            event_parsed = False
             released = self.at_pixel_position(pg.mouse.get_pos())
 
             if self.__pressed_grid_position == released:
                 data = { BoardDataType.GRID_POSITION: self.__pressed_grid_position }
                 self.__events.append(BoardEvent(BoardEventType.CLICK, data))
+                event_parsed = True
             
             self.__pressed_grid_position = None
+            return event_parsed
+        return False
     
     def pop_event(self) -> Optional[BoardEvent]:
         if len(self.__events) == 0:

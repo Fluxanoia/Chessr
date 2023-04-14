@@ -19,6 +19,9 @@ class LogicPiece():
     def delete(self) -> None:
         return
 
+    def change_type(self, piece_type : PieceType) -> None:
+        self.__piece_type = piece_type
+
     def update_tags(self) -> None:
         self.__tags = list(filter(lambda x : x.update(), self.__tags))
 

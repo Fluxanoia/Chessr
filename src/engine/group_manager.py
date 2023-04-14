@@ -53,7 +53,11 @@ class GroupManager():
             for p in self.__get_all_priorities():
                 self.__groups[t][p].draw(screen)
 
-    def get_group(self, group : GroupType, drawing_priority : Optional[DrawingPriority]) -> pg.sprite.LayeredDirty:
+    def get_group(
+        self,
+        group : GroupType,
+        drawing_priority : Optional[DrawingPriority]
+    ) -> pg.sprite.LayeredDirty:
         drawing_priority = DrawingPriority.NORMAL if drawing_priority is None else drawing_priority
         return self.__groups[group][drawing_priority]
 

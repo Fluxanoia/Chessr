@@ -4,6 +4,7 @@ from src.game.logic.move_data import MoveType
 from src.game.logic.piece_tag import PieceTag, PieceTagType
 from src.game.sprites.board_cell import LogicCell
 from src.game.sprites.piece import LogicPiece
+from src.utils.enums import PendingMoveType
 from src.utils.helpers import IntVector, inbounds
 
 MovesGrid = tuple[tuple[Optional["Moves"]]]
@@ -32,7 +33,12 @@ class LogicBoard():
 
 #region Piece Logic
 
-    def move(self, from_gxy : IntVector, to_gxy : IntVector, skip_validation : bool = False) -> None:
+    def move(
+        self,
+        from_gxy : IntVector,
+        to_gxy : IntVector,
+        skip_validation : bool = False
+    ) -> None:
         if from_gxy == to_gxy:
             return
         
@@ -171,15 +177,20 @@ class Move:
         gxy : IntVector,
         move_type : MoveType,
         valid : bool,
-        callback : Optional[ManoeuvreCallback] = None
+        callback : Optional[ManoeuvreCallback] = None,
+        pending_action : Optional[PendingMoveType] = None
     ):
         self.__gxy = gxy
         self.__move_type = move_type
         self.__valid = valid
         self.__callback = callback
+        self.__pending_action = pending_action
 
     def invalidate(self):
         self.__valid = False
+
+    def set_pending_action(self, value : Optional[PendingMoveType]):
+        self.__pending_action = value
 
     @property
     def gxy(self):
@@ -196,6 +207,10 @@ class Move:
     @property
     def callback(self):
         return self.__callback
+
+    @property
+    def pending_action(self):
+        return self.__pending_action
 
 class Moves:
 
