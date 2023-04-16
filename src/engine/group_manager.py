@@ -9,6 +9,8 @@ from src.utils.enums import ArrayEnum, enum_as_list
 
 class GroupType(ArrayEnum):
     MAIN_MENU_UI = auto()
+    
+    BOARD_SELECTION_UI = auto()
 
     GAME_BOARD = auto()
     GAME_PIECE = auto()
@@ -19,6 +21,10 @@ class GroupType(ArrayEnum):
         if state_type == StateType.MAIN_MENU:
             return (
                 GroupType.MAIN_MENU_UI,
+            )
+        if state_type == StateType.BOARD_SELECTION:
+            return (
+                GroupType.BOARD_SELECTION_UI,
             )
         if state_type == StateType.GAME:
             return (

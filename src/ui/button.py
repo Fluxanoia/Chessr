@@ -16,7 +16,8 @@ BORDER_COLOUR : Colour = (50, 50, 50)
 
 class ButtonDisplayType(ArrayEnum):
     DEFAULT = auto()
-    ALTERNATE = auto()
+    HOVERED = auto()
+    PRESSED = auto()
 
 class Button(ChessrSprite):
 
@@ -37,13 +38,15 @@ class Button(ChessrSprite):
                            scale,Anchor.CENTER,
                            group_type,
                            DrawingPriority.PLUS_ONE)
-        self.__text.add_text(ButtonDisplayType.DEFAULT, text, TEXT_COLOUR)
-        size = self.__text.add_text(ButtonDisplayType.ALTERNATE, text, ALT_TEXT_COLOUR)
+        size = self.__text.add_text(ButtonDisplayType.DEFAULT, text, TEXT_COLOUR)
+        self.__text.add_text(ButtonDisplayType.HOVERED, text, TEXT_COLOUR)
+        self.__text.add_text(ButtonDisplayType.PRESSED, text, ALT_TEXT_COLOUR)
         self.__text.set_text_by_key(ButtonDisplayType.DEFAULT)
 
         self.__images = {
             ButtonDisplayType.DEFAULT: self.__create_image(size, BG_COLOUR, BORDER_COLOUR, scale),
-            ButtonDisplayType.ALTERNATE: self.__create_image(size, BORDER_COLOUR, BG_COLOUR, scale)
+            ButtonDisplayType.HOVERED: self.__create_image(size, BG_COLOUR, ALT_TEXT_COLOUR, scale),
+            ButtonDisplayType.PRESSED: self.__create_image(size, BORDER_COLOUR, BG_COLOUR, scale)
         }
 
         super().__init__(
@@ -56,6 +59,7 @@ class Button(ChessrSprite):
         )
 
         self.__mouse_down = False
+        self.__hovering = False
 
     def __create_image(
         self,
@@ -69,6 +73,10 @@ class Button(ChessrSprite):
         pg.draw.rect(image, bg_colour, rect, border_radius=20)
         pg.draw.rect(image, border_colour, rect, 5, border_radius=20)
         return image
+    
+    def __change_display_type(self, display_type : ButtonDisplayType):
+        self.image = self.__images[display_type]
+        self.__text.set_text_by_key(display_type)
 
 #region Super Class Overrides
 
@@ -93,8 +101,7 @@ class Button(ChessrSprite):
     def mouse_down(self, _event : pg.event.Event) -> bool:
         if self.__mouse_intersects():
             self.__mouse_down = True
-            self.image = self.__images[ButtonDisplayType.ALTERNATE]
-            self.__text.set_text_by_key(ButtonDisplayType.ALTERNATE)
+            self.__change_display_type(ButtonDisplayType.PRESSED)
             return True
         return False
     
@@ -102,16 +109,21 @@ class Button(ChessrSprite):
         if self.__mouse_intersects() and self.__mouse_down:
             self.__action()
             self.__mouse_down = False
-            self.image = self.__images[ButtonDisplayType.DEFAULT]
-            self.__text.set_text_by_key(ButtonDisplayType.DEFAULT)
+            self.__change_display_type(ButtonDisplayType.DEFAULT)
             return True
         return False
 
     def mouse_move(self, _event : pg.event.Event) -> None:
-        if not self.__mouse_intersects() and self.__mouse_down:
-            self.__mouse_down = False
-            self.image = self.__images[ButtonDisplayType.DEFAULT]
-            self.__text.set_text_by_key(ButtonDisplayType.DEFAULT)
+        hovering = self.__mouse_intersects()
+        if hovering:
+            if not self.__hovering:
+                self.__change_display_type(ButtonDisplayType.HOVERED)
+        else:
+            if self.__hovering:
+                self.__change_display_type(ButtonDisplayType.DEFAULT)
+            if self.__mouse_down:
+                self.__mouse_down = False
+        self.__hovering = hovering
 
     def __mouse_intersects(self) -> bool:
         return self.point_intersects(pg.mouse.get_pos())

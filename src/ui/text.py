@@ -169,9 +169,10 @@ class Text(ChessrSprite):
         self,
         state : ViewState,
         direction : Optional[Direction] = None,
-        pause : int = 0
+        pause : int = 0,
+        callback : Optional[Callable[[], None]] = None
     ) -> None:
-        self.__do_slide(state, direction, pause=pause)
+        self.__do_slide(state, direction, pause=pause, callback=callback)
 
     def __do_slide(
         self,

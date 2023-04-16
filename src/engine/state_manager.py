@@ -2,6 +2,7 @@ from typing import Optional
 
 import pygame as pg
 
+from src.board_selection.board_selection_state import BoardSelectionState
 from src.engine.state.state import State, StateType
 from src.game.game_state import GameState
 from src.main_menu.main_menu_state import MainMenuState
@@ -13,6 +14,7 @@ class StateManager():
     def __init__(self) -> None:
         self.__states : tuple[State, ...] = (
             MainMenuState(),
+            BoardSelectionState(),
             GameState()
         )
         self.__current_state : Optional[State] = None
