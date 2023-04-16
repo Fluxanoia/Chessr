@@ -1,3 +1,6 @@
+name:5x5
+desc:A 5x5 chess board.
+
 w:5
 h:5
 

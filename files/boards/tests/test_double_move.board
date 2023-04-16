@@ -1,8 +1,12 @@
-# A board for testing that you can block a en passant.
+name:Test 2
+desc:Test 2.
 
 w:5
 h:3
+
+turn:b
+
 b :b3
+
 w :c1
 wK:c2
-turn:b

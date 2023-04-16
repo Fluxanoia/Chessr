@@ -1,4 +1,5 @@
-# A board for testing that you can block a checkmate with a double move.
+name:Micro 4x5
+desc:A 4x5 chess board in micro format.
 
 w:4
 h:5

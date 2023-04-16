@@ -1,4 +1,5 @@
-# A board for testing en passant and double moves.
+name:Test 3
+desc:Test 3.
 
 w:2
 h:3
