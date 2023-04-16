@@ -4,8 +4,8 @@ import pygame as pg
 
 from src.engine.group_manager import GroupType
 from src.logic.board import Board
-from src.sprites.board_cell import BoardCell
-from src.ui.button import Button
+from src.sprites.board.board_cell import BoardCell
+from src.sprites.ui.button import Button
 from src.utils.enums import Anchor, PendingMoveType, PieceType
 from src.utils.helpers import IntVector
 

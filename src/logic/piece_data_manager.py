@@ -9,7 +9,7 @@ from src.logic.logic_piece import LogicPiece
 from src.logic.move_data import MoveData, MoveType
 from src.logic.piece_data import PieceData
 from src.logic.piece_tag import PieceTag, PieceTagType
-from src.sprites.board_cell import BoardCell
+from src.sprites.board.board_cell import BoardCell
 from src.utils.enums import (LogicState, PendingMoveType, PieceColour,
                              PieceType, Side, enum_as_list)
 from src.utils.helpers import IntVector, add_vectors, inbounds, is_empty

@@ -1,6 +1,6 @@
 from typing import Optional
 
-from src.sprites.piece import LogicPiece
+from src.sprites.board.piece import LogicPiece
 from src.utils.helpers import IntVector
 
 

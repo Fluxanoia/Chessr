@@ -8,9 +8,9 @@ from src.engine.state import State, StateType
 from src.logic.board import Board, BoardCell, BoardEventType
 from src.logic.pending_move_action import PendingMoveAction
 from src.logic.piece_data_manager import PieceDataManager
-from src.sprites.piece import Piece
-from src.ui.button import Button
-from src.ui.text import Text
+from src.sprites.board.piece import Piece
+from src.sprites.ui.button import Button
+from src.sprites.ui.text import Text
 from src.utils.enums import (Anchor, CellHighlightType, Direction, LogicState,
                              Side, ViewState)
 from src.utils.helpers import IntVector, get_coord_text

@@ -2,8 +2,8 @@ import pygame as pg
 
 from src.engine.group_manager import GroupType
 from src.engine.state import State, StateType
-from src.ui.button import Button
-from src.ui.text import Text
+from src.sprites.ui.button import Button
+from src.sprites.ui.text import Text
 from src.utils.enums import Anchor, Direction, ViewState
 
 

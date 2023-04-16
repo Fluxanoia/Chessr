@@ -4,7 +4,7 @@ from typing import Callable
 import pygame as pg
 
 from src.engine.group_manager import DrawingPriority
-from src.ui.text import Text
+from src.sprites.ui.text import Text
 from src.utils.enums import Anchor, ArrayEnum
 from src.utils.helpers import Colour, FloatVector, IntVector
 from src.utils.sprite import ChessrSprite, GroupType

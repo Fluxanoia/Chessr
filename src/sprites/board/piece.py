@@ -4,7 +4,7 @@ import pygame as pg
 
 from src.engine.factory import Factory
 from src.logic.logic_piece import LogicPiece
-from src.sprites.piece_shadow import PieceShadow
+from src.sprites.board.piece_shadow import PieceShadow
 from src.utils.enums import Anchor, PieceColour, PieceType, Side
 from src.utils.helpers import FloatVector, clamp
 from src.utils.sprite import ChessrSprite, GroupType

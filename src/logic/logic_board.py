@@ -2,8 +2,8 @@ from typing import Callable, Optional
 
 from src.logic.move_data import MoveType
 from src.logic.piece_tag import PieceTag, PieceTagType
-from src.sprites.board_cell import LogicCell
-from src.sprites.piece import LogicPiece
+from src.sprites.board.board_cell import LogicCell
+from src.sprites.board.piece import LogicPiece
 from src.utils.enums import PendingMoveType
 from src.utils.helpers import IntVector, inbounds
 
