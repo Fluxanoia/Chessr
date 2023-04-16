@@ -5,10 +5,9 @@ import pygame as pg
 from src.engine.config import Config
 from src.engine.factory import Factory
 from src.engine.spritesheets.board_spritesheet import BoardSpritesheet
-from src.game.logic.board_event import (BoardDataType, BoardEvent,
-                                        BoardEventType)
-from src.game.logic.logic_board import LogicBoard, MoveSupplier
-from src.game.sprites.board_cell import BoardCell
+from src.logic.board_event import BoardDataType, BoardEvent, BoardEventType
+from src.logic.logic_board import LogicBoard, MoveSupplier
+from src.sprites.board_cell import BoardCell
 from src.utils.enums import BoardColour, CellColour, MouseButton
 from src.utils.helpers import FloatVector, IntVector
 from src.utils.sprite import GroupType

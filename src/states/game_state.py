@@ -5,10 +5,10 @@ import pygame as pg
 
 from src.engine.group_manager import GroupType
 from src.engine.state import State, StateType
-from src.game.logic.board import Board, BoardCell, BoardEventType
-from src.game.logic.pending_move_action import PendingMoveAction
-from src.game.logic.piece_data_manager import PieceDataManager
-from src.game.sprites.piece import Piece
+from src.logic.board import Board, BoardCell, BoardEventType
+from src.logic.pending_move_action import PendingMoveAction
+from src.logic.piece_data_manager import PieceDataManager
+from src.sprites.piece import Piece
 from src.ui.button import Button
 from src.ui.text import Text
 from src.utils.enums import (Anchor, CellHighlightType, Direction, LogicState,

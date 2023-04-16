@@ -4,9 +4,9 @@ import pygame as pg
 
 from src.engine.factory import Factory
 from src.engine.spritesheets.board_spritesheet import BoardSpritesheet
-from src.game.logic.logic_cell import LogicCell
-from src.game.sprites.board_cell_highlight import BoardCellHighlight
-from src.game.sprites.piece import LogicPiece, Piece
+from src.logic.logic_cell import LogicCell
+from src.sprites.board_cell_highlight import BoardCellHighlight
+from src.sprites.piece import LogicPiece, Piece
 from src.utils.enums import (BoardColour, CellColour, CellHighlightType,
                              PieceColour, PieceType, Side)
 from src.utils.helpers import FloatVector, IntVector

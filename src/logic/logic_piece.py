@@ -1,6 +1,6 @@
 from typing import Iterable, Optional
 
-from src.game.logic.piece_tag import PieceTag, PieceTagType
+from src.logic.piece_tag import PieceTag, PieceTagType
 from src.utils.enums import PieceType, Side
 
 
