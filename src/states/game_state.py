@@ -4,8 +4,8 @@ from typing import Optional
 import pygame as pg
 
 from src.engine.group_manager import GroupType
-from src.engine.state.state import State, StateType
-from src.game.board import Board, BoardCell, BoardEventType
+from src.engine.state import State, StateType
+from src.game.logic.board import Board, BoardCell, BoardEventType
 from src.game.logic.pending_move_action import PendingMoveAction
 from src.game.logic.piece_data_manager import PieceDataManager
 from src.game.sprites.piece import Piece

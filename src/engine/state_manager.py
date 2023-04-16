@@ -2,10 +2,10 @@ from typing import Optional
 
 import pygame as pg
 
-from src.board_selection.board_selection_state import BoardSelectionState
-from src.engine.state.state import State, StateType
-from src.game.game_state import GameState
-from src.main_menu.main_menu_state import MainMenuState
+from src.engine.state import State, StateType
+from src.states.board_selection_state import BoardSelectionState
+from src.states.game_state import GameState
+from src.states.main_menu_state import MainMenuState
 from src.utils.enums import enum_as_list
 
 

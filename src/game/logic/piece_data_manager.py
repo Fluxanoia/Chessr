@@ -3,7 +3,7 @@ from typing import Callable, Optional
 
 from src.engine.factory import Factory
 from src.engine.file_manager import PathLike
-from src.game.board import Board
+from src.game.logic.board import Board
 from src.game.logic.logic_board import LogicBoard, Move, Moves
 from src.game.logic.logic_piece import LogicPiece
 from src.game.logic.move_data import MoveData, MoveType
