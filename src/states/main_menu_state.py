@@ -1,3 +1,5 @@
+from typing import Any
+
 import pygame as pg
 
 from src.engine.group_manager import GroupType
@@ -41,7 +43,7 @@ class MainMenuState(State):
 
 #region Game Loop Methods
 
-    def start(self) -> None:
+    def start(self, data : Any) -> None:
         self.__title_text.do_slide(ViewState.VISIBLE, pause=200)
 
     def stop(self) -> None:

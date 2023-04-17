@@ -1,134 +1,16 @@
-from functools import reduce
 from typing import Callable, Optional
 
-from src.engine.factory import Factory
-from src.engine.file_manager import PathLike
-from src.logic.board import Board
 from src.logic.logic_board import LogicBoard, Move, Moves
 from src.logic.logic_piece import LogicPiece
-from src.logic.move_data import MoveData, MoveType
-from src.logic.piece_data import PieceData
+from src.logic.move_data import MoveType
+from src.logic.piece_move_calculator import PieceMoveCalculator
+from src.logic.piece_move_calculators import PieceMoveCalculators
 from src.logic.piece_tag import PieceTag, PieceTagType
-from src.sprites.board.board_cell import BoardCell
-from src.utils.enums import (LogicState, PendingMoveType, PieceColour,
-                             PieceType, Side, enum_as_list)
+from src.utils.enums import LogicState, PendingMoveType, PieceType, Side
 from src.utils.helpers import IntVector, add_vectors, inbounds, is_empty
 
 
-class PieceDataManager():
-
-    def __init__(self) -> None:
-        self.__data : dict[PieceType, PieceData] = {
-            PieceType.QUEEN : PieceData('Q', (
-                MoveData((1, 0), True, True),
-                MoveData((1, 1), True, True)
-            )),
-            PieceType.KING : PieceData('K', (
-                MoveData((1, 0), True, False),
-                MoveData((1, 1), True, False)
-            )),
-            PieceType.BISHOP : PieceData('B', (
-                MoveData((1, 1), True, True),
-            )),
-            PieceType.ROOK : PieceData('R', (
-                MoveData((1, 0), True, True),
-            )),
-            PieceType.KNIGHT : PieceData('N', (
-                MoveData((2, 1), True, False),
-                MoveData((2, -1), True, False),
-            )),
-            PieceType.PAWN : PieceData(' ', (
-                MoveData((-1, 0), False, False, (MoveType.MOVE,)),
-                MoveData((-1, -1), False, False, (MoveType.ATTACK,)),
-                MoveData((-1, 1), False, False, (MoveType.ATTACK,))
-            ))
-        }
-
-        if not all(map(lambda p : p in self.__data.keys(), enum_as_list(PieceType))):
-            raise SystemExit('Some piece types are undefined.')
-
-#region Board Creation
-
-    def load_board(self, board : Board, path : PathLike = 'default.board') -> Side:
-        file_data = Factory.get().file_manager.load_board(path)
-
-        if file_data is None:
-            raise SystemExit('The board file data could not be found.')
-
-        width, height = None, None
-        for key, value in file_data.items():
-            if key == 'w':
-                width = int(value)
-            elif key == 'h':
-                height = int(value)
-
-        if width is None or height is None or width < 0 or height < 0:
-            raise SystemError('Invalid width and height for board, ' \
-                + f'width: \'{width}\', height: \'{height}\'.')
-
-        board.reset(width, height)
-
-        def get_piece_colour(side : Side) -> PieceColour:
-            if side == Side.FRONT:
-                return PieceColour.WHITE
-            if side == Side.BACK:
-                return PieceColour.BLACK
-            raise SystemExit(f'Unexpected side value \'{side}\'.')
-
-        turn = Side.FRONT
-
-        for key, value in file_data.items():
-            if not len(key) == 2:
-                if key == 'turn':
-                    turn = self.__get_side_from_text(value)
-            else:
-                side = self.__get_side_from_text(key[0])
-                piece = self.__get_piece_from_text(key[1])
-                coords = map(lambda c : self.__get_coordinate_from_text(c, height), value.split(' '))
-                for (i, j) in coords:
-                    cell = board.at(i, j)
-                    if cell is None:
-                        continue
-                    if not isinstance(cell, BoardCell):
-                        raise SystemExit('Expected display element.')    
-                    cell.add_piece(get_piece_colour(side), piece, side)
-
-        return turn
-
-    def __get_piece_from_text(self, c : str) -> PieceType:
-        for piece_type, piece_data in self.__data.items():
-            if piece_data.char == c:
-                return piece_type
-        raise SystemExit(f'Invalid piece character \'{c}\'.')
-
-    def __get_side_from_text(self, c : str) -> Side:
-        if c == 'w':
-            return Side.FRONT
-        if c == 'b':
-            return Side.BACK
-        raise SystemExit(f'Invalid side character \'{c}\'.')
-
-    def __get_coordinate_from_text(self, coord : str, board_height : int) -> IntVector:
-        row = ''
-        column = ''
-        for char in coord:
-            alpha = char.isalpha()
-            if (not char.isdigit() and not alpha) \
-                or (alpha and len(row) > 0):
-                raise SystemExit(f'Incorrect coordinate format \'{coord}\'.')
-            if char.isalpha():
-                column += char
-            else:
-                row += char
-
-        if len(row) == 0 or len(column) == 0:
-            raise SystemExit(f'Incorrect coordinate format \'{coord}\'.')
-         
-        i = board_height - int(row)
-        j = reduce(lambda r, x: r * 26 + x, map(lambda x : ord(x.lower()) - ord('a'), column), 0)
-        return (i, j)
-
-#endregion
+class MoveLogic():
 
 #region Game State
 
@@ -222,6 +104,8 @@ class PieceDataManager():
 
         moves_grid : list[tuple[Optional[Moves]]] = []
 
+        piece_move_calculators = PieceMoveCalculators.get()
+
         for i in range(logic_board.height):
             row : list[Optional[Moves]] = []
             for j in range(logic_board.width):
@@ -230,7 +114,9 @@ class PieceDataManager():
                 if piece is None:
                     row.append(None)
                 else:
-                    moves = self.__data[piece.type].get_moves(logic_board, piece.side, gxy)
+                    moves = piece_move_calculators \
+                        .get_calculator(piece.type) \
+                        .get_moves(logic_board, piece.side, gxy)
 
                     for move in moves.get_all_moves():
                         self.__supply_pending_action(logic_board, piece, move)
@@ -249,7 +135,7 @@ class PieceDataManager():
         move : Move
     ) -> None:
         if (piece.type == PieceType.PAWN
-            and PieceData.get_away_row(logic_board, piece.side) == move.gxy[0]):
+            and PieceMoveCalculator.get_away_row(logic_board, piece.side) == move.gxy[0]):
             move.set_pending_action(PendingMoveType.PIECE_PROMOTION)
 
     def __supply_manoeuvres(
@@ -375,7 +261,7 @@ class PieceDataManager():
             or piece.has_tag(PieceTagType.HAS_MOVED):
             return tuple()
 
-        forward_vector = PieceData.get_forward_vector(piece.side)
+        forward_vector = PieceMoveCalculator.get_forward_vector(piece.side)
         inbetween_gxy = add_vectors(gxy, forward_vector)
         final_gxy = add_vectors(inbetween_gxy, forward_vector)
         if not inbounds(logic_board.width, logic_board.height, inbetween_gxy) \
@@ -409,7 +295,7 @@ class PieceDataManager():
 
         manoeuvres : list[IntVector] = []
 
-        forward_vector = PieceData.get_forward_vector(piece.side)
+        forward_vector = PieceMoveCalculator.get_forward_vector(piece.side)
         en_passant_vectors = ((0, -1), (0, 1))
         for en_passant_vector in en_passant_vectors:
             en_passant_gxy = add_vectors(gxy, en_passant_vector)

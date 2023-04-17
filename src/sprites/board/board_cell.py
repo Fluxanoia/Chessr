@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import NoReturn, Optional
 
 import pygame as pg
 
@@ -108,5 +108,5 @@ class BoardCell(ChessrSprite, LogicCell):
         return (rect_x + offset, rect_y + rect_width - offset)
 
     @staticmethod
-    def __raise_display_cast_error():
+    def __raise_display_cast_error() -> NoReturn:
         raise SystemExit('There was an attempt to set the piece of a display cell to a logic piece.')

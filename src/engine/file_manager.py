@@ -46,7 +46,10 @@ class FileManager():
         pathlike : PathLike
     ) -> Optional[dict[str, str]]:
         path_object = self.__get_path_object(pathlike)
-        return self.load_file(Path(('files', 'boards')).get_relative_path(path_object))
+        return self.load_file(self.__get_boards_folder().get_relative_path(path_object))
+
+    def get_board_paths(self):
+        return self.get_files_in_folder(self.__get_boards_folder(), True)
 
     def load_file(
         self,
@@ -94,6 +97,17 @@ class FileManager():
             for (x, y) in content.items():
                 file.write(str(x) + FileManager.DELIM + str(y) + '\n')
 
+    def get_files_in_folder(self, pathlike : PathLike, recursive : bool) -> tuple[Path, ...]:
+        path = self.__get_path_object(pathlike).get_literal_path()
+        paths : list[Path] = []
+        for name in os.listdir(path):
+            path_object = self.__get_path_object((path, name))
+            if os.path.isfile(path_object.get_literal_path()):
+                paths.append(path_object)
+            elif recursive:
+                paths.extend(self.get_files_in_folder(path_object.get_literal_path(), True))
+        return tuple(paths)
+
     def __get_path_object(self, obj : PathLike) -> Path:
         if isinstance(obj, Path):
             return obj
@@ -104,3 +118,6 @@ class FileManager():
 
     def __exists(self, path : str) -> bool:
         return os.path.exists(path)
+    
+    def __get_boards_folder(self) -> Path:
+        return Path(('files', 'boards'))

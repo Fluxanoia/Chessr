@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Any, Optional
 
 import pygame as pg
 
@@ -28,13 +28,13 @@ class StateManager():
         for state in self.__states:
             state.provide_state_changer(self.set_state)
 
-        self.set_state(StateType.MAIN_MENU)
+        self.set_state(StateType.MAIN_MENU, None)
 
-    def set_state(self, state_type : StateType):
+    def set_state(self, state_type : StateType, data : Any):
         if not self.__current_state is None:
             self.__current_state.stop()
         self.__current_state = next(x for x in self.__states if x.state_type == state_type)
-        self.__current_state.start()
+        self.__current_state.start(data)
 
     def update(self) -> None:
         if not self.__current_state is None:

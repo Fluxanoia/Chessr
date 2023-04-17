@@ -1,5 +1,5 @@
 from enum import auto
-from typing import Callable
+from typing import Any, Callable
 
 import pygame as pg
 
@@ -16,19 +16,19 @@ class State():
     def __init__(self, state_type : StateType) -> None:
         self.__state_type = state_type
 
-    def provide_state_changer(self, state_changer : Callable[[StateType], None]):
+    def provide_state_changer(self, state_changer : Callable[[StateType, Any], None]):
         self.__state_changer = state_changer
 
     @property
     def state_type(self):
         return self.__state_type
     
-    def change_state(self, state_type : StateType):
-        self.__state_changer(state_type)
+    def change_state(self, state_type : StateType, data : Any = None):
+        self.__state_changer(state_type, data)
     
 #region Game Loop Methods
 
-    def start(self) -> None:
+    def start(self, data : Any) -> None:
         pass
 
     def stop(self) -> None:

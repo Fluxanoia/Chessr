@@ -4,7 +4,7 @@ from src.utils.enums import Side
 from src.utils.helpers import IntVector, add_vectors
 
 
-class PieceData:
+class PieceMoveCalculator:
 
     def __init__(
         self,
@@ -56,15 +56,15 @@ class PieceData:
 
     @staticmethod
     def get_forward_vector(side : Side):
-        return (1, 0) if PieceData.do_flip(side) else (-1, 0)
+        return (1, 0) if PieceMoveCalculator.do_flip(side) else (-1, 0)
     
     @staticmethod
     def get_home_row(logic_board : LogicBoard, side : Side):
-        return 0 if PieceData.do_flip(side) else logic_board.height - 1
+        return 0 if PieceMoveCalculator.do_flip(side) else logic_board.height - 1
     
     @staticmethod
     def get_away_row(logic_board : LogicBoard, side : Side):
-        return 0 if not PieceData.do_flip(side) else logic_board.height - 1
+        return 0 if not PieceMoveCalculator.do_flip(side) else logic_board.height - 1
 
     @staticmethod
     def do_flip(side : Side):

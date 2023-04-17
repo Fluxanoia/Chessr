@@ -3,7 +3,7 @@ from typing import Callable
 import pygame as pg
 
 from src.engine.group_manager import GroupType
-from src.logic.board import Board
+from src.sprites.board.board import Board
 from src.sprites.board.board_cell import BoardCell
 from src.sprites.ui.button import Button
 from src.utils.enums import Anchor, PendingMoveType, PieceType

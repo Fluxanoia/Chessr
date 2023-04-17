@@ -1,13 +1,15 @@
 from threading import Thread
-from typing import Optional
+from typing import Any, Optional
 
 import pygame as pg
 
 from src.engine.group_manager import GroupType
 from src.engine.state import State, StateType
-from src.logic.board import Board, BoardCell, BoardEventType
+from src.logic.board_applier import BoardApplier
+from src.logic.board_data import BoardData
+from src.logic.move_logic import MoveLogic
 from src.logic.pending_move_action import PendingMoveAction
-from src.logic.piece_data_manager import PieceDataManager
+from src.sprites.board.board import Board, BoardCell, BoardEventType
 from src.sprites.board.piece import Piece
 from src.sprites.ui.button import Button
 from src.sprites.ui.text import Text
@@ -22,8 +24,9 @@ class GameState(State):
     def __init__(self) -> None:
         super().__init__(StateType.GAME)
 
-        self.__piece_data_manager = PieceDataManager()
-        self.__board = Board(self.__piece_data_manager.supply_moves)
+        self.__board_applier = BoardApplier()
+        self.__move_logic = MoveLogic()
+        self.__board = Board(self.__move_logic.supply_moves)
 
         scale = self.__board.scale
         self.__turn_text = Text(
@@ -73,13 +76,17 @@ class GameState(State):
 
 #region Game Loop Methods
 
-    def start(self) -> None:
+    def start(self, data : Any) -> None:
+        if not isinstance(data, BoardData):
+            raise SystemExit('The GameState requires board data to initialise.')
+
         self.__state : LogicState = LogicState.NONE
         self.__pending_move_action : Optional[PendingMoveAction] = None 
         self.__processing_thread : Optional[Thread] = None
         self.__selected : Optional[IntVector] = None
 
-        self.__turn = self.__piece_data_manager.load_board(self.__board, '5x5.board')
+        self.__turn = data.starting_turn
+        self.__board_applier.apply_board(self.__board, data)
 
         scale = self.__board.scale
         board_bounds = self.__board.pixel_bounds
@@ -251,7 +258,7 @@ class GameState(State):
             self.__state_text.do_slide(ViewState.VISIBLE, pause=200)
 
         def process():
-            self.__state = self.__piece_data_manager.get_state(self.__board, self.__turn)
+            self.__state = self.__move_logic.get_state(self.__board, self.__turn)
         self.__processing_thread = Thread(target=process)
         self.__processing_thread.start()
 
