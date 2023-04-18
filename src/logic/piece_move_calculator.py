@@ -37,12 +37,12 @@ class PieceMoveCalculator:
                 if is_attack:
                     moves.append(Move(cell, MoveType.ATTACK, False))
                 return move_data.expand
-            else:
-                if piece.side == side:
-                    return False
-                if is_attack:
-                    moves.append(Move(cell, MoveType.ATTACK, True))
+            
+            if piece.side == side:
                 return False
+            if is_attack:
+                moves.append(Move(cell, MoveType.ATTACK, True))
+            return False
 
         flip = self.do_flip(side)
 

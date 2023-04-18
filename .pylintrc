@@ -62,26 +62,20 @@ confidence=
 # --enable=similarities". If you want to run only the classes checker, but have
 # no Warning level messages displayed, use "--disable=all --enable=classes
 # --disable=W".
-disable=trailing-whitespace,
-        consider-iterating-dictionary,
-        too-many-arguments,
-        too-few-public-methods,
-        attribute-defined-outside-init,
-        wrong-import-position,
-        multiple-statements,
-        invalid-name,
-        missing-function-docstring,
-        missing-module-docstring,
-        missing-class-docstring,
-        raw-checker-failed,
-        bad-inline-option,
-        locally-disabled,
-        file-ignored,
-        suppressed-message,
-        useless-suppression,
-        deprecated-pragma,
-        use-symbolic-message-instead,
-        pointless-string-statement
+disable=consider-iterating-dictionary,
+      duplicate-code,
+      missing-function-docstring,
+      missing-module-docstring,
+      missing-class-docstring,
+      pointless-string-statement,
+      trailing-whitespace,
+      too-many-locals,
+      too-many-branches,
+      too-many-instance-attributes,
+      too-many-return-statements,
+      too-many-arguments,
+      too-few-public-methods,
+      unused-argument
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option
@@ -144,12 +138,7 @@ attr-naming-style=snake_case
 #attr-rgx=
 
 # Bad variable names which should always be refused, separated by a comma.
-bad-names=foo,
-          bar,
-          baz,
-          toto,
-          tutu,
-          tata
+bad-names=
 
 # Bad variable names regexes, separated by a comma. If names match any regex,
 # they will always be refused
@@ -188,16 +177,11 @@ function-naming-style=snake_case
 #function-rgx=
 
 # Good variable names which should always be accepted, separated by a comma.
-good-names=i,
-           j,
-           k,
-           ex,
-           Run,
-           _
+good-names=Chessr,_
 
 # Good variable names regexes, separated by a comma. If names match any regex,
 # they will always be accepted
-good-names-rgxs=
+good-names-rgxs=^[_a-z][_a-z0-9]?$
 
 # Include a hint for the correct naming format with invalid-name.
 include-naming-hint=no
@@ -260,7 +244,7 @@ indent-after-paren=4
 indent-string='    '
 
 # Maximum number of characters on a single line.
-max-line-length=100
+max-line-length=120
 
 # Maximum number of lines in a module.
 max-module-lines=1000
@@ -288,9 +272,7 @@ logging-modules=logging
 [MISCELLANEOUS]
 
 # List of note tags to take in consideration, separated by a comma.
-notes=FIXME,
-      XXX,
-      TODO
+notes=TODO
 
 # Regular expression of note tags to take in consideration.
 #notes-rgx=

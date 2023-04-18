@@ -24,6 +24,21 @@ class GameState(State):
     def __init__(self) -> None:
         super().__init__(StateType.GAME)
 
+        self.__board_applier : BoardApplier
+        self.__move_logic : MoveLogic
+        self.__turn : Side
+        self.__board : Board
+        
+        self.__turn_text : Text
+        self.__state_text : Text
+        self.__coords_text : Text
+        self.__back_button : Button
+
+        self.__state : LogicState = LogicState.NONE
+        self.__pending_move_action : Optional[PendingMoveAction] = None
+        self.__processing_thread : Optional[Thread] = None
+        self.__selected : Optional[IntVector] = None
+
 #region Game Loop Methods
 
     def load(self) -> None:
@@ -42,7 +57,7 @@ class GameState(State):
         self.__turn_text.add_text(Side.FRONT, 'WHITE', (240, 240, 240))
         self.__turn_text.add_text(Side.BACK, 'BLACK', (240, 240, 240))
 
-        self.__state_text : Text = Text(
+        self.__state_text = Text(
             (0, 0),
             36,
             Anchor.TOP_LEFT,
@@ -55,7 +70,7 @@ class GameState(State):
         self.__state_text.add_text(LogicState.CHECKMATE, 'Checkmate', (240, 240, 240))
         self.__state_text.add_text(LogicState.STALEMATE, 'Stalemate', (240, 240, 240))
 
-        self.__coords_text : Text = Text(
+        self.__coords_text = Text(
             (0, 0),
             36,
             Anchor.BOTTOM_LEFT,
@@ -78,10 +93,10 @@ class GameState(State):
         if not isinstance(data, BoardData):
             raise SystemExit('The GameState requires board data to initialise.')
 
-        self.__state : LogicState = LogicState.NONE
-        self.__pending_move_action : Optional[PendingMoveAction] = None 
-        self.__processing_thread : Optional[Thread] = None
-        self.__selected : Optional[IntVector] = None
+        self.__state = LogicState.NONE
+        self.__pending_move_action = None 
+        self.__processing_thread = None
+        self.__selected = None
 
         self.__turn = data.starting_turn
         self.__board_applier.apply_board(self.__board, data)

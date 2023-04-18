@@ -124,58 +124,50 @@ def tween(tween_type : TweenType, n : float) -> float:
 def __ease_in_out_quad(n : float) -> float:
     if n < 0.5:
         return 2 * n ** 2
-    else:
-        n = n * 2 - 1
-        return -0.5 * (n * (n - 2) - 1)
+    n = n * 2 - 1
+    return -0.5 * (n * (n - 2) - 1)
 
 def __ease_in_out_cubic(n : float) -> float:
     n = 2 * n
     if n < 1:
         return 0.5 * n ** 3
-    else:
-        n = n - 2
-        return 0.5 * (n ** 3 + 2)
+    n = n - 2
+    return 0.5 * (n ** 3 + 2)
 
 def __ease_in_out_quart(n : float) -> float:
     n = 2 * n
     if n < 1:
         return 0.5 * n**4
-    else:
-        n = n - 2
-        return -0.5 * (n**4 - 2)
+    n = n - 2
+    return -0.5 * (n**4 - 2)
 
 def __ease_in_out_quint(n : float) -> float:
     n = 2 * n
     if n < 1:
         return 0.5 * n ** 5
-    else:
-        n = n - 2
-        return 0.5 * (n ** 5 + 2)
+    n = n - 2
+    return 0.5 * (n ** 5 + 2)
 
 def __ease_in_expo(n : float) -> float:
     if n == 0:
         return 0
-    else:
-        return 2 ** (10 * (n - 1))
+    return 2 ** (10 * (n - 1))
 
 def __ease_out_expo(n : float) -> float:
     if n == 1:
         return 1
-    else:
-        return -(2 ** (-10 * n)) + 1
+    return -(2 ** (-10 * n)) + 1
 
 def __ease_in_out_expo(n : float) -> float:
     if n == 0:
         return 0
-    elif n == 1:
+    if n == 1:
         return 1
-    else:
-        n = n * 2
-        if n < 1:
-            return 0.5 * 2 ** (10 * (n - 1))
-        else:
-            n -= 1
-            return 0.5 * (-1 * (2 ** (-10 * n)) + 2)
+    n = n * 2
+    if n < 1:
+        return 0.5 * 2 ** (10 * (n - 1))
+    n -= 1
+    return 0.5 * (-1 * (2 ** (-10 * n)) + 2)
 
 def __ease_out_circ(n : float) -> float:
     n -= 1
@@ -185,9 +177,8 @@ def __ease_in_out_circ(n : float) -> float:
     n = n * 2
     if n < 1:
         return -0.5 * (math.sqrt(1 - n ** 2) - 1)
-    else:
-        n = n - 2
-        return 0.5 * (math.sqrt(1 - n ** 2) + 1)
+    n = n - 2
+    return 0.5 * (math.sqrt(1 - n ** 2) + 1)
 
 def __ease_in_elastic(n : float, amplitude : float = 1, period : float = 0.3) -> float:
     return 1 - __ease_out_elastic(1 - n, amplitude = amplitude, period = period)
@@ -204,8 +195,7 @@ def __ease_in_out_elastic(n : float, amplitude : float = 1, period : float = 0.5
     n *= 2
     if n < 1:
         return __ease_in_elastic(n, amplitude = amplitude, period = period) / 2
-    else:
-        return __ease_out_elastic(n - 1, amplitude = amplitude, period = period) / 2 + 0.5
+    return __ease_out_elastic(n - 1, amplitude = amplitude, period = period) / 2 + 0.5
 
 def __ease_in_back(n : float, s : float = 1.70158) -> float:
     return n * n * ((s + 1) * n - s)
@@ -219,10 +209,9 @@ def __ease_in_out_back(n : float, s : float = 1.70158) -> float:
     if n < 1:
         s *= 1.525
         return 0.5 * (n * n * ((s + 1) * n - s))
-    else:
-        n -= 2
-        s *= 1.525
-        return 0.5 * (n * n * ((s + 1) * n + s) + 2)
+    n -= 2
+    s *= 1.525
+    return 0.5 * (n * n * ((s + 1) * n + s) + 2)
 
 def __ease_in_bounce(n : float) -> float:
     return 1 - __ease_out_bounce(1 - n)
@@ -230,18 +219,16 @@ def __ease_in_bounce(n : float) -> float:
 def __ease_out_bounce(n : float) -> float:
     if n < (1 / 2.75):
         return 7.5625 * n * n
-    elif n < (2 / 2.75):
+    if n < (2 / 2.75):
         n -= (1.5 / 2.75)
         return 7.5625 * n * n + 0.75
-    elif n < (2.5 / 2.75):
+    if n < (2.5 / 2.75):
         n -= (2.25 / 2.75)
         return 7.5625 * n * n + 0.9375
-    else:
-        n -= (2.65 / 2.75)
-        return 7.5625 * n * n + 0.984375
+    n -= (2.65 / 2.75)
+    return 7.5625 * n * n + 0.984375
 
 def __ease_in_out_bounce(n : float) -> float:
     if n < 0.5:
         return __ease_in_bounce(n * 2) * 0.5
-    else:
-        return __ease_out_bounce(n * 2 - 1) * 0.5 + 0.5
+    return __ease_out_bounce(n * 2 - 1) * 0.5 + 0.5

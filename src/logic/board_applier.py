@@ -15,7 +15,8 @@ class BoardApplier:
                 continue
             if not isinstance(cell, BoardCell):
                 raise SystemExit('Expected display element.')    
-            cell.add_piece(self.__get_piece_colour(piece_data.side), piece_data.type, piece_data.side)
+            cell.add_piece(
+                self.__get_piece_colour(piece_data.side), piece_data.type, piece_data.side)
 
     def __get_piece_colour(self, side : Side) -> PieceColour:
         if side == Side.FRONT:

@@ -10,12 +10,10 @@ class State():
 
     def __init__(self, state_type : StateType) -> None:
         self.__state_type = state_type
+        self.__state_changer : Callable[[StateType, Any], None] = lambda _x, _y : None
 
     def provide_state_changer(self, state_changer : Callable[[StateType, Any], None]):
         self.__state_changer = state_changer
-
-    def provide_bounds_getter(self, bounds_getter : Callable[[], pg.rect.Rect]):
-        self.__bounds_getter = bounds_getter
 
     @property
     def state_type(self):

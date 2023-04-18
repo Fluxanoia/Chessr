@@ -13,6 +13,9 @@ class MainMenuState(State):
 
     def __init__(self) -> None:
         super().__init__(StateType.MAIN_MENU)
+        
+        self.__title_text : Text
+        self.__button : Button
 
 #region Game Loop Methods
 

@@ -65,7 +65,7 @@ class FileManager():
             return default
         
         data : dict[str, str] = {}
-        with open(path, 'r') as file:
+        with open(path, 'r', encoding='utf8') as file:
             for line in file:
                 if len(line) == 0 or line[0] == '#':
                     continue
@@ -93,7 +93,7 @@ class FileManager():
         if not self.__exists(path):
             self.__mkdirs(path)
         
-        with open(path, 'w+') as file:
+        with open(path, 'w+', encoding='utf8') as file:
             for (x, y) in content.items():
                 file.write(str(x) + FileManager.DELIM + str(y) + '\n')
 

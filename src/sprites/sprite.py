@@ -98,8 +98,7 @@ class ChessrSprite(pg.sprite.DirtySprite):
     def _calculate_size(self) -> FloatVector:
         if self.src_rect is None:
             return self.image.get_size() if not self.image is None else (0, 0)
-        else:
-            return self.src_rect.size
+        return self.src_rect.size
 
     def point_intersects(self, point : FloatVector) -> bool:
         if self.dst_rect is None:

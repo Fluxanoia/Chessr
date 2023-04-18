@@ -17,6 +17,12 @@ class BoardSelectionState(State):
     def __init__(self) -> None:
         super().__init__(StateType.BOARD_SELECTION)
 
+        self.__title_text : Text
+        self.__continue_button : Button
+        self.__board_data : tuple[BoardData]
+        self.__board_data_buttons : tuple[Button]
+        self.__chosen_board_data : Optional[BoardData] = None
+
 #region Game Loop Methods
 
     def load(self) -> None:
@@ -32,7 +38,6 @@ class BoardSelectionState(State):
         def set_chosen_data_action(data : BoardData):
             self.__chosen_board_data = data
 
-        self.__chosen_board_data : Optional[BoardData] = None
         self.__board_data_buttons = tuple(
             map(lambda x : Button(
                 (0, 0),
