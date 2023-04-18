@@ -36,6 +36,12 @@ class BoardCell(ChessrSprite, LogicCell):
 
         image = Factory.get().board_spritesheet.get_sheet(scale)
         ChessrSprite.__init__(self, xy, GroupType.GAME_BOARD, None, image, self.__get_src_rect(scale))
+ 
+    def delete(self):
+        if self.piece is not None:
+            self.piece.delete()
+        self.__highlight.delete()
+        ChessrSprite.delete(self)
 
     def set_position(self, xy : FloatVector, preserve_tween : bool = False) -> None:
         super().set_position(xy, preserve_tween)
