@@ -6,7 +6,7 @@ from src.engine.factory import Factory
 from src.engine.group_manager import DrawingPriority
 from src.sprites.sprite import ChessrSprite, GroupType
 from src.utils.enums import Anchor, Direction, ViewState
-from src.utils.helpers import Colour, FloatVector, IntVector, add_vectors
+from src.utils.helpers import Colour, FloatVector, IntVector
 from src.utils.tween import Tween, TweenType
 
 
@@ -74,11 +74,9 @@ class Text(ChessrSprite):
         self,
         key : Any,
         text : str,
-        colour : Colour,
-        outline_size : Optional[int] = None,
-        outline_colour : Optional[Colour] = None
+        colour : Colour
     ) -> IntVector:
-        surface = self.__get_text(text, colour, outline_size, outline_colour)
+        surface = self.__get_text(text, colour)
         
         if not self.__cache.get(key, None) is None:
             raise SystemExit('This cache key is already populated.')
@@ -95,40 +93,18 @@ class Text(ChessrSprite):
     def set_text(
         self,
         text : str,
-        colour : Colour,
-        outline_size : Optional[int] = None,
-        outline_colour : Optional[Colour] = None
+        colour : Colour
     ) -> IntVector:
-        surface = self.__get_text(text, colour, outline_size, outline_colour)
+        surface = self.__get_text(text, colour)
         self.image = surface
         return surface.get_size()
 
     def __get_text(
         self,
         text : str,
-        colour : Colour,
-        outline_size : Optional[int] = None,
-        outline_colour : Optional[Colour] = None
+        colour : Colour
     ) -> pg.surface.Surface:
-        rendered_text = self.__font.render(text, True, colour)
-        if outline_colour is None or outline_size is None:
-            return rendered_text
-            
-        rendered_outline_text = self.__font.render(text, True, outline_colour)
-        rendered_outline_text_size = rendered_outline_text.get_size()
-        surface = pg.surface.Surface(
-                add_vectors(rendered_outline_text_size, (2 * outline_size, 2 * outline_size)),
-                flags = pg.SRCALPHA)
-        
-        offsets = range(-outline_size, 2 * outline_size, 1)
-        for x in offsets:
-            for y in offsets:
-                if x == y == 0:
-                    continue
-                surface.blit(rendered_outline_text, (x + outline_size, y + outline_size))
-
-        surface.blit(rendered_text, (outline_size, outline_size))
-        return surface
+        return self.__font.render(text, True, colour)
 
 #endregion
 
@@ -156,12 +132,10 @@ class Text(ChessrSprite):
         self,
         text : str,
         colour : Colour,
-        direction : Optional[Direction] = None,
-        outline_size : Optional[int] = None,
-        outline_colour : Optional[Colour] = None
+        direction : Optional[Direction] = None
     ) -> None:
         def callback():
-            self.set_text(text, colour, outline_size, outline_colour)
+            self.set_text(text, colour)
         self.__slide_with_callback(direction, callback)
 
     def do_slide(
