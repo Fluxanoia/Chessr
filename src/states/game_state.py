@@ -24,6 +24,9 @@ class GameState(State):
     def __init__(self) -> None:
         super().__init__(StateType.GAME)
 
+#region Game Loop Methods
+
+    def load(self) -> None:
         self.__board_applier = BoardApplier()
         self.__move_logic = MoveLogic()
         self.__board = Board(self.__move_logic.supply_moves)
@@ -70,8 +73,6 @@ class GameState(State):
             GroupType.GAME_UI)
 
         self._update_view()
-
-#region Game Loop Methods
 
     def start(self, data : Any) -> None:
         if not isinstance(data, BoardData):

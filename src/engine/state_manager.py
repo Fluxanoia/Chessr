@@ -7,6 +7,7 @@ from src.engine.state import State
 from src.engine.state_type import StateType
 from src.states.board_selection_state import BoardSelectionState
 from src.states.game_state import GameState
+from src.states.loading_state import LoadingState
 from src.states.main_menu_state import MainMenuState
 from src.utils.enums import enum_as_list
 
@@ -15,6 +16,7 @@ class StateManager():
 
     def __init__(self) -> None:
         self.__states : tuple[State, ...] = (
+            LoadingState(),
             MainMenuState(),
             BoardSelectionState(),
             GameState()
@@ -30,9 +32,13 @@ class StateManager():
         for state in self.__states:
             state.provide_state_changer(self.set_state)
 
-        self.set_state(StateType.MAIN_MENU, None)
+        self.set_state(StateType.LOADING, None)
 
-    def set_state(self, state_type : StateType, data : Any):
+    def load_states(self):
+        for state in self.__states:
+            state.load()
+
+    def set_state(self, state_type : StateType, data : Any = None):
         if not self.__current_state is None:
             self.__current_state.stop()
         self.__current_state = next(x for x in self.__states if x.state_type == state_type)
@@ -57,7 +63,7 @@ class StateManager():
                 state.on_view_change(bounds)
 
     @property
-    def state_type(self):
+    def state_type(self) -> Optional[StateType]:
         if self.__current_state is None:
-            raise SystemExit('Unexpected missing state.')
+            return None
         return self.__current_state.state_type

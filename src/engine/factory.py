@@ -4,6 +4,7 @@ from src.engine.camera import Camera
 from src.engine.file_manager import FileManager
 from src.engine.group_manager import GroupManager
 from src.engine.spritesheets.board_spritesheet import BoardSpritesheet
+from src.engine.spritesheets.spinner_spritesheet import SpinnerSpritesheet
 
 
 class Factory:
@@ -24,6 +25,7 @@ class Factory:
         self.__file_manager : Optional[FileManager] = None
         self.__group_manager : Optional[GroupManager] = None
         self.__board_spritesheet : Optional[BoardSpritesheet] = None
+        self.__spinner_spritesheet : Optional[SpinnerSpritesheet] = None
 
     @property
     def camera(self) -> Camera:
@@ -48,3 +50,9 @@ class Factory:
         if self.__board_spritesheet is None:
             self.__board_spritesheet = BoardSpritesheet(self.file_manager)
         return self.__board_spritesheet
+    
+    @property
+    def spinner_spritesheet(self) -> SpinnerSpritesheet:
+        if self.__spinner_spritesheet is None:
+            self.__spinner_spritesheet = SpinnerSpritesheet(self.file_manager)
+        return self.__spinner_spritesheet

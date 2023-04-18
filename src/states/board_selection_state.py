@@ -17,35 +17,9 @@ class BoardSelectionState(State):
     def __init__(self) -> None:
         super().__init__(StateType.BOARD_SELECTION)
 
-        self.__title_text = Text(
-            (0, 0),
-            108,
-            Anchor.TOP_LEFT,
-            GroupType.BOARD_SELECTION_UI
-        )
-        self.__title_text.set_text('Board Selection', (240, 240, 240))
+#region Game Loop Methods
 
-        self.__board_data_buttons = self.__get_board_data_buttons()
-
-        self.__chosen_board_data : Optional[BoardData] = None
-
-        def action():
-            self.__title_text.do_slide(
-                ViewState.INVISIBLE,
-                callback=lambda : self.change_state(StateType.GAME, self.__chosen_board_data))
-
-        self.__continue_button = Button(
-            (0, 0),
-            'Continue',
-            action,
-            36,
-            Anchor.BOTTOM_RIGHT,
-            GroupType.BOARD_SELECTION_UI,
-            200)
-        
-        self._update_view()
-
-    def __get_board_data_buttons(self):
+    def load(self) -> None:
         board_loader = BoardLoader()
         board_data : list[BoardData] = []
         paths = Factory.get().file_manager.get_board_paths()
@@ -55,21 +29,44 @@ class BoardSelectionState(State):
 
         self.__board_data = tuple(board_data)
 
-        def set_data(data : BoardData):
+        def set_chosen_data_action(data : BoardData):
             self.__chosen_board_data = data
 
-        return tuple(
+        self.__chosen_board_data : Optional[BoardData] = None
+        self.__board_data_buttons = tuple(
             map(lambda x : Button(
                 (0, 0),
                 x.name,
-                lambda : set_data(x),
+                lambda : set_chosen_data_action(x),
                 36,
                 Anchor.TOP_LEFT,
                 GroupType.BOARD_SELECTION_UI,
                 400),
             self.__board_data))
 
-#region Game Loop Methods
+        self.__title_text = Text(
+            (0, 0),
+            108,
+            Anchor.TOP_LEFT,
+            GroupType.BOARD_SELECTION_UI
+        )
+        self.__title_text.set_text('Board Selection', (240, 240, 240))
+
+        def continue_action():
+            self.__title_text.do_slide(
+                ViewState.INVISIBLE,
+                callback=lambda : self.change_state(StateType.GAME, self.__chosen_board_data))
+
+        self.__continue_button = Button(
+            (0, 0),
+            'Continue',
+            continue_action,
+            36,
+            Anchor.BOTTOM_RIGHT,
+            GroupType.BOARD_SELECTION_UI,
+            200)
+        
+        self._update_view()
 
     def start(self, data : Any) -> None:
         self.__title_text.do_slide(ViewState.VISIBLE, pause=200)

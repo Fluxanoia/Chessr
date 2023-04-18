@@ -1,13 +1,11 @@
-from typing import Optional
+from typing import NoReturn, Optional
 
 import pygame as pg
 
-from src.engine.factory import Factory
 from src.engine.spritesheets.board_spritesheet import BoardSpritesheet
 from src.logic.board_event import BoardDataType, BoardEvent, BoardEventType
 from src.logic.logic_board import LogicBoard, MoveSupplier
 from src.sprites.board.board_cell import BoardCell
-from src.sprites.sprite import GroupType
 from src.utils.enums import BoardColour, CellColour, MouseButton
 from src.utils.helpers import FloatVector, IntVector
 
@@ -30,19 +28,19 @@ class Board(LogicBoard):
         self.__pressed_grid_position : Optional[IntVector] = None
     
     def reset(self, width : int, height : int) -> None:
+        for i in range(self.height):
+            for j in range(self.width):
+                cell = self.at(i, j)
+                if not isinstance(cell, BoardCell):
+                    self.__raise_display_cast_error()
+                cell.delete()
+
         self._width = width
         self._height = height
 
         cell_colours = (CellColour.LIGHT, CellColour.DARK)
         def calculate_cell_colour(i : int, j : int) -> CellColour:
             return cell_colours[(i + j + 1) % len(cell_colours)]
-
-        group_manager = Factory.get().group_manager
-        for group in [GroupType.GAME_BOARD, GroupType.GAME_PIECE]:
-            sprites = group_manager.get_sprites(group)
-            for priority, sprites in sprites.items():
-                for sprite in sprites:
-                    group_manager.get_group(group, priority).remove(sprite)
 
         cells : list[tuple[BoardCell]] = []
 
@@ -78,7 +76,7 @@ class Board(LogicBoard):
             for j in range(self.width):
                 sprite = self.at(i, j)
                 if not isinstance(sprite, BoardCell):
-                    continue
+                    self.__raise_display_cast_error()
                 sprite.set_position(calculate_cell_position(i, j))
 
     def mouse_down(self, event : pg.event.Event) -> bool:
@@ -108,12 +106,13 @@ class Board(LogicBoard):
         return self.__events.pop(0)
     
     def at_pixel_position(self, point : IntVector) -> Optional[IntVector]:
-        sprites = reversed(Factory.get().group_manager.get_flattened_sprites(GroupType.GAME_BOARD))
-        for sprite in sprites:
-            if not isinstance(sprite, BoardCell):
-                continue
-            if sprite.point_intersects(point):
-                return sprite.gxy
+        for i in range(self.height):
+            for j in range(self.width):
+                cell = self.at(i, j)
+                if not isinstance(cell, BoardCell):
+                    self.__raise_display_cast_error()
+                if cell.point_intersects(point):
+                    return cell.gxy
         return None
 
     @property
@@ -123,3 +122,7 @@ class Board(LogicBoard):
     @property
     def bounds(self) -> pg.Rect:
         return self.__bounds
+    
+    @staticmethod
+    def __raise_display_cast_error() -> NoReturn:
+        raise SystemExit('There was a failed attempt to cast a logic object to a display object.')

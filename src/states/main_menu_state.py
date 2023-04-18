@@ -14,6 +14,9 @@ class MainMenuState(State):
     def __init__(self) -> None:
         super().__init__(StateType.MAIN_MENU)
 
+#region Game Loop Methods
+
+    def load(self) -> None:
         self.__title_text = Text(
             (0, 0),
             108,
@@ -32,8 +35,6 @@ class MainMenuState(State):
             300)
         
         self._update_view()
-
-#region Game Loop Methods
 
     def start(self, data : Any) -> None:
         pass

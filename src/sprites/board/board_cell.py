@@ -123,4 +123,4 @@ class BoardCell(ChessrSprite, LogicCell):
 
     @staticmethod
     def __raise_display_cast_error() -> NoReturn:
-        raise SystemExit('There was an attempt to set the piece of a display cell to a logic piece.')
+        raise SystemExit('There was a failed attempt to cast a logic object to a display object.')

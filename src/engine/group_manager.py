@@ -8,6 +8,8 @@ from src.utils.enums import ArrayEnum, enum_as_list
 
 
 class GroupType(ArrayEnum):
+    LOADING = auto()
+
     MAIN_MENU_UI = auto()
     
     BOARD_SELECTION_UI = auto()
@@ -15,24 +17,6 @@ class GroupType(ArrayEnum):
     GAME_BOARD = auto()
     GAME_PIECE = auto()
     GAME_UI = auto()
-
-    @staticmethod
-    def get_group_types(state_type : StateType):
-        if state_type == StateType.MAIN_MENU:
-            return (
-                GroupType.MAIN_MENU_UI,
-            )
-        if state_type == StateType.BOARD_SELECTION:
-            return (
-                GroupType.BOARD_SELECTION_UI,
-            )
-        if state_type == StateType.GAME:
-            return (
-                GroupType.GAME_BOARD,
-                GroupType.GAME_PIECE,
-                GroupType.GAME_UI
-            )
-        raise SystemExit('Unexpected state type.')
     
 class DrawingPriority(ArrayEnum):
     MINUS_ONE = auto()
@@ -42,21 +26,44 @@ class DrawingPriority(ArrayEnum):
 class GroupManager():
 
     def __init__(self) -> None:
-        priorities = self.__get_all_priorities()
+        all_group_types = list(map(lambda x : cast(GroupType, x), enum_as_list(GroupType)))
+        all_group_types.sort()
+        self.__all_group_types = tuple(all_group_types)
+
+        priorities = list(map(lambda x : cast(DrawingPriority, x), enum_as_list(DrawingPriority)))
+        priorities.sort()
+        self.__priorities = tuple(priorities)
+
+        self.__group_types = {
+            StateType.LOADING: (
+                GroupType.LOADING,
+            ),
+            StateType.MAIN_MENU: (
+                GroupType.MAIN_MENU_UI,
+            ),
+            StateType.BOARD_SELECTION: (
+                GroupType.BOARD_SELECTION_UI,
+            ),
+            StateType.GAME: (
+                GroupType.GAME_BOARD,
+                GroupType.GAME_PIECE,
+                GroupType.GAME_UI
+            )
+        }
         self.__groups : dict[GroupType, dict[DrawingPriority, pg.sprite.LayeredDirty]] = {}
-        for t in self.__get_all_types():
+        for t in self.__all_group_types:
             self.__groups[t] = {}
-            for p in priorities:
+            for p in self.__priorities:
                 self.__groups[t][p] = pg.sprite.LayeredDirty()
 
     def update_groups(self, state_type : StateType) -> None:
-        for t in GroupType.get_group_types(state_type):
-            for p in self.__get_all_priorities():
+        for t in self.__group_types[state_type]:
+            for p in self.__priorities:
                 self.__groups[t][p].update()
 
     def draw_groups(self, screen : pg.surface.Surface, state_type : StateType) -> None:
-        for t in GroupType.get_group_types(state_type):
-            for p in self.__get_all_priorities():
+        for t in self.__group_types[state_type]:
+            for p in self.__priorities:
                 self.__groups[t][p].draw(screen)
 
     def get_group(
@@ -66,26 +73,9 @@ class GroupManager():
     ) -> pg.sprite.LayeredDirty:
         drawing_priority = DrawingPriority.NORMAL if drawing_priority is None else drawing_priority
         return self.__groups[group][drawing_priority]
-
-    def get_sprites(self, group_type : GroupType) -> dict[DrawingPriority, list[pg.sprite.Sprite]]:
-        sprites : dict[DrawingPriority, list[pg.sprite.Sprite]] = {}
-        for priority in self.__get_all_priorities():
-            sprites[priority] = self.__groups[group_type][priority].sprites()
-        return sprites
     
-    def get_flattened_sprites(self, group_type : GroupType) -> list[pg.sprite.Sprite]:
-        flattened : list[pg.sprite.Sprite] = []
-        sprites = self.get_sprites(group_type)
-        for p in self.__get_all_priorities():
-            flattened.extend(sprites[p])
-        return flattened
-
-    def __get_all_types(self) -> tuple[GroupType, ...]:
-        types = list(map(lambda x : cast(GroupType, x), enum_as_list(GroupType)))
-        types.sort()
-        return tuple(types)
-    
-    def __get_all_priorities(self) -> tuple[DrawingPriority, ...]:
-        priorities = list(map(lambda x : cast(DrawingPriority, x), enum_as_list(DrawingPriority)))
-        priorities.sort()
-        return tuple(priorities)
+    def get_groups(
+        self,
+        group : GroupType
+    ) -> tuple[pg.sprite.LayeredDirty, ...]:
+        return tuple(self.__groups[group].values())

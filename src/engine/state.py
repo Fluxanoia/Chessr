@@ -26,6 +26,9 @@ class State():
     
 #region Game Loop Methods
 
+    def load(self) -> None:
+        pass
+
     def start(self, data : Any) -> None:
         pass
 
