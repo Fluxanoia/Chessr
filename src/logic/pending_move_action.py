@@ -80,10 +80,9 @@ class PiecePromotionMoveAction(PendingMoveAction):
         if cell is None or not isinstance(cell, BoardCell):
             raise SystemExit('Expected display element.')   
 
-        pixel_bounds = cell.pixel_bounds
         buffer = 10 * board.scale
-        x = 0 if pixel_bounds is None else pixel_bounds.right + buffer
-        y = 0 if pixel_bounds is None else pixel_bounds.top
+        x = 0 if cell.dst_rect is None else cell.dst_rect.right + buffer
+        y = 0 if cell.dst_rect is None else cell.dst_rect.top
 
         buttons : list[Button] = []
 
@@ -100,7 +99,6 @@ class PiecePromotionMoveAction(PendingMoveAction):
                 text,
                 finalise_with_piece_setting,
                 12,
-                board.scale,
                 Anchor.TOP_LEFT,
                 GroupType.GAME_UI))
             

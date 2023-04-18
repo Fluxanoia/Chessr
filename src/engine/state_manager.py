@@ -2,7 +2,9 @@ from typing import Any, Optional
 
 import pygame as pg
 
-from src.engine.state import State, StateType
+from src.engine.factory import Factory
+from src.engine.state import State
+from src.engine.state_type import StateType
 from src.states.board_selection_state import BoardSelectionState
 from src.states.game_state import GameState
 from src.states.main_menu_state import MainMenuState
@@ -49,6 +51,10 @@ class StateManager():
             self.__current_state.mouse_up(event)
         if event.type == pg.MOUSEMOTION:
             self.__current_state.mouse_move(event)
+        if event.type == pg.WINDOWSIZECHANGED:
+            bounds = Factory.get().camera.bounds
+            for state in self.__states:
+                state.on_view_change(bounds)
 
     @property
     def state_type(self):

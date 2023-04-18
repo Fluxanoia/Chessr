@@ -28,37 +28,33 @@ class GameState(State):
         self.__move_logic = MoveLogic()
         self.__board = Board(self.__move_logic.supply_moves)
 
-        scale = self.__board.scale
         self.__turn_text = Text(
             (0, 0),
-            24,
-            scale,
+            36,
             Anchor.BOTTOM_RIGHT,
             GroupType.GAME_UI,
             None,
             ViewState.INVISIBLE,
             Direction.RIGHT)
-        self.__turn_text.add_text(Side.FRONT, "WHITE", (240, 240, 240))
-        self.__turn_text.add_text(Side.BACK, "BLACK", (240, 240, 240))
+        self.__turn_text.add_text(Side.FRONT, 'WHITE', (240, 240, 240))
+        self.__turn_text.add_text(Side.BACK, 'BLACK', (240, 240, 240))
 
         self.__state_text : Text = Text(
             (0, 0),
-            24,
-            scale,
+            36,
             Anchor.TOP_LEFT,
             GroupType.GAME_UI,
             None,
             ViewState.INVISIBLE,
             Direction.TOP)
-        self.__state_text.add_text(PROCESSING, "Processing...", (240, 240, 240))
-        self.__state_text.add_text(LogicState.CHECK, "Check", (240, 240, 240))
-        self.__state_text.add_text(LogicState.CHECKMATE, "Checkmate", (240, 240, 240))
-        self.__state_text.add_text(LogicState.STALEMATE, "Stalemate", (240, 240, 240))
+        self.__state_text.add_text(PROCESSING, 'Processing...', (240, 240, 240))
+        self.__state_text.add_text(LogicState.CHECK, 'Check', (240, 240, 240))
+        self.__state_text.add_text(LogicState.CHECKMATE, 'Checkmate', (240, 240, 240))
+        self.__state_text.add_text(LogicState.STALEMATE, 'Stalemate', (240, 240, 240))
 
         self.__coords_text : Text = Text(
             (0, 0),
-            16,
-            scale,
+            36,
             Anchor.BOTTOM_LEFT,
             GroupType.GAME_UI,
             None,
@@ -66,13 +62,14 @@ class GameState(State):
             Direction.LEFT)
         
         self.__back_button = Button(
-            (50, 50),
-            "Back",
+            (0, 0),
+            'Back',
             lambda : self.change_state(StateType.MAIN_MENU),
-            12,
-            scale,
+            36,
             Anchor.TOP_LEFT,
             GroupType.GAME_UI)
+
+        self._update_view()
 
 #region Game Loop Methods
 
@@ -87,16 +84,7 @@ class GameState(State):
 
         self.__turn = data.starting_turn
         self.__board_applier.apply_board(self.__board, data)
-
-        scale = self.__board.scale
-        board_bounds = self.__board.pixel_bounds
-        left, bottom = board_bounds.bottomleft
-        right = board_bounds.right
-        buffer = 10 * scale
-
-        self.__turn_text.set_position((left - buffer, bottom))
-        self.__coords_text.set_position((right + buffer, bottom))
-        self.__state_text.set_position((left, bottom + buffer))
+        self._update_view()
 
         self.__coords_text.set_state(ViewState.INVISIBLE)
         self.__state_text.set_state(ViewState.INVISIBLE)
@@ -123,7 +111,19 @@ class GameState(State):
     
 #endregion
 
-#region User Input
+#region Events
+
+    def on_view_change(self, bounds : pg.rect.Rect):
+        buffer = 50
+        self.__back_button.set_position((bounds.left + buffer, bounds.top + buffer))
+        self.__board.set_position(*bounds.center)
+
+        left, bottom = self.__board.bounds.bottomleft
+        right = self.__board.bounds.right
+
+        self.__turn_text.set_position((left - buffer, bottom))
+        self.__coords_text.set_position((right + buffer, bottom))
+        self.__state_text.set_position((left, bottom + buffer))
 
     def mouse_down(self, event : pg.event.Event) -> bool:
         if not self.__pending_move_action is None \

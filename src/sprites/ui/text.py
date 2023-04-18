@@ -4,9 +4,9 @@ import pygame as pg
 
 from src.engine.factory import Factory
 from src.engine.group_manager import DrawingPriority
+from src.sprites.sprite import ChessrSprite, GroupType
 from src.utils.enums import Anchor, Direction, ViewState
 from src.utils.helpers import Colour, FloatVector, IntVector, add_vectors
-from src.utils.sprite import ChessrSprite, GroupType
 from src.utils.tween import Tween, TweenType
 
 
@@ -16,10 +16,9 @@ class Text(ChessrSprite):
         self,
         xy : FloatVector,
         size : float,
-        scale : float,
         anchor : Anchor,
         group_type : GroupType,
-        drawing_priority : Optional[DrawingPriority],
+        drawing_priority : Optional[DrawingPriority] = None,
         state : ViewState = ViewState.VISIBLE,
         slide_direction : Optional[Direction] = None
     ):
@@ -27,10 +26,10 @@ class Text(ChessrSprite):
         self.__slide_direction : Optional[Direction] = slide_direction
         self.__slide_tween : Optional[Tween] = None
 
-        self.__font = Factory.get().file_manager.load_default_font(int(size * scale))
+        self.__font = Factory.get().file_manager.load_default_font(int(size))
         self.__cache : dict[Any, pg.surface.Surface] = {}
 
-        super().__init__(xy, group_type, drawing_priority, pg.Surface((0, 0)), scale=scale, anchor=anchor)
+        super().__init__(xy, group_type, drawing_priority, pg.Surface((0, 0)), anchor=anchor)
 
 #region Super Class Methods
 

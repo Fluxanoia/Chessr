@@ -3,14 +3,15 @@ from typing import NoReturn, Optional
 import pygame as pg
 
 from src.engine.factory import Factory
+from src.engine.group_manager import GroupType
 from src.engine.spritesheets.board_spritesheet import BoardSpritesheet
 from src.logic.logic_cell import LogicCell
 from src.sprites.board.board_cell_highlight import BoardCellHighlight
 from src.sprites.board.piece import LogicPiece, Piece
+from src.sprites.sprite import ChessrSprite
 from src.utils.enums import (BoardColour, CellColour, CellHighlightType,
                              PieceColour, PieceType, Side)
 from src.utils.helpers import FloatVector, IntVector
-from src.utils.sprite import ChessrSprite, GroupType
 
 
 class BoardCell(ChessrSprite, LogicCell):
@@ -27,14 +28,27 @@ class BoardCell(ChessrSprite, LogicCell):
         LogicCell.__init__(self, gxy, None)
         self.__colour_scheme = colour_scheme
         self.__colour = colour
-
-        image = Factory.get().board_spritesheet.get_sheet(scale)
-        ChessrSprite.__init__(self, xy, GroupType.GAME_BOARD, None, image, self.__get_src_rect(scale), scale)
-
+        self.__scale = scale
+        self.__piece_scale = piece_scale
+        
         self.__selected = False
         self.__highlight = BoardCellHighlight(xy, scale, self.__colour_scheme)
 
-        self.__piece_scale = piece_scale
+        image = Factory.get().board_spritesheet.get_sheet(scale)
+        ChessrSprite.__init__(self, xy, GroupType.GAME_BOARD, None, image, self.__get_src_rect(scale))
+
+    def set_position(self, xy : FloatVector, preserve_tween : bool = False) -> None:
+        super().set_position(xy, preserve_tween)
+        self.__highlight.set_position(xy, preserve_tween)
+
+        piece = self.piece
+        if piece is None:
+            return
+
+        if not isinstance(piece, Piece):
+            self.__raise_display_cast_error()
+        
+        piece.set_position(self.__get_piece_position(), preserve_tween)
 
     def set_theme(self, colour_scheme : BoardColour, colour : CellColour) -> None:
         self.__colour_scheme = colour_scheme
@@ -73,7 +87,7 @@ class BoardCell(ChessrSprite, LogicCell):
             self.unselect()
         elif not self.piece is None:
             self.__selected = True
-            rect_width = self.rect.w if not self.rect is None else 0
+            rect_width = self.dst_rect.w if not self.dst_rect is None else 0
             self.piece.lift(None, rect_width / 2, 200)
 
     def unselect(self) -> None:
@@ -94,16 +108,16 @@ class BoardCell(ChessrSprite, LogicCell):
         self.__highlight.set_visible(False)
 
     def __get_src_rect(self, scale : Optional[float] = None) -> pg.Rect:
-        scale = scale if not scale is None else self.scale
+        scale = scale if not scale is None else self.__scale
         spritesheet = Factory.get().board_spritesheet
         return spritesheet.get_board_srcrect(self.__colour_scheme, self.__colour, scale)
 
     def __get_piece_position(self) -> FloatVector:
         rect_x, rect_y, rect_width = 0, 0, 0
-        if not self.rect is None:
-            rect_x = self.rect.x
-            rect_y = self.rect.y
-            rect_width = self.rect.w
+        if not self.dst_rect is None:
+            rect_x = self.dst_rect.x
+            rect_y = self.dst_rect.y
+            rect_width = self.dst_rect.w
         offset = (rect_width - BoardSpritesheet.PIECE_WIDTH * self.__piece_scale) / 2
         return (rect_x + offset, rect_y + rect_width - offset)
 

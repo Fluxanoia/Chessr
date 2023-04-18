@@ -3,7 +3,7 @@ from typing import Optional, cast
 
 import pygame as pg
 
-from src.engine.state import StateType
+from src.engine.state_type import StateType
 from src.utils.enums import ArrayEnum, enum_as_list
 
 

@@ -1,15 +1,10 @@
-from enum import auto
 from typing import Any, Callable
 
 import pygame as pg
 
-from src.utils.enums import ArrayEnum
+from src.engine.factory import Factory
+from src.engine.state_type import StateType
 
-
-class StateType(ArrayEnum):
-    MAIN_MENU = auto()
-    BOARD_SELECTION = auto()
-    GAME = auto()
 
 class State():
 
@@ -18,6 +13,9 @@ class State():
 
     def provide_state_changer(self, state_changer : Callable[[StateType, Any], None]):
         self.__state_changer = state_changer
+
+    def provide_bounds_getter(self, bounds_getter : Callable[[], pg.rect.Rect]):
+        self.__bounds_getter = bounds_getter
 
     @property
     def state_type(self):
@@ -36,10 +34,16 @@ class State():
 
     def update(self) -> None:
         pass
-    
+
 #endregion
 
-#region User Input
+#region Events
+
+    def _update_view(self):
+        self.on_view_change(Factory.get().camera.bounds)
+
+    def on_view_change(self, bounds : pg.rect.Rect):
+        pass
 
     def mouse_down(self, _event : pg.event.Event) -> bool:
         return False

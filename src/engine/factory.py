@@ -1,5 +1,6 @@
 from typing import Optional
 
+from src.engine.camera import Camera
 from src.engine.file_manager import FileManager
 from src.engine.group_manager import GroupManager
 from src.engine.spritesheets.board_spritesheet import BoardSpritesheet
@@ -19,9 +20,16 @@ class Factory:
         if not Factory.__instance is None:
             raise SystemExit('Invalid initialisation of Factory.')
 
+        self.__camera : Optional[Camera] = None
         self.__file_manager : Optional[FileManager] = None
         self.__group_manager : Optional[GroupManager] = None
         self.__board_spritesheet : Optional[BoardSpritesheet] = None
+
+    @property
+    def camera(self) -> Camera:
+        if self.__camera is None:
+            self.__camera = Camera()
+        return self.__camera
 
     @property
     def file_manager(self) -> FileManager:

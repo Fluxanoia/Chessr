@@ -9,7 +9,7 @@ from src.logic.board_data import BoardData
 from src.logic.board_loader import BoardLoader
 from src.sprites.ui.button import Button
 from src.sprites.ui.text import Text
-from src.utils.enums import Anchor, Direction, ViewState
+from src.utils.enums import Anchor, ViewState
 
 
 class BoardSelectionState(State):
@@ -17,41 +17,15 @@ class BoardSelectionState(State):
     def __init__(self) -> None:
         super().__init__(StateType.BOARD_SELECTION)
 
-        scale = 3
         self.__title_text = Text(
-            (50, 50),
-            32,
-            scale,
+            (0, 0),
+            108,
             Anchor.TOP_LEFT,
-            GroupType.BOARD_SELECTION_UI,
-            None,
-            ViewState.INVISIBLE,
-            Direction.LEFT
+            GroupType.BOARD_SELECTION_UI
         )
-        self.__title_text.set_text("Board Selection", (240, 240, 240))
+        self.__title_text.set_text('Board Selection', (240, 240, 240))
 
-        buttons : list[Button] = []
-
-        board_loader = BoardLoader()
-        board_data : list[BoardData] = []
-        paths = Factory.get().file_manager.get_board_paths()
-        for path in paths:
-            board_data.append(board_loader.load_board(path))
-        self.__board_data = tuple(board_data)
-
-        def set_data(data : BoardData):
-            self.__chosen_board_data = data
-
-        buttons.extend(
-            map(lambda x : Button(
-                (50, 250 + x[0] * scale * 20),
-                x[1].name,
-                lambda : set_data(x[1]),
-                6,
-                scale,
-                Anchor.BOTTOM_LEFT,
-                GroupType.BOARD_SELECTION_UI),
-            enumerate(self.__board_data)))
+        self.__board_data_buttons = self.__get_board_data_buttons()
 
         self.__chosen_board_data : Optional[BoardData] = None
 
@@ -60,16 +34,40 @@ class BoardSelectionState(State):
                 ViewState.INVISIBLE,
                 callback=lambda : self.change_state(StateType.GAME, self.__chosen_board_data))
 
-        buttons.append(Button(
-            (250, 250),
-            "Continue",
+        self.__continue_button = Button(
+            (0, 0),
+            'Continue',
             action,
-            12,
-            scale,
-            Anchor.BOTTOM_LEFT,
-            GroupType.BOARD_SELECTION_UI))
+            36,
+            Anchor.BOTTOM_RIGHT,
+            GroupType.BOARD_SELECTION_UI,
+            200)
         
-        self.__buttons = tuple(buttons)
+        self._update_view()
+
+    def __get_board_data_buttons(self):
+        board_loader = BoardLoader()
+        board_data : list[BoardData] = []
+        paths = Factory.get().file_manager.get_board_paths()
+
+        for path in paths:
+            board_data.append(board_loader.load_board(path))
+
+        self.__board_data = tuple(board_data)
+
+        def set_data(data : BoardData):
+            self.__chosen_board_data = data
+
+        return tuple(
+            map(lambda x : Button(
+                (0, 0),
+                x.name,
+                lambda : set_data(x),
+                36,
+                Anchor.TOP_LEFT,
+                GroupType.BOARD_SELECTION_UI,
+                400),
+            self.__board_data))
 
 #region Game Loop Methods
 
@@ -84,22 +82,31 @@ class BoardSelectionState(State):
     
 #endregion
 
-#region User Input
+#region Events
+
+    def on_view_change(self, bounds : pg.rect.Rect):
+        buffer = 50
+        left = bounds.left + buffer
+        self.__title_text.set_position((left, bounds.top + buffer))
+        for (i, button) in enumerate(self.__board_data_buttons):
+            button.set_position((left, bounds.top + 300 + i * 85))
+        self.__continue_button.set_position((bounds.right - buffer, bounds.bottom - buffer))
 
     def mouse_down(self, event : pg.event.Event) -> bool:
-        for button in self.__buttons:
+        for button in self.__board_data_buttons:
             if button.mouse_down(event):
                 return True
-        return False
+        return self.__continue_button.mouse_down(event)
     
     def mouse_up(self, event : pg.event.Event) -> bool:
-        for button in self.__buttons:
+        for button in self.__board_data_buttons:
             if button.mouse_up(event):
                 return True
-        return False
+        return self.__continue_button.mouse_up(event)
 
     def mouse_move(self, event : pg.event.Event) -> None:
-        for button in self.__buttons:
+        for button in self.__board_data_buttons:
             button.mouse_move(event)
+        self.__continue_button.mouse_move(event)
 
 #endregion

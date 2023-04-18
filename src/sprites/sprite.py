@@ -17,21 +17,18 @@ class ChessrSprite(pg.sprite.DirtySprite):
         group : Optional[GroupType],
         drawing_priority : Optional[DrawingPriority],
         image : pg.surface.Surface,
-        src_rect : Optional[pg.Rect] = None,
-        scale : float = 1,
+        src_rect : Optional[pg.rect.Rect] = None,
         anchor : Anchor = Anchor.TOP_LEFT
     ):
         super().__init__()
 
-        self.rect = None
-        self.__group = None
-        self.__drawing_priority = drawing_priority
+        self.__group : Optional[GroupType] = None
+        self.__drawing_priority : Optional[DrawingPriority] = drawing_priority
 
         self.dirty = 2
         self.group = group
         self.image = image
         self.src_rect = src_rect
-        self.scale = scale
 
         self._anchor = anchor
         self.__position_tween : Optional[Tween] = None
@@ -47,11 +44,10 @@ class ChessrSprite(pg.sprite.DirtySprite):
         self.set_position(position, True)
 
     def delete(self) -> None:
-        if not self.group is None:
-            Factory.get().group_manager.get_group(self.group, self.drawing_priority).remove(self)
+        self.kill()
 
     def set_position(self, xy : FloatVector, preserve_tween : bool = False) -> None:
-        self.rect = pg.Rect((0, 0), self._calculate_size())
+        self.dst_rect = pg.Rect((0, 0), self._calculate_size())
 
         self.__raw_position = xy
         
@@ -60,7 +56,7 @@ class ChessrSprite(pg.sprite.DirtySprite):
             layer = self._calculate_layer(xy)
             Factory.get().group_manager.get_group(self.group, self.__drawing_priority).change_layer(self, layer)
 
-        self.rect.x, self.rect.y = int(xy[0]), int(xy[1])
+        self.dst_rect.x, self.dst_rect.y = int(xy[0]), int(xy[1])
         
         if not preserve_tween:
             self.__position_tween = None
@@ -86,7 +82,7 @@ class ChessrSprite(pg.sprite.DirtySprite):
 
     def _calculate_position(self, xy : FloatVector) -> FloatVector:
         x, y = xy
-        w, h = self._calculate_size() if self.rect is None else self.rect.size
+        w, h = self._calculate_size() if self.dst_rect is None else self.dst_rect.size
         if self._anchor == Anchor.TOP_LEFT:
             return xy
         if self._anchor == Anchor.TOP_RIGHT:
@@ -106,9 +102,9 @@ class ChessrSprite(pg.sprite.DirtySprite):
             return self.src_rect.size
 
     def point_intersects(self, point : FloatVector) -> bool:
-        if self.rect is None:
+        if self.dst_rect is None:
             return False
-        return self.rect.collidepoint(point)
+        return self.dst_rect.collidepoint(point)
 
     def __update_grouping(
         self,
@@ -117,7 +113,7 @@ class ChessrSprite(pg.sprite.DirtySprite):
     ):
         group_manager = Factory.get().group_manager
         if not self.__group is None:
-            group_manager.get_group(self.__group, self.__drawing_priority).remove(self)
+            self.kill()
         self.__group = group
         self.__drawing_priority = drawing_priority
         if not self.__group is None:
@@ -159,16 +155,15 @@ class ChessrSprite(pg.sprite.DirtySprite):
         return self.source_rect
 
     @src_rect.setter
-    def src_rect(self, src_rect : Optional[pg.Rect]) -> None:
-        if src_rect is None:
-            self.source_rect = None # type: ignore
-        elif getattr(self, 'source_rect', None) is None:
-            self.source_rect = src_rect
-        else:
-            self.source_rect.update(src_rect)
+    def src_rect(self, src_rect : Optional[pg.rect.Rect]) -> None:
+        self.source_rect = src_rect # type: ignore
 
     @property
-    def pixel_bounds(self) -> Optional[pg.rect.Rect]:
+    def dst_rect(self) -> Optional[pg.rect.Rect]:
         return self.rect
+
+    @dst_rect.setter
+    def dst_rect(self, dst_rect : Optional[pg.rect.Rect]) -> None:
+        self.rect = dst_rect
 
 #endregion

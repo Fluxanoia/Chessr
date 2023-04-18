@@ -11,7 +11,7 @@ Colour = tuple[int, int, int]
 def add_vectors(x : IntVector, y : IntVector) -> IntVector:
     return (x[0] + y[0], x[1] + y[1])
 
-def scale_rect(rect : pg.Rect, scale : float) -> None:
+def scale_rect(rect : pg.rect.Rect, scale : float) -> None:
     rect.update(rect.x * scale, rect.y * scale, rect.w * scale, rect.h * scale)
 
 T = TypeVar('T')

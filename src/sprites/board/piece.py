@@ -3,11 +3,12 @@ from typing import Any, Optional
 import pygame as pg
 
 from src.engine.factory import Factory
+from src.engine.group_manager import GroupType
 from src.logic.logic_piece import LogicPiece
 from src.sprites.board.piece_shadow import PieceShadow
+from src.sprites.sprite import ChessrSprite
 from src.utils.enums import Anchor, PieceColour, PieceType, Side
 from src.utils.helpers import FloatVector, clamp
-from src.utils.sprite import ChessrSprite, GroupType
 from src.utils.tween import Tween, TweenType
 
 
@@ -24,6 +25,7 @@ class Piece(ChessrSprite, LogicPiece):
         LogicPiece.__init__(self, piece_type, side)
         self.__colour = self.__fallback_colour = colour
 
+        self.__scale = scale
         image = Factory.get().board_spritesheet.get_sheet(scale)
 
         self.__lift : float = 0
@@ -39,7 +41,6 @@ class Piece(ChessrSprite, LogicPiece):
             None,
             image,
             self.__get_src_rect(scale),
-            scale,
             Anchor.BOTTOM_LEFT)
 
     def delete(self) -> None:
@@ -94,7 +95,7 @@ class Piece(ChessrSprite, LogicPiece):
         self.src_rect = self.__get_src_rect()
 
     def __get_src_rect(self, scale : Optional[float] = None) -> pg.Rect:
-        scale = scale if not scale is None else self.scale
+        scale = scale if not scale is None else self.__scale
         spritesheet = Factory.get().board_spritesheet
         return spritesheet.get_piece_srcrect(self.__colour, self.type, self.side, scale)
 

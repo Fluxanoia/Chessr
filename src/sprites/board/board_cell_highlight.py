@@ -3,10 +3,10 @@ from typing import Optional
 import pygame as pg
 
 from src.engine.factory import Factory
-from src.engine.group_manager import DrawingPriority
+from src.engine.group_manager import DrawingPriority, GroupType
+from src.sprites.sprite import ChessrSprite
 from src.utils.enums import BoardColour, CellHighlightType
 from src.utils.helpers import FloatVector
-from src.utils.sprite import ChessrSprite, GroupType
 
 
 class BoardCellHighlight(ChessrSprite):
@@ -15,9 +15,10 @@ class BoardCellHighlight(ChessrSprite):
         self.__type : CellHighlightType = CellHighlightType.MOVE
         self.__board_colour = board_colour
 
+        self.__scale = scale
         image = Factory.get().board_spritesheet.get_sheet(scale)
 
-        super().__init__(xy, GroupType.GAME_BOARD, DrawingPriority.PLUS_ONE, image, self.__get_src_rect(scale), scale)
+        super().__init__(xy, GroupType.GAME_BOARD, DrawingPriority.PLUS_ONE, image, self.__get_src_rect(scale))
 
         self.set_visible(False)
 
@@ -30,7 +31,6 @@ class BoardCellHighlight(ChessrSprite):
         self.visible = int(visible)
 
     def __get_src_rect(self, scale : Optional[float] = None) -> pg.Rect:
-        if scale is None:
-            scale = self.scale
+        scale = scale if not scale is None else self.__scale
         spritesheet = Factory.get().board_spritesheet
         return spritesheet.get_cell_highlight_srcrect(self.__board_colour, self.__type, scale)
