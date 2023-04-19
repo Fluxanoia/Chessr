@@ -1,10 +1,9 @@
-from functools import reduce
 from typing import Optional, cast
 
 from src.engine.factory import Factory
 from src.engine.file_manager import PathLike
 from src.logic.board_data import BoardData, PieceData
-from src.logic.piece_move_calculators import PieceMoveCalculators
+from src.logic.notation import Notation
 from src.utils.enums import Side
 from src.utils.helpers import IntVector
 
@@ -32,7 +31,7 @@ class BoardLoader:
         turn = Side.FRONT
         pieces : list[PieceData] = []
 
-        piece_move_calculators = PieceMoveCalculators.get()
+        notation = Notation.get()
 
         for key, value in file_data.items():
             if key in ('w', 'h'):
@@ -55,9 +54,9 @@ class BoardLoader:
                         f'The piece data was invalid: \'{key}:{value}\'.')
 
                 side = self.__get_side_from_text(key[0])
-                piece_type = piece_move_calculators.get_piece_type_by_char(key[1])
+                piece_type = notation.get_piece_type(key[1])
                 coords = list(map(
-                    lambda c : self.__get_coordinate_from_text(c, height),
+                    lambda c : notation.get_coordinate_from_notation(c, height),
                     value.split(' ')))
 
                 if side is None or piece_type is None or any(map(lambda x : x is None, coords)):
@@ -85,26 +84,6 @@ class BoardLoader:
         if c == 'b':
             return Side.BACK
         return None
-    
-    def __get_coordinate_from_text(self, coord : str, board_height : int) -> Optional[IntVector]:
-        row = ''
-        column = ''
-        for char in coord:
-            alpha = char.isalpha()
-            if (not char.isdigit() and not alpha) \
-                or (alpha and len(row) > 0):
-                return None
-            if char.isalpha():
-                column += char
-            else:
-                row += char
-
-        if len(row) == 0 or len(column) == 0:
-            return None
-         
-        i = board_height - int(row)
-        j = reduce(lambda r, x: r * 26 + x, map(lambda x : ord(x.lower()) - ord('a'), column), 0)
-        return (i, j)
 
     def __get_invalid_board(self, path : PathLike, description : str) -> BoardData:
         return BoardData(

@@ -4,12 +4,12 @@ desc:A 4x4 chess board.
 w:4
 h:4
 
-w :a2 b2 c2 d2
+wP:a2 b2 c2 d2
 wQ:b1
 wK:c1
 wR:a1 d1
 
-b :a3 b3 c3 d3
+bP:a3 b3 c3 d3
 bQ:b4
 bK:c4
 bR:a4 d4

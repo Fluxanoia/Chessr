@@ -4,14 +4,14 @@ desc:A 5x5 chess board.
 w:5
 h:5
 
-w :a2 b2 c2 d2 e2
+wP:a2 b2 c2 d2 e2
 wR:a1
 wN:b1
 wB:c1
 wQ:d1
 wK:e1
 
-b :a4 b4 c4 d4 e4
+bP:a4 b4 c4 d4 e4
 bR:a5
 bN:b5
 bB:c5

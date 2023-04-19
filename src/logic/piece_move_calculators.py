@@ -20,25 +20,25 @@ class PieceMoveCalculators:
             raise SystemExit('Invalid initialisation of PieceMoveCalculators.')
         
         self.__data : dict[PieceType, PieceMoveCalculator] = {
-            PieceType.QUEEN : PieceMoveCalculator('Q', (
+            PieceType.QUEEN : PieceMoveCalculator((
                 MoveData((1, 0), True, True),
                 MoveData((1, 1), True, True)
             )),
-            PieceType.KING : PieceMoveCalculator('K', (
+            PieceType.KING : PieceMoveCalculator((
                 MoveData((1, 0), True, False),
                 MoveData((1, 1), True, False)
             )),
-            PieceType.BISHOP : PieceMoveCalculator('B', (
+            PieceType.BISHOP : PieceMoveCalculator((
                 MoveData((1, 1), True, True),
             )),
-            PieceType.ROOK : PieceMoveCalculator('R', (
+            PieceType.ROOK : PieceMoveCalculator((
                 MoveData((1, 0), True, True),
             )),
-            PieceType.KNIGHT : PieceMoveCalculator('N', (
+            PieceType.KNIGHT : PieceMoveCalculator((
                 MoveData((2, 1), True, False),
                 MoveData((2, -1), True, False),
             )),
-            PieceType.PAWN : PieceMoveCalculator(' ', (
+            PieceType.PAWN : PieceMoveCalculator((
                 MoveData((-1, 0), False, False, (MoveType.MOVE,)),
                 MoveData((-1, -1), False, False, (MoveType.ATTACK,)),
                 MoveData((-1, 1), False, False, (MoveType.ATTACK,))
@@ -53,12 +53,3 @@ class PieceMoveCalculators:
         piece_type : PieceType
     ) -> PieceMoveCalculator:
         return self.__data[piece_type]
-    
-    def get_piece_type_by_char(
-        self,
-        c : str
-    ) -> Optional[PieceType]:
-        for piece_type, piece_data in self.__data.items():
-            if piece_data.char == c:
-                return piece_type
-        return None

@@ -8,6 +8,7 @@ from src.engine.state import State, StateType
 from src.logic.board_applier import BoardApplier
 from src.logic.board_data import BoardData
 from src.logic.move_logic import MoveLogic
+from src.logic.notation import Notation
 from src.logic.pending_move_action import PendingMoveAction
 from src.sprites.board.board import Board, BoardCell, BoardEventType
 from src.sprites.board.piece import Piece
@@ -15,7 +16,7 @@ from src.sprites.ui.button import Button
 from src.sprites.ui.text import Text
 from src.utils.enums import (Anchor, CellHighlightType, Direction, LogicState,
                              Side, ViewState)
-from src.utils.helpers import IntVector, get_coord_text
+from src.utils.helpers import IntVector
 
 PROCESSING = -1
 
@@ -170,10 +171,11 @@ class GameState(State):
                 pause = 500 if self.__coords_text.is_completely_visible() else 0
                 self.__coords_text.do_slide(ViewState.INVISIBLE, pause=pause)
         else:
-            coords = get_coord_text(gxy, self.__board.height)
-            self.__coords_text.set_text(coords, (240, 240, 240))
-            if not self.__coords_text.is_tweening_to(ViewState.VISIBLE):
-                self.__coords_text.do_slide(ViewState.VISIBLE)
+            coords = Notation.get().get_notation_from_coordinate(gxy, self.__board.height)
+            if coords is not None:
+                self.__coords_text.set_text(coords.upper(), (240, 240, 240))
+                if not self.__coords_text.is_tweening_to(ViewState.VISIBLE):
+                    self.__coords_text.do_slide(ViewState.VISIBLE)
 
 #endregion
 
@@ -245,6 +247,7 @@ class GameState(State):
 
         def finalise():
             clear_action()
+            print(valid_move.notation)
             self.__board.move(from_gxy, to_gxy)
             self.__deselect()
             self.__update_highlighting()

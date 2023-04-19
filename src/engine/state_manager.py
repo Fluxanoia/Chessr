@@ -9,7 +9,6 @@ from src.states.board_selection_state import BoardSelectionState
 from src.states.game_state import GameState
 from src.states.loading_state import LoadingState
 from src.states.main_menu_state import MainMenuState
-from src.utils.enums import enum_as_list
 
 
 class StateManager():
@@ -22,12 +21,6 @@ class StateManager():
             GameState()
         )
         self.__current_state : Optional[State] = None
-
-        possible_states = len(enum_as_list(StateType))
-        distinct_states = len(set(map(lambda x : x.state_type, self.__states)))
-        configured_states = len(self.__states)
-        if not possible_states == distinct_states or not distinct_states == configured_states:
-            raise SystemExit('Invalid state configuration.')
 
         for state in self.__states:
             state.provide_state_changer(self.set_state)

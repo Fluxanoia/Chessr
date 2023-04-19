@@ -88,6 +88,16 @@ class MoveLogic():
 
         self.__supply_manoeuvres(logic_board, self.__get_complex_manoeuvres)
 
+        for i in range(logic_board.height):
+            for j in range(logic_board.width):
+                moves = logic_board.moves_at(i, j)
+                if moves is None:
+                    continue
+                for move in moves.get_all_moves():
+                    # TODO Fill the data below and promotions
+                    # https://en.wikipedia.org/wiki/Algebraic_notation_(chess)
+                    move.set_notation(logic_board.height, False, False, LogicState.NONE)
+
     def __supply_partial_moves(
         self,
         logic_board : LogicBoard
@@ -116,7 +126,7 @@ class MoveLogic():
                 else:
                     moves = piece_move_calculators \
                         .get_calculator(piece.type) \
-                        .get_moves(logic_board, piece.side, gxy)
+                        .get_moves(logic_board, piece, gxy)
 
                     for move in moves.get_all_moves():
                         self.__supply_pending_action(logic_board, piece, move)
@@ -277,6 +287,8 @@ class MoveLogic():
             piece.add_tag(PieceTag.get_tag(PieceTagType.EN_PASSANT))
 
         move = Move(
+            PieceType.PAWN,
+            gxy,
             final_gxy,
             MoveType.MOVE,
             True,
@@ -315,7 +327,7 @@ class MoveLogic():
             logic_board.remove(src[0], dst[1])
 
         return tuple(map(
-            lambda x : Move(x, MoveType.MOVE, True, en_passant_callback),
+            lambda x : Move(PieceType.PAWN, gxy, x, MoveType.MOVE, True, en_passant_callback),
             manoeuvres))
 
     def __castle_manoeuvre(
@@ -350,16 +362,23 @@ class MoveLogic():
             return tuple()
 
         row, column = gxy
-        manoeuvres : list[IntVector] = []
+        manoeuvres : list[tuple[IntVector, str]] = []
         for rook_column in rook_columns:
             if abs(column - rook_column) < 2:
                 continue
-            castle_direction = 1 if rook_column > column else -1
+
+            if rook_column > column:
+                castle_direction = 1
+                notation = '0-0'
+            else:
+                castle_direction = -1
+                notation = '0-0-0'
+
             cells_between = [(row, x) for x in range(column + castle_direction, rook_column, castle_direction)]
             if any(map(lambda x : x in endangered_cells, cells_between)):
                 continue
             if all(map(lambda x : x is None, [logic_board.piece_at(*x) for x in cells_between])):
-                manoeuvres.append((row, rook_column - castle_direction))
+                manoeuvres.append(((row, rook_column - castle_direction), notation))
 
         def castle_callback(logic_board : LogicBoard, src : IntVector, dst : IntVector) -> None:
             castle_direction = -1 if dst[1] < src[1] else 1
@@ -373,8 +392,12 @@ class MoveLogic():
                     return
                 j += castle_direction
 
-        return tuple(map(
-            lambda x : Move(x, MoveType.MOVE, True, castle_callback),
-            manoeuvres))
+        moves : list[Move] = []
+        for (final_gxy, notation) in manoeuvres:
+            move = Move(PieceType.KING, gxy, final_gxy, MoveType.MOVE, True, castle_callback)
+            move.override_notation(notation)
+            moves.append(move)
+
+        return tuple(moves)
 
 #endregion

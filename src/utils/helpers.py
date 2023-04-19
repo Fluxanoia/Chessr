@@ -26,10 +26,6 @@ def inbounds(grid_width : int, grid_height : int, cell : IntVector) -> bool:
     i, j = cell
     return 0 <= i < grid_height and 0 <= j < grid_width
 
-def get_coord_text(gxy : IntVector, board_height : int) -> str:
-    i, j = gxy
-    return chr(ord('A') + j) + str(board_height - i)
-
 def is_empty(x : Iterable[Any]) -> bool:
     for _ in x:
         return False

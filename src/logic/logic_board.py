@@ -1,10 +1,11 @@
 from typing import Callable, Optional
 
 from src.logic.move_data import MoveType
+from src.logic.notation import Notation
 from src.logic.piece_tag import PieceTag, PieceTagType
 from src.sprites.board.board_cell import LogicCell
 from src.sprites.board.piece import LogicPiece
-from src.utils.enums import PendingMoveType
+from src.utils.enums import LogicState, PendingMoveType, PieceType
 from src.utils.helpers import IntVector, inbounds
 
 MovesGrid = tuple[tuple[Optional["Moves"]]]
@@ -174,23 +175,66 @@ class Move:
 
     def __init__(
         self,
+        piece_type : PieceType,
+        from_gxy : IntVector,
         gxy : IntVector,
         move_type : MoveType,
         valid : bool,
         callback : Optional[ManoeuvreCallback] = None,
         pending_action : Optional[PendingMoveType] = None
     ):
+        self.__piece_type = piece_type
+        self.__from_gxy = from_gxy
         self.__gxy = gxy
         self.__move_type = move_type
         self.__valid = valid
         self.__callback = callback
         self.__pending_action = pending_action
+        self.__notation : Optional[str] = None
 
     def invalidate(self):
         self.__valid = False
 
     def set_pending_action(self, value : Optional[PendingMoveType]):
         self.__pending_action = value
+
+    def override_notation(self, notation : str):
+        self.__notation = notation
+
+    def set_notation(
+        self,
+        board_height : int,
+        rank_ambigious : bool,
+        file_ambigious : bool,
+        state : LogicState
+    ) -> None:
+        notation = Notation.get()
+
+        if self.__piece_type is PieceType.PAWN:
+            char = ''
+            file_ambigious = file_ambigious or self.__move_type is MoveType.ATTACK
+        else:
+            char = notation.get_char(self.__piece_type)
+        
+        destination = notation.get_notation_from_coordinate(self.__gxy, board_height)
+        if destination is None:
+            return None
+
+        suffix = ''
+        if state is LogicState.CHECK:
+            suffix = '+'
+        elif state is LogicState.CHECKMATE:
+            suffix = '#'
+
+        ambiguity = ''
+        if file_ambigious:
+            ambiguity += notation.get_file_from_coordinate(self.__from_gxy[1])
+        if rank_ambigious:
+            ambiguity += notation.get_rank_from_coordinate(self.__from_gxy[0], board_height)
+
+        capture = 'x' if self.__move_type is MoveType.ATTACK else ''
+
+        self.__notation = char + ambiguity + capture + destination + suffix
 
     @property
     def gxy(self):
@@ -211,6 +255,10 @@ class Move:
     @property
     def pending_action(self):
         return self.__pending_action
+    
+    @property
+    def notation(self):
+        return self.__notation
 
 class Moves:
 

@@ -4,13 +4,13 @@ desc:A 4x5 chess board in micro format.
 w:4
 h:5
 
-w :d2
+wP:d2
 wR:a1
 wB:b1
 wN:c1
 wK:d1
 
-b :a4
+bP:a4
 bR:d5
 bB:c5
 bN:b5

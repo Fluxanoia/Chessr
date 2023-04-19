@@ -1,8 +1,8 @@
-name:12x12
-desc:A 12x12 chess board.
+name:28x28
+desc:A 28x28 chess board.
 
-w:12
-h:12
+w:28
+h:28
 
 bP:c9 d9 e9 f9 g9 h9 i9 j9
 bQ:f10

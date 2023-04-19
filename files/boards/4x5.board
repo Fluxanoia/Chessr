@@ -4,12 +4,12 @@ desc:A 4x5 chess board.
 w:4
 h:5
 
-w :a2 b2 c2 d2
+wP:a2 b2 c2 d2
 wQ:b1
 wK:c1
 wR:a1 d1
 
-b :a4 b4 c4 d4
+bP:a4 b4 c4 d4
 bQ:b5
 bK:c5
 bR:a5 d5
