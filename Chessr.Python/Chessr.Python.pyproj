@@ -1,0 +1,127 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{e31af9d7-f7f4-4ba7-830b-7cb52b31cd93}</ProjectGuid>
+    <ProjectHome />
+    <StartupFile>__init__.py</StartupFile>
+    <SearchPath />
+    <WorkingDirectory>.</WorkingDirectory>
+    <OutputPath>.</OutputPath>
+    <ProjectTypeGuids>{888888a0-9f3d-457c-b088-3a5042f75d52}</ProjectTypeGuids>
+    <LaunchProvider>Standard Python launcher</LaunchProvider>
+    <InterpreterId>MSBuild|.env|$(MSBuildProjectFullPath)</InterpreterId>
+    <TestFramework>Pytest</TestFramework>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'" />
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'" />
+  <PropertyGroup>
+    <VisualStudioVersion Condition=" '$(VisualStudioVersion)' == '' ">10.0</VisualStudioVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="src\engine\camera.py" />
+    <Compile Include="src\engine\factory.py" />
+    <Compile Include="src\engine\file_manager.py" />
+    <Compile Include="src\engine\group_manager.py" />
+    <Compile Include="src\engine\spritesheets\board_spritesheet.py" />
+    <Compile Include="src\engine\spritesheets\spinner_spritesheet.py" />
+    <Compile Include="src\engine\spritesheets\spritesheet.py" />
+    <Compile Include="src\engine\state.py" />
+    <Compile Include="src\engine\state_manager.py" />
+    <Compile Include="src\engine\state_type.py" />
+    <Compile Include="src\logic\board_applier.py" />
+    <Compile Include="src\logic\board_data.py" />
+    <Compile Include="src\logic\board_event.py" />
+    <Compile Include="src\logic\board_loader.py" />
+    <Compile Include="src\logic\logic_board.py" />
+    <Compile Include="src\logic\logic_cell.py" />
+    <Compile Include="src\logic\logic_piece.py" />
+    <Compile Include="src\logic\move_data.py" />
+    <Compile Include="src\logic\move_logic.py" />
+    <Compile Include="src\logic\notation.py" />
+    <Compile Include="src\logic\pending_move_action.py" />
+    <Compile Include="src\logic\piece_move_calculator.py" />
+    <Compile Include="src\logic\piece_move_calculators.py" />
+    <Compile Include="src\logic\piece_tag.py" />
+    <Compile Include="src\master.py" />
+    <Compile Include="src\sprites\board\board.py" />
+    <Compile Include="src\sprites\board\board_cell.py" />
+    <Compile Include="src\sprites\board\board_cell_highlight.py" />
+    <Compile Include="src\sprites\board\piece.py" />
+    <Compile Include="src\sprites\board\piece_shadow.py" />
+    <Compile Include="src\sprites\sprite.py" />
+    <Compile Include="src\sprites\ui\button.py" />
+    <Compile Include="src\sprites\ui\spinner.py" />
+    <Compile Include="src\sprites\ui\text.py" />
+    <Compile Include="src\states\board_selection_state.py" />
+    <Compile Include="src\states\game_state.py" />
+    <Compile Include="src\states\loading_state.py" />
+    <Compile Include="src\states\main_menu_state.py" />
+    <Compile Include="src\utils\enums.py" />
+    <Compile Include="src\utils\helpers.py" />
+    <Compile Include="src\utils\path.py" />
+    <Compile Include="src\utils\timer.py" />
+    <Compile Include="src\utils\tween.py" />
+    <Compile Include="src\utils\tween_functions.py" />
+    <Compile Include="src\__init__.py" />
+    <Compile Include="__init__.py" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include=".pylintrc" />
+    <Content Include="files\boards\12x12.board" />
+    <Content Include="files\boards\28x28.board" />
+    <Content Include="files\boards\4x4.board" />
+    <Content Include="files\boards\4x5 micro.board" />
+    <Content Include="files\boards\4x5.board" />
+    <Content Include="files\boards\5x5.board" />
+    <Content Include="files\boards\default.board" />
+    <Content Include="files\boards\tests\test_checkmate_1.board" />
+    <Content Include="files\boards\tests\test_double_move.board" />
+    <Content Include="files\boards\tests\test_en_passant.board" />
+    <Content Include="files\boards\tests\test_pawn_manoeuvre.board" />
+    <Content Include="files\fonts\Kenney Blocks.ttf" />
+    <Content Include="files\fonts\Roboto-Black.ttf" />
+    <Content Include="images\icon.png" />
+    <Content Include="images\icon_large.png" />
+    <Content Include="images\spinner.png" />
+    <Content Include="images\sprites.png" />
+    <Content Include="requirements.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="files\" />
+    <Folder Include="files\boards\" />
+    <Folder Include="files\boards\tests\" />
+    <Folder Include="files\fonts\" />
+    <Folder Include="files\games\" />
+    <Folder Include="images" />
+    <Folder Include="src" />
+    <Folder Include="src\engine" />
+    <Folder Include="src\engine\spritesheets" />
+    <Folder Include="src\logic" />
+    <Folder Include="src\sprites" />
+    <Folder Include="src\sprites\board" />
+    <Folder Include="src\sprites\ui" />
+    <Folder Include="src\states" />
+    <Folder Include="src\utils" />
+  </ItemGroup>
+  <ItemGroup>
+    <Interpreter Include=".env\">
+      <Id>.env</Id>
+      <Version>3.10</Version>
+      <Description>.env (Python 3.10 (64-bit))</Description>
+      <InterpreterPath>Scripts\python.exe</InterpreterPath>
+      <WindowsInterpreterPath>Scripts\pythonw.exe</WindowsInterpreterPath>
+      <PathEnvironmentVariable>PYTHONPATH</PathEnvironmentVariable>
+      <Architecture>X64</Architecture>
+    </Interpreter>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Chessr.Backend\Chessr.Backend.vcxproj">
+      <Name>Chessr.Backend</Name>
+      <Project>{88b8bcec-c249-4b4a-bdcf-c34c32ab51df}</Project>
+      <Private>True</Private>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
+</Project>

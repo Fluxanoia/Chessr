@@ -218,7 +218,7 @@ class Move:
         
         destination = notation.get_notation_from_coordinate(self.__gxy, board_height)
         if destination is None:
-            return None
+            return
 
         suffix = ''
         if state is LogicState.CHECK:

@@ -247,7 +247,6 @@ class GameState(State):
 
         def finalise():
             clear_action()
-            print(valid_move.notation)
             self.__board.move(from_gxy, to_gxy)
             self.__deselect()
             self.__update_highlighting()
@@ -279,6 +278,7 @@ class GameState(State):
         def process():
             self.__state = self.__move_logic.get_state(self.__board, self.__turn)
         self.__processing_thread = Thread(target=process)
+        self.__processing_thread.daemon = True
         self.__processing_thread.start()
 
     def __update_highlighting(self) -> None:
