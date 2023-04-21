@@ -1,28 +1,35 @@
 #include <pybind11/pybind11.h>
-#include <Python.h>
-#include <Windows.h>
-#include <cmath>
-
-const double e = 2.7182818284590452353602874713527;
-
-double sinh_impl(double x) {
-    return (1 - pow(e, (-2 * x))) / (2 * pow(e, -x));
-}
-
-double cosh_impl(double x) {
-    return (1 + pow(e, (-2 * x))) / (2 * pow(e, -x));
-}
-
-PyObject* tanh_impl(PyObject* /* unused module reference */, PyObject* o) {
-    double x = PyFloat_AsDouble(o);
-    double tanh_x = sinh_impl(x) / cosh_impl(x);
-    return PyFloat_FromDouble(tanh_x);
-}
 
 namespace py = pybind11;
 
+class SomeClass {
+    float multiplier;
+public:
+    SomeClass(float multiplier_) : multiplier(multiplier_) {};
+
+    float multiply(float input) {
+        return multiplier * input;
+    }
+
+    std::vector<float> multiply_list(std::vector<float> items) {
+        for (auto i = 0; i < items.size(); i++) {
+            items[i] = multiply(items.at(i));
+        }
+        return items;
+    }
+
+    void set_mult(float val) {
+        multiplier = val;
+    }
+
+    float get_mult() {
+        return multiplier;
+    }
+};
+
 PYBIND11_MODULE(backend, m) {
-    m.def("fast_tanh2", &tanh_impl, R"pbdoc(
-        Compute a hyperbolic tangent of a single argument expressed in radians.
-    )pbdoc");
+    py::class_<SomeClass>(m, "SomeClass").def(py::init<float>())
+        .def_property("multiplier", &SomeClass::get_mult, &SomeClass::set_mult)
+        .def("multiply", &SomeClass::multiply)
+        .def("multiply_list", &SomeClass::multiply_list);
 }
