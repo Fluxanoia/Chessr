@@ -73,26 +73,34 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <TargetName>backend</TargetName>
     <TargetExt>.pyd</TargetExt>
-    <OutDir>$(SolutionDir)build\$(Configuration)</OutDir>
-    <IntDir>$(SolutionDir)build\$(Configuration)\Intermediate</IntDir>
+    <OutDir>$(SolutionDir)build\$(Platform)-$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)build\$(Platform)-$(Configuration)\intermediate\</IntDir>
+    <CustomBuildAfterTargets>
+    </CustomBuildAfterTargets>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <TargetName>backend</TargetName>
     <TargetExt>.pyd</TargetExt>
-    <OutDir>$(SolutionDir)build\$(Configuration)</OutDir>
-    <IntDir>$(SolutionDir)build\$(Configuration)\Intermediate</IntDir>
+    <OutDir>$(SolutionDir)build\$(Platform)-$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)build\$(Platform)-$(Configuration)\intermediate\</IntDir>
+    <CustomBuildAfterTargets>
+    </CustomBuildAfterTargets>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <TargetName>backend</TargetName>
     <TargetExt>.pyd</TargetExt>
-    <OutDir>$(SolutionDir)build\$(Configuration)</OutDir>
-    <IntDir>$(SolutionDir)build\$(Configuration)\Intermediate</IntDir>
+    <OutDir>$(SolutionDir)build\$(Platform)-$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)build\$(Platform)-$(Configuration)\intermediate\</IntDir>
+    <CustomBuildAfterTargets>
+    </CustomBuildAfterTargets>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <TargetName>backend</TargetName>
     <TargetExt>.pyd</TargetExt>
-    <OutDir>$(SolutionDir)build\$(Configuration)</OutDir>
-    <IntDir>$(SolutionDir)build\$(Configuration)\Intermediate</IntDir>
+    <OutDir>$(SolutionDir)build\$(Platform)-$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)build\$(Platform)-$(Configuration)\intermediate\</IntDir>
+    <CustomBuildAfterTargets>
+    </CustomBuildAfterTargets>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -107,6 +115,9 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+    <PostBuildEvent>
+      <Command>xcopy /y "$(OutDir)$(TargetName)$(TargetExt)" "$(OutDir).."</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -125,6 +136,9 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+    <PostBuildEvent>
+      <Command>xcopy /y "$(OutDir)$(TargetName)$(TargetExt)" "$(OutDir).."</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -140,6 +154,9 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(PythonDir)\libs</AdditionalLibraryDirectories>
     </Link>
+    <PostBuildEvent>
+      <Command>xcopy /y "$(OutDir)$(TargetName)$(TargetExt)" "$(OutDir).."</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -159,6 +176,9 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(PythonDir)\libs</AdditionalLibraryDirectories>
     </Link>
+    <PostBuildEvent>
+      <Command>xcopy /y "$(OutDir)$(TargetName)$(TargetExt)" "$(OutDir).."</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="module.cpp" />
