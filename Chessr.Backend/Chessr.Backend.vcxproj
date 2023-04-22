@@ -116,7 +116,18 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /y "$(OutDir)$(TargetName)$(TargetExt)" "$(OutDir).."</Command>
+      <Command>echo Copying build to the build root...
+xcopy /y "$(TargetPath)" "$(OutDir).."
+
+cd /D "$(OutDir).."
+
+echo Creating type stubs...
+python "$(SolutionDir)Chessr.Python\.env\Lib\site-packages\pybind11_stubgen\__init__.py" --no-setup-py -o "$(IntDir).." $(TargetName)
+
+echo Copying types to the build root...
+echo F|xcopy /y "$(OutDir)$(TargetName)-stubs\__init__.pyi" "$(OutDir)..\$(TargetName).pyi"
+
+</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -137,7 +148,18 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /y "$(OutDir)$(TargetName)$(TargetExt)" "$(OutDir).."</Command>
+      <Command>echo Copying build to the build root...
+xcopy /y "$(TargetPath)" "$(OutDir).."
+
+cd /D "$(OutDir).."
+
+echo Creating type stubs...
+python "$(SolutionDir)Chessr.Python\.env\Lib\site-packages\pybind11_stubgen\__init__.py" --no-setup-py -o "$(IntDir).." $(TargetName)
+
+echo Copying types to the build root...
+echo F|xcopy /y "$(OutDir)$(TargetName)-stubs\__init__.pyi" "$(OutDir)..\$(TargetName).pyi"
+
+</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -155,7 +177,18 @@
       <AdditionalLibraryDirectories>$(PythonDir)\libs</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /y "$(OutDir)$(TargetName)$(TargetExt)" "$(OutDir).."</Command>
+      <Command>echo Copying build to the build root...
+xcopy /y "$(TargetPath)" "$(OutDir).."
+
+cd /D "$(OutDir).."
+
+echo Creating type stubs...
+python "$(SolutionDir)Chessr.Python\.env\Lib\site-packages\pybind11_stubgen\__init__.py" --no-setup-py -o "$(IntDir).." $(TargetName)
+
+echo Copying types to the build root...
+echo F|xcopy /y "$(OutDir)$(TargetName)-stubs\__init__.pyi" "$(OutDir)..\$(TargetName).pyi"
+
+</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -177,7 +210,18 @@
       <AdditionalLibraryDirectories>$(PythonDir)\libs</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /y "$(OutDir)$(TargetName)$(TargetExt)" "$(OutDir).."</Command>
+      <Command>echo Copying build to the build root...
+xcopy /y "$(TargetPath)" "$(OutDir).."
+
+cd /D "$(OutDir).."
+
+echo Creating type stubs...
+python "$(SolutionDir)Chessr.Python\.env\Lib\site-packages\pybind11_stubgen\__init__.py" --no-setup-py -o "$(IntDir).." $(TargetName)
+
+echo Copying types to the build root...
+echo F|xcopy /y "$(OutDir)$(TargetName)-stubs\__init__.pyi" "$(OutDir)..\$(TargetName).pyi"
+
+</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>

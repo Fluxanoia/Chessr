@@ -13,10 +13,13 @@
 		"python.analysis.extraPaths": [
 			"../build"
 		],
-		"explorer.excludeGitIgnore": true,
 		"pylint.args": [
 			"--rcfile Chessr.Python/.pylintrc"
-		]
+		],
+		"explorer.excludeGitIgnore": true,
+		"editor.codeActionsOnSave": {
+			"source.organizeImports": true
+		}
 	},
 	"launch": {
 		"version": "0.2.0",
