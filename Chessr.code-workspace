@@ -1,0 +1,40 @@
+{
+	"folders": [
+		{
+			"name": "Python",
+			"path": "./Chessr.Python"
+		},
+		{
+			"name": "Backend",
+			"path": "./Chessr.Backend"
+		},
+		{
+			"name": "Root",
+			"path": "."
+		}
+	],
+	"settings": {
+		"python.linting.enabled": true,
+		"python.linting.pylintEnabled": true,
+		"python.languageServer": "Pylance",
+		"python.analysis.typeCheckingMode": "strict",
+		"python.analysis.diagnosticMode": "workspace",
+		"python.analysis.extraPaths": [
+			"../build"
+		],
+		"explorer.excludeGitIgnore": true
+	},
+	"launch": {
+		"version": "0.2.0",
+		"configurations": [
+			{
+				"name": "Chessr",
+				"type": "python",
+				"request": "launch",
+				"program": "Chessr.Python/__init__.py",
+				"console": "integratedTerminal"
+			}
+		],
+		"compounds": []
+	}
+}

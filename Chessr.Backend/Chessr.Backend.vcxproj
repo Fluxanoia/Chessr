@@ -181,7 +181,13 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="module.cpp" />
+    <ClCompile Include="board.cpp" />
+    <ClCompile Include="chess_engine.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="board.hpp" />
+    <ClInclude Include="enums.hpp" />
+    <ClInclude Include="data.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

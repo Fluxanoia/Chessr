@@ -1,10 +1,8 @@
 import os
 
-import backend
+# import backend
 
 from src.master import Master
-
-backend.SomeClass(1)
 
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = 'hide'
 
