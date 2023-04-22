@@ -1,15 +1,6 @@
 {
 	"folders": [
 		{
-			"name": "Python",
-			"path": "./Chessr.Python"
-		},
-		{
-			"name": "Backend",
-			"path": "./Chessr.Backend"
-		},
-		{
-			"name": "Root",
 			"path": "."
 		}
 	],
@@ -22,7 +13,10 @@
 		"python.analysis.extraPaths": [
 			"../build"
 		],
-		"explorer.excludeGitIgnore": true
+		"explorer.excludeGitIgnore": true,
+		"pylint.args": [
+			"--rcfile Chessr.Python/.pylintrc"
+		]
 	},
 	"launch": {
 		"version": "0.2.0",
