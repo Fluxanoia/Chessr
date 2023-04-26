@@ -1,7 +1,7 @@
 #pragma once
 
 #include <tuple>
-#include "enums.hpp"
+#include "types.hpp"
 
 class Piece {
 private:
@@ -11,28 +11,32 @@ private:
 public:
 	Piece(PieceType type, Player player) : type(type), player(player) {}
 
-	PieceType get_type() {
+	const PieceType& get_type() const
+	{
 		return this->type;
 	}
 
-	Player get_player() {
+	const Player& get_player() const
+	{
 		return this->player;
 	}
 };
 
 class Move {
 private:
-	const std::tuple<int, int> from;
-	const std::tuple<int, int> to;
+	const Coordinate from;
+	const Coordinate to;
 
 public:
-	Move(std::tuple<int, int> from, std::tuple<int, int> to) : from(from), to(to) {}
+	Move(Coordinate from, Coordinate to) : from(from), to(to) {}
 
-	std::tuple<int, int> get_from() {
+	const Coordinate& get_from() const
+	{
 		return this->from;
 	}
 
-	std::tuple<int, int> get_to() {
+	const Coordinate& get_to() const
+	{
 		return this->to;
 	}
 };

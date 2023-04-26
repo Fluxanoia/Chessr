@@ -110,6 +110,7 @@
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(PythonDir)\include;$(SolutionDir)Chessr.Python\.env\Lib\site-packages\pybind11\include</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -140,6 +141,7 @@ echo F|xcopy /y "$(OutDir)$(TargetName)-stubs\__init__.pyi" "$(OutDir)..\$(Targe
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(PythonDir)\include;$(SolutionDir)Chessr.Python\.env\Lib\site-packages\pybind11\include</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -170,6 +172,7 @@ echo F|xcopy /y "$(OutDir)$(TargetName)-stubs\__init__.pyi" "$(OutDir)..\$(Targe
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(PythonDir)\include;$(SolutionDir)Chessr.Python\.env\Lib\site-packages\pybind11\include</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -201,6 +204,7 @@ echo F|xcopy /y "$(OutDir)$(TargetName)-stubs\__init__.pyi" "$(OutDir)..\$(Targe
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(PythonDir)\include;$(SolutionDir)Chessr.Python\.env\Lib\site-packages\pybind11\include</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -227,11 +231,23 @@ echo F|xcopy /y "$(OutDir)$(TargetName)-stubs\__init__.pyi" "$(OutDir)..\$(Targe
   <ItemGroup>
     <ClCompile Include="board.cpp" />
     <ClCompile Include="chess_engine.cpp" />
+    <ClCompile Include="flag_board.cpp" />
+    <ClCompile Include="module.cpp" />
+    <ClCompile Include="move_generator.cpp" />
+    <ClCompile Include="piece_configuration.cpp" />
+    <ClCompile Include="piece_data.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="board.hpp" />
-    <ClInclude Include="enums.hpp" />
+    <ClInclude Include="chess_engine.hpp" />
     <ClInclude Include="data.hpp" />
+    <ClInclude Include="exceptions.hpp" />
+    <ClInclude Include="flag_board.hpp" />
+    <ClInclude Include="maths.hpp" />
+    <ClInclude Include="move_generator.hpp" />
+    <ClInclude Include="piece_configuration.hpp" />
+    <ClInclude Include="piece_data.hpp" />
+    <ClInclude Include="types.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
