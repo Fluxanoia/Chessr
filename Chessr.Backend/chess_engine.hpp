@@ -3,6 +3,7 @@
 #include <set>
 #include <vector>
 #include <optional>
+#include <algorithm>
 #include "types.hpp"
 #include "maths.hpp"
 #include "board.hpp"

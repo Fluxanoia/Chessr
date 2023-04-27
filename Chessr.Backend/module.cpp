@@ -40,7 +40,7 @@ PYBIND11_MODULE(backend, m) {
         .def_property_readonly("player", &Piece::get_player);
 
     py::class_<Move>(m, "Move")
-        .def(py::init<std::tuple<int, int>, std::tuple<int, int>>())
+        .def(py::init<Coordinate, Coordinate>())
         .def_property_readonly("from_gxy", &Move::get_from)
         .def_property_readonly("to_gxy", &Move::get_to);
 

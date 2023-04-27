@@ -1,77 +1,101 @@
 #include "flag_board.hpp"
 
-FlagBoard::FlagBoard(const Coordinate& dimensions) : std::vector<std::vector<bool>>(), dimensions(dimensions)
+#pragma region Public Methods
+
+FlagBoard::FlagBoard(const Coordinate& dimensions, const bool default_value)
+	: std::vector<std::vector<bool>>(), dimensions(dimensions)
 {
-    const auto& [width, height] = this->dimensions;
-    for (auto i = 0; i < height; i++)
-    {
-        this->push_back(std::vector<bool>(width, false));
-    }
+	const auto& [width, height] = this->dimensions;
+	for (auto i = 0; i < height; i++)
+	{
+		this->push_back(std::vector<bool>(width, default_value));
+	}
 }
 
-void FlagBoard::flag_attacks(
-    const Board& board,
-    const Player& player,
-    const PieceData& piece_data,
-    const Coordinate& coordinate,
-    const std::optional<Coordinate>& ignore_coordinate,
-    const bool ignore_pieces,
-    const bool reverse_rays)
+void FlagBoard::flag(const std::optional<Coordinate> coordinate)
 {
-    auto cells = MoveGenerator::get_attacks(board, player, piece_data, coordinate, ignore_coordinate, ignore_pieces, reverse_rays);
-    for (auto& cell : cells)
-    {
-        const auto& [i, j] = cell;
-        this->operator[](i)[j] = true;
-    }
+	set_coordinates(coordinate, true);
 }
 
-void FlagBoard::flag_ray(
-    const Board& board,
-    const Player& player,
-    const Coordinate& ray,
-    const Coordinate& coordinate,
-    const std::optional<Coordinate>& ignore_coordinate,
-    const bool ignore_pieces)
+void FlagBoard::flag(const std::vector<Coordinate> coordinates)
 {
-    auto cells = MoveGenerator::get_ray(board, player, ray, coordinate, ignore_coordinate, ignore_pieces);
-    for (auto& cell : cells)
-    {
-        const auto& [i, j] = cell;
-        this->operator[](i)[j] = true;
-    }
+	set_coordinates(coordinates, true);
 }
 
-void FlagBoard::flag_jump(
-    const Board& board,
-    const Player& player,
-    const Coordinate& jump,
-    const Coordinate& coordinate,
-    const std::optional<Coordinate>& ignore_coordinate,
-    const bool ignore_pieces)
+void FlagBoard::unflag(const std::optional<Coordinate> coordinate)
 {
-    auto cell = MoveGenerator::get_jump(board, player, jump, coordinate, ignore_pieces);
-    if (!cell.has_value())
-    {
-        return;
-    }
-
-    const auto& [i, j] = cell.value();
-    this->operator[](i)[j] = true;
+	set_coordinates(coordinate, false);
 }
 
-std::vector<Coordinate> FlagBoard::mask(
-    const std::vector<Coordinate> coordinates,
-    const bool invert) const
+void FlagBoard::unflag(const std::vector<Coordinate> coordinates)
 {
-    std::vector<Coordinate> masked = {};
-    for (auto& coordinate : coordinates)
-    {
-        const auto& [i, j] = coordinate;
-        if (this->operator[](i)[j] != invert)
-        {
-            masked.push_back(coordinate);
-        }
-    }
-    return masked;
+	set_coordinates(coordinates, false);
 }
+
+void FlagBoard::set_all(const bool value)
+{
+	const auto& [width, height] = this->dimensions;
+	for (auto i = 0; i < height; i++)
+	{
+		for (auto j = 0; j < width; j++)
+		{
+			this->operator[](i)[j] = value;
+		}
+	}
+}
+
+void FlagBoard::restrict(const std::vector<Coordinate> coordinates)
+{
+	const auto& [width, height] = this->dimensions;
+	for (auto i = 0; i < height; i++)
+	{
+		for (auto j = 0; j < width; j++)
+		{
+			if (std::find(coordinates.begin(), coordinates.end(), Coordinate{ i, j }) == coordinates.end())
+			{
+				this->operator[](i)[j] = false;
+			}
+		}
+	}
+}
+
+std::vector<Coordinate> FlagBoard::mask(const std::vector<Coordinate> coordinates) const
+{
+	std::vector<Coordinate> masked = {};
+	for (auto& coordinate : coordinates)
+	{
+		const auto& [i, j] = coordinate;
+		if (this->operator[](i)[j])
+		{
+			masked.push_back(coordinate);
+		}
+	}
+	return masked;
+}
+
+#pragma endregion
+
+#pragma region Private Methods
+
+void FlagBoard::set_coordinates(const std::optional<Coordinate> coordinate, const bool value)
+{
+	if (!coordinate.has_value())
+	{
+		return;
+	}
+
+	const auto& [i, j] = coordinate.value();
+	this->operator[](i)[j] = value;
+}
+
+void FlagBoard::set_coordinates(const std::vector<Coordinate> coordinates, const bool value)
+{
+	for (auto& cell : coordinates)
+	{
+		const auto& [i, j] = cell;
+		this->operator[](i)[j] = value;
+	}
+}
+
+#pragma endregion
+

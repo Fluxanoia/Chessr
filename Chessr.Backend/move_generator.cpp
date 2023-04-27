@@ -1,83 +1,172 @@
 #include "move_generator.hpp"
 
-std::vector<Coordinate> MoveGenerator::get_attacks(
+#pragma region Public Methods
+
+FlagBoard MoveGenerator::get_king_move_mask(
+	const Board& board,
+	const Player& player,
+	const Coordinate& coordinate)
+{
+	FlagBoard king_move_mask = { board.get_dimensions(), true };
+
+	const auto& [width, height] = board.get_dimensions();
+	const auto& piece_configuration = PieceConfiguration::get_instance();
+	const auto opposing_player = MoveGenerator::get_opposing_player(player);
+	for (auto i = 0; i < height; i++)
+	{
+		for (auto j = 0; j < width; j++)
+		{
+			Coordinate cell = { i, j };
+			if (!board.has_piece(cell))
+			{
+				continue;
+			}
+
+			auto& piece = board.get_piece(cell);
+			if (piece.get_player() != opposing_player)
+			{
+				continue;
+			}
+
+			auto possible_attacks = MoveGenerator::get_possible_attacks(
+				board,
+				opposing_player,
+				piece_configuration.get_data(piece.get_type()),
+				cell,
+				coordinate);
+
+			king_move_mask.unflag(possible_attacks);
+		}
+	}
+
+	return king_move_mask;
+}
+
+std::vector<Coordinate> MoveGenerator::get_possible_attacks(
 	const Board& board,
 	const Player& player,
 	const PieceData& piece_data,
 	const Coordinate& coordinate,
-	const std::optional<Coordinate>& ignore_coordinate,
-	const bool ignore_pieces,
-	const bool reverse_rays)
+	const std::optional<Coordinate>& ignore_coordinate)
 {
-	auto& rays = piece_data.get_attack_rays(player, reverse_rays);
-	auto& jumps = piece_data.get_attack_jumps(player, reverse_rays);
-	return get_moves(board, player, rays, jumps, coordinate, ignore_coordinate, ignore_pieces);
+	auto& rays = piece_data.get_attack_rays(player);
+	auto& jumps = piece_data.get_attack_jumps(player);
+	return get_moves(board, player, rays, jumps, coordinate, ignore_coordinate, true);
 }
 
-std::vector<Coordinate> MoveGenerator::get_pushes(
+std::vector<Coordinate> MoveGenerator::get_attacking_coordinates(
+	const Board& board,
+	const Player& player,
+	const Coordinate& coordinate)
+{
+	auto& piece_configuration = PieceConfiguration::get_instance();
+	const auto opposing_player = get_opposing_player(player);
+
+	std::vector<Coordinate> attacking_cells = {};
+	for (auto& piece_type : piece_configuration.get_piece_types())
+	{
+		const auto& piece_data = piece_configuration.get_data(piece_type);
+		auto& rays = piece_data.get_attack_rays(player, true);
+		auto& jumps = piece_data.get_attack_jumps(player, true);
+		auto possible_attacking_cells = get_moves(
+			board,
+			opposing_player,
+			rays,
+			jumps,
+			coordinate,
+			{},
+			true);
+
+		for (auto& cell : possible_attacking_cells)
+		{
+			if (!board.has_piece(cell))
+			{
+				continue;
+			}
+
+			auto& piece = board.get_piece(cell);
+			if (piece.get_player() == opposing_player && piece.get_type() == piece_type)
+			{
+				attacking_cells.push_back(cell);
+			}
+		}
+	}
+
+	return attacking_cells;
+}
+
+std::vector<Coordinate> MoveGenerator::get_valid_attack_moves(
 	const Board& board,
 	const Player& player,
 	const PieceData& piece_data,
 	const Coordinate& coordinate)
 {
-	auto& rays = piece_data.get_push_rays(player, false);
-	auto& jumps = piece_data.get_push_jumps(player, false);
-	return get_moves(board, player, rays, jumps, coordinate, std::optional<Coordinate>(), false);
-}
+	auto& rays = piece_data.get_attack_rays(player);
+	auto& jumps = piece_data.get_attack_jumps(player);
+	auto attacks = get_moves(board, player, rays, jumps, coordinate, {}, true);
 
-std::vector<Coordinate> MoveGenerator::get_moves(
-	const Board& board,
-	const Player& player,
-	const std::vector<Coordinate>& rays,
-	const std::vector<Coordinate>& jumps,
-	const Coordinate& coordinate,
-	const std::optional<Coordinate>& ignore_coordinate,
-	const bool ignore_pieces)
-{
-	std::vector<Coordinate> cells = {};
-	for (auto& ray : rays)
+	auto it = attacks.begin();
+	while (it != attacks.end())
 	{
-		auto cells = get_ray(board, player, ray, coordinate, ignore_coordinate, ignore_pieces);
-		cells.insert(cells.end(), cells.begin(), cells.end());
-	}
-
-	for (auto& jump : jumps)
-	{
-		auto cell = get_jump(board, player, jump, coordinate, ignore_pieces);
-		if (cell.has_value())
+		const auto& attack = *it;
+		if (board.has_piece(attack) && board.get_piece(attack).get_player() != player)
 		{
-			cells.push_back(cell.value());
+			it++;
+		}
+		else
+		{
+			it = attacks.erase(it);
 		}
 	}
 
-	return cells;
+	return attacks;
 }
 
-std::vector<Coordinate> MoveGenerator::get_all_moves(
+std::vector<Coordinate> MoveGenerator::get_valid_push_moves(
 	const Board& board,
 	const Player& player,
 	const PieceData& piece_data,
 	const Coordinate& coordinate)
 {
-	auto pushes = get_pushes(board, player, piece_data, coordinate);
-	auto attacks = get_attacks(board, player, piece_data, coordinate, std::optional<Coordinate>(), false, false);
+	auto& rays = piece_data.get_push_rays(player);
+	auto& jumps = piece_data.get_push_jumps(player);
+	return get_moves(board, player, rays, jumps, coordinate, {}, false);
+}
 
-	for (const auto& attack : attacks)
+std::vector<Coordinate> MoveGenerator::get_valid_moves(
+	const Board& board,
+	const Player& player,
+	const PieceData& piece_data,
+	const Coordinate& coordinate)
+{
+	auto moves = get_valid_push_moves(board, player, piece_data, coordinate);
+	auto attacks = get_valid_attack_moves(board, player, piece_data, coordinate);
+	moves.insert(moves.end(), attacks.begin(), attacks.end());
+	return moves;
+}
+
+std::vector<Coordinate> MoveGenerator::get_blocks_to_attack(
+	const Board& board,
+	const Player& player,
+	const PieceData& piece_data,
+	const Coordinate& from,
+	const Coordinate& to)
+{
+	for (auto& ray : piece_data.get_attack_rays(player))
 	{
-		if (!board.has_piece(attack))
+		auto cells = get_ray(board, player, ray, from, {}, true);
+		if (cells.size() > 0 && *cells.end() == to)
 		{
-			continue;
-		}
-
-		const auto& piece = board.get_piece(attack);
-		if (piece.get_player() != player)
-		{
-			pushes.push_back(attack);
+			cells.pop_back();
+			return cells;
 		}
 	}
-
-	return pushes;
+	return {};
 }
+
+#pragma endregion
+
+#pragma region Private Methods
 
 std::vector<Coordinate> MoveGenerator::get_ray(
 	const Board& board,
@@ -85,7 +174,7 @@ std::vector<Coordinate> MoveGenerator::get_ray(
 	const Coordinate& ray,
 	const Coordinate& coordinate,
 	const std::optional<Coordinate>& ignore_coordinate,
-	const bool ignore_pieces)
+	const bool attack)
 {
 	std::vector<Coordinate> cells = {};
 
@@ -93,7 +182,7 @@ std::vector<Coordinate> MoveGenerator::get_ray(
 	while (in_bounds(board.get_dimensions(), cell))
 	{
 		const auto& [i, j] = cell;
-		auto ignore = ignore_pieces || (ignore_coordinate.has_value() && ignore_coordinate.value() == cell);
+		auto ignore = ignore_coordinate.has_value() && ignore_coordinate.value() == cell;
 
 		if (ignore || !board.has_piece(cell))
 		{
@@ -101,8 +190,7 @@ std::vector<Coordinate> MoveGenerator::get_ray(
 		}
 		else
 		{
-			auto& piece = board.get_piece(cell);
-			if (piece.get_player() != player)
+			if (attack && board.get_piece(cell).get_player() != player)
 			{
 				cells.push_back(cell);
 			}
@@ -121,18 +209,53 @@ std::optional<Coordinate> MoveGenerator::get_jump(
 	const Player& player,
 	const Coordinate& jump,
 	const Coordinate& coordinate,
-	const bool ignore_pieces)
+	const bool attack)
 {
 	auto cell = add_coordinates(coordinate, jump);
 	if (!in_bounds(board.get_dimensions(), cell))
 	{
-		return std::optional<Coordinate>();
+		return {};
 	}
 
-	if (ignore_pieces || (!board.has_piece(cell) || board.get_piece(cell).get_player() != player))
+	if (!board.has_piece(cell))
 	{
 		return cell;
 	}
 
-	return std::optional<Coordinate>();
+	if (attack && board.get_piece(cell).get_player() != player)
+	{
+		return cell;
+	}
+
+	return {};
 }
+
+std::vector<Coordinate> MoveGenerator::get_moves(
+	const Board& board,
+	const Player& player,
+	const std::vector<Coordinate>& rays,
+	const std::vector<Coordinate>& jumps,
+	const Coordinate& coordinate,
+	const std::optional<Coordinate>& ignore_coordinate,
+	const bool attack)
+{
+	std::vector<Coordinate> cells = {};
+	for (auto& ray : rays)
+	{
+		auto cells = get_ray(board, player, ray, coordinate, ignore_coordinate, attack);
+		cells.insert(cells.end(), cells.begin(), cells.end());
+	}
+
+	for (auto& jump : jumps)
+	{
+		auto cell = get_jump(board, player, jump, coordinate, attack);
+		if (cell.has_value())
+		{
+			cells.push_back(cell.value());
+		}
+	}
+
+	return cells;
+}
+
+#pragma endregion
