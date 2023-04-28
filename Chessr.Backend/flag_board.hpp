@@ -3,6 +3,7 @@
 #include <vector>
 #include <algorithm>
 #include "types.hpp"
+#include "exceptions.hpp"
 
 class FlagBoard : public std::vector<std::vector<bool>>
 {
@@ -17,7 +18,6 @@ public:
 
     FlagBoard(const Coordinate& dimensions, const bool default_value = false);
 
-
     void set_all(const bool value);
     void flag(const std::vector<Coordinate> coordinates);
     void flag(const std::optional<Coordinate> coordinates);
@@ -25,6 +25,6 @@ public:
     void unflag(const std::optional<Coordinate> coordinates);
     void restrict(const std::vector<Coordinate> coordinates);
 
-    std::vector<Coordinate> mask(const std::vector<Coordinate> coordinates) const;
-
+    std::vector<Coordinate> get_flagged() const;
+    std::vector<Coordinate> mask_coordinates(const std::vector<Coordinate> coordinates) const;
 };

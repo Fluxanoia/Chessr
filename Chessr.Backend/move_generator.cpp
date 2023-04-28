@@ -70,7 +70,7 @@ std::vector<Coordinate> MoveGenerator::get_attacking_coordinates(
 		auto& jumps = piece_data.get_attack_jumps(player, true);
 		auto possible_attacking_cells = get_moves(
 			board,
-			opposing_player,
+			player,
 			rays,
 			jumps,
 			coordinate,
@@ -162,6 +162,64 @@ std::vector<Coordinate> MoveGenerator::get_blocks_to_attack(
 		}
 	}
 	return {};
+}
+
+std::vector<PinnedPiece> MoveGenerator::get_pins(
+	const Board& board,
+	const Player& player)
+{
+	auto& piece_configuration = PieceConfiguration::get_instance();
+	const auto opposing_player = get_opposing_player(player);
+	const auto king_positions = board.positions_of(PieceType::KING, opposing_player);
+
+	std::vector<PinnedPiece> pinned_pieces = {};
+	for (const auto& piece_type : piece_configuration.get_piece_types())
+	{
+		const auto& piece_data = piece_configuration.get_data(piece_type);
+		auto& rays = piece_data.get_attack_rays(player);
+		auto& reverse_rays = piece_data.get_attack_rays(player, true);
+
+		for (const auto& king_position : king_positions)
+		for (const auto& coordinate : board.positions_of(piece_type, opposing_player))
+		for (auto i = 0; i < rays.size(); i++)
+		{
+			auto outgoing = get_ray(board, opposing_player, rays[i], coordinate, {}, true);
+			auto incoming = get_ray(board, opposing_player, reverse_rays[i], king_position, {}, true);
+			if (outgoing.size() == 0 || incoming.size() == 0 || outgoing.back() != incoming.back())
+			{
+				continue;
+			}
+
+			const auto& pin_coordinate = outgoing.back();
+			if (!board.has_piece(pin_coordinate) || board.get_piece(pin_coordinate).get_player() != player)
+			{
+				continue;
+			}
+
+			auto& possible_moves = outgoing;
+			possible_moves.insert(outgoing.end(), incoming.begin(), incoming.end());
+			possible_moves.push_back(coordinate);
+
+			auto found = false;
+			for (auto& pinned_piece : pinned_pieces)
+			{
+				if (pinned_piece.coordinate == pin_coordinate)
+				{
+					found = true;
+					pinned_piece.move_mask.restrict(possible_moves);
+					break;
+				}
+			}
+						
+			if (!found)
+			{
+				pinned_pieces.push_back({ pin_coordinate, { board.get_dimensions(), true } });
+				pinned_pieces.back().move_mask.restrict(possible_moves);
+			}
+		}
+	}
+
+	return pinned_pieces;
 }
 
 #pragma endregion

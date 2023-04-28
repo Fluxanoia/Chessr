@@ -74,24 +74,9 @@ std::vector<PieceType> generate_piece_types(std::map<PieceType, PieceData> map)
 	return types;
 }
 
-std::vector<PieceType> generate_piece_types_sans_king(std::map<PieceType, PieceData> map)
-{
-	std::vector<PieceType> types = {};
-	for (const auto& [key, _] : map)
-	{
-		if (key == PieceType::KING)
-		{
-			continue;
-		}
-		types.push_back(key);
-	}
-	return types;
-}
-
 PieceConfiguration::PieceConfiguration()
 	: data(generate_piece_data()),
-	piece_types(generate_piece_types(data)),
-	piece_types_sans_king(generate_piece_types_sans_king(data))
+	piece_types(generate_piece_types(data))
 {
 }
 
@@ -103,9 +88,4 @@ const PieceData& PieceConfiguration::get_data(const PieceType piece_type) const
 const std::vector<PieceType>& PieceConfiguration::get_piece_types() const
 {
 	return this->piece_types;
-}
-
-const std::vector<PieceType>& PieceConfiguration::get_piece_types_sans_king() const
-{
-	return this->piece_types_sans_king;
 }

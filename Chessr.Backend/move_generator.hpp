@@ -7,6 +7,12 @@
 #include "flag_board.hpp"
 #include "piece_configuration.hpp"
 
+typedef struct _PinnedPiece
+{
+	const Coordinate& coordinate;
+	FlagBoard move_mask;
+} PinnedPiece;
+
 class MoveGenerator
 {
 public:
@@ -52,6 +58,10 @@ public:
 		const PieceData& piece_data,
 		const Coordinate& from,
 		const Coordinate& to);
+
+	static std::vector<PinnedPiece> get_pins(
+		const Board& board,
+		const Player& player);
 
 	static inline Player get_opposing_player(const Player& player)
 	{

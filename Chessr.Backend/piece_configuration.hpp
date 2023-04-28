@@ -9,7 +9,6 @@ private:
 
     const std::map<PieceType, PieceData> data;
     const std::vector<PieceType> piece_types;
-    const std::vector<PieceType> piece_types_sans_king;
 
     PieceConfiguration();
 
@@ -32,7 +31,6 @@ public:
 
     const PieceData& get_data(const PieceType piece_type) const;
     const std::vector<PieceType>& get_piece_types() const;
-    const std::vector<PieceType>& get_piece_types_sans_king() const;
 
     PieceConfiguration(PieceConfiguration const&) = delete;
     void operator=(PieceConfiguration const&) = delete;

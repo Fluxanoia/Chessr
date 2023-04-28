@@ -62,7 +62,7 @@ const std::vector<Move> ChessEngine::get_moves(const Player player) const {
 		{
 			// A king is under double check, so only moves by that king are valid.
 			const auto& double_check = double_checks.at(0);
-			const auto double_check_moves = double_check.move_mask.mask(
+			const auto double_check_moves = double_check.move_mask.mask_coordinates(
 				MoveGenerator::get_valid_moves(
 					board,
 					player,
@@ -171,28 +171,148 @@ const std::vector<Move> ChessEngine::get_moves(const Player player) const {
 
 	std::vector<Move> moves = {};
 
+#pragma region King Move Aggregation
+
 	for (const auto& king_information : king_informations)
 	{
-		const auto attacks = attackable.mask(
-			king_information.move_mask.mask(
+		const auto attacks = attackable.mask_coordinates(
+			king_information.move_mask.mask_coordinates(
 				MoveGenerator::get_valid_attack_moves(
 					board,
 					player,
 					king_piece_data,
 					king_information.coordinate)));
 
-		const auto pushes = pushable.mask(
-			king_information.move_mask.mask(
+		const auto pushes = pushable.mask_coordinates(
+			king_information.move_mask.mask_coordinates(
 				MoveGenerator::get_valid_push_moves(
 					board,
 					player,
 					king_piece_data,
 					king_information.coordinate)));
 
-		// TODO something
+		for (const auto& attack : attacks)
+		{
+			moves.push_back({ king_information.coordinate, attack });
+		}
+
+		for (const auto& push : pushes)
+		{
+			moves.push_back({ king_information.coordinate, push });
+		}
 	}
 
-	// TODO: add every other move
+#pragma endregion
 
-	return {};
+#pragma region Pin Move Aggregation
+
+	const auto& pins = MoveGenerator::get_pins(board, player);
+	for (const auto& pin : pins)
+	{
+		if (!board.has_piece(pin.coordinate))
+		{
+			continue;
+		}
+
+		const auto& piece = board.get_piece(pin.coordinate);
+		if (piece.get_player() != player || piece.get_type() == PieceType::KING)
+		{
+			continue;
+		}
+
+		const auto& piece_data = piece_configuration.get_data(piece.get_type());
+
+		const auto attacks = attackable.mask_coordinates(
+			pin.move_mask.mask_coordinates(
+				MoveGenerator::get_valid_attack_moves(
+					board,
+					player,
+					piece_data,
+					pin.coordinate)));
+
+		const auto pushes = pushable.mask_coordinates(
+			pin.move_mask.mask_coordinates(
+				MoveGenerator::get_valid_push_moves(
+					board,
+					player,
+					piece_data,
+					pin.coordinate)));
+
+		for (const auto& attack : attacks)
+		{
+			moves.push_back({ pin.coordinate, attack });
+		}
+
+		for (const auto& push : pushes)
+		{
+			moves.push_back({ pin.coordinate, push });
+		}
+	}
+
+#pragma endregion
+
+#pragma region Final Move Aggregation
+
+	const auto pin_coordinates = [](const std::vector<PinnedPiece>& pins)
+	{
+		std::vector<Coordinate> coordinates = {};
+		for (const auto& pin : pins)
+		{
+			coordinates.push_back(pin.coordinate);
+		}
+		return coordinates;
+	}(pins);
+
+	for (auto i = 0; i < height; i++)
+	{
+		for (auto j = 0; j < width; j++)
+		{
+			const Coordinate cell = { i, j };
+			if (!board.has_piece(cell))
+			{
+				continue;
+			}
+
+			const auto& piece = board.get_piece(cell);
+			if (piece.get_player() != player || piece.get_type() == PieceType::KING)
+			{
+				continue;
+			}
+
+			if (std::find(pin_coordinates.begin(), pin_coordinates.end(), cell) != pin_coordinates.end())
+			{
+				continue;
+			}
+
+			const auto& piece_data = piece_configuration.get_data(piece.get_type());
+
+			const auto attacks = attackable.mask_coordinates(
+				MoveGenerator::get_valid_attack_moves(
+					board,
+					player,
+					piece_data,
+					cell));
+
+			const auto pushes = pushable.mask_coordinates(
+				MoveGenerator::get_valid_push_moves(
+					board,
+					player,
+					piece_data,
+					cell));
+
+			for (const auto& attack : attacks)
+			{
+				moves.push_back({ cell, attack });
+			}
+
+			for (const auto& push : pushes)
+			{
+				moves.push_back({ cell, push });
+			}
+		}
+	}
+
+#pragma endregion
+
+	return moves;
 }

@@ -59,7 +59,7 @@ void FlagBoard::restrict(const std::vector<Coordinate> coordinates)
 	}
 }
 
-std::vector<Coordinate> FlagBoard::mask(const std::vector<Coordinate> coordinates) const
+std::vector<Coordinate> FlagBoard::mask_coordinates(const std::vector<Coordinate> coordinates) const
 {
 	std::vector<Coordinate> masked = {};
 	for (auto& coordinate : coordinates)
@@ -73,6 +73,22 @@ std::vector<Coordinate> FlagBoard::mask(const std::vector<Coordinate> coordinate
 	return masked;
 }
 
+std::vector<Coordinate> FlagBoard::get_flagged() const
+{
+	std::vector<Coordinate> flagged = {};
+	const auto& [width, height] = this->dimensions;
+	for (auto i = 0; i < height; i++)
+	{
+		for (auto j = 0; j < width; j++)
+		{
+			if (this->operator[](i)[j])
+			{
+				flagged.push_back({ i, j });
+			}
+		}
+	}
+	return flagged;
+}
 #pragma endregion
 
 #pragma region Private Methods
