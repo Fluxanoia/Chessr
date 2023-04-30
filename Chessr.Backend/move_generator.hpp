@@ -63,11 +63,6 @@ public:
 		const Board& board,
 		const Player& player);
 
-	static inline Player get_opposing_player(const Player& player)
-	{
-		return player == Player::WHITE ? Player::BLACK : Player::WHITE;
-	}
-
 	static std::vector<Coordinate> get_ray(
 		const Board& board,
 		const Player& player,
@@ -92,4 +87,8 @@ public:
 		const std::optional<Coordinate>& ignore_coordinate,
 		const bool attack);
 
+	static inline Player get_opposing_player(const Player& player)
+	{
+		return player == Player::WHITE ? Player::BLACK : Player::WHITE;
+	}
 };

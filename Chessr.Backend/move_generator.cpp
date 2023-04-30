@@ -153,7 +153,7 @@ std::vector<Coordinate> MoveGenerator::get_blocks_to_attack(
 	for (auto& ray : piece_data.get_attack_rays(player))
 	{
 		auto cells = get_ray(board, player, ray, from, {}, true);
-		if (cells.size() > 0 && *cells.end() == to)
+		if (cells.size() > 0 && cells.back() == to)
 		{
 			cells.pop_back();
 			return cells;
