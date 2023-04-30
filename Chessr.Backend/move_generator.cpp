@@ -1,7 +1,5 @@
 #include "move_generator.hpp"
 
-#pragma region Public Methods
-
 FlagBoard MoveGenerator::get_king_move_mask(
 	const Board& board,
 	const Player& player,
@@ -222,10 +220,6 @@ std::vector<PinnedPiece> MoveGenerator::get_pins(
 	return pinned_pieces;
 }
 
-#pragma endregion
-
-#pragma region Private Methods
-
 std::vector<Coordinate> MoveGenerator::get_ray(
 	const Board& board,
 	const Player& player,
@@ -244,13 +238,13 @@ std::vector<Coordinate> MoveGenerator::get_ray(
 
 		if (ignore || !board.has_piece(cell))
 		{
-			cells.push_back(cell);
+			cells.emplace_back(i, j);
 		}
 		else
 		{
 			if (attack && board.get_piece(cell).get_player() != player)
 			{
-				cells.push_back(cell);
+				cells.emplace_back(i, j);
 			}
 
 			break;
@@ -300,8 +294,10 @@ std::vector<Coordinate> MoveGenerator::get_moves(
 	std::vector<Coordinate> cells = {};
 	for (auto& ray : rays)
 	{
-		auto cells = get_ray(board, player, ray, coordinate, ignore_coordinate, attack);
-		cells.insert(cells.end(), cells.begin(), cells.end());
+		for (auto& cell : get_ray(board, player, ray, coordinate, ignore_coordinate, attack))
+		{
+			cells.push_back(cell);
+		}
 	}
 
 	for (auto& jump : jumps)
@@ -315,5 +311,3 @@ std::vector<Coordinate> MoveGenerator::get_moves(
 
 	return cells;
 }
-
-#pragma endregion

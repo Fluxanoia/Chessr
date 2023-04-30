@@ -13,5 +13,5 @@ inline bool in_bounds(const Coordinate& dimensions, const Coordinate& coordinate
 {
     const auto& [i, j] = coordinate;
     const auto& [width, height] = dimensions;
-    return i >= 0 && j >= 0 && i < height&& j < width;
+    return i >= 0 && j >= 0 && i < height && j < width;
 }

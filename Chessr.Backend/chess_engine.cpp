@@ -4,12 +4,18 @@ ChessEngine::ChessEngine(const Grid<Piece> starting_position) {
 	this->positions.push_back(Board{ starting_position });
 }
 
-typedef struct _KingInformation
+struct KingInformation
 {
-	const Coordinate& coordinate;
-	const FlagBoard& move_mask;
+	const Coordinate coordinate;
+	const FlagBoard move_mask;
 	const std::vector<Coordinate> checkers;
-} KingInformation;
+
+	KingInformation(Coordinate coordinate, FlagBoard move_mask, std::vector<Coordinate> checkers)
+		: coordinate(coordinate), move_mask(move_mask), checkers(checkers)
+	{
+	}
+	
+};
 
 const std::vector<Move> ChessEngine::get_moves(const Player player) const {
 	const auto& board = this->positions.back();
@@ -22,16 +28,14 @@ const std::vector<Move> ChessEngine::get_moves(const Player player) const {
 	auto king_informations = std::vector<KingInformation>{};
 	for (auto& coordinate : board.positions_of(PieceType::KING, player))
 	{
-		KingInformation king_information = {
+		king_informations.emplace_back(
 			coordinate,
 			MoveGenerator::get_king_move_mask(board, player, coordinate),
-			MoveGenerator::get_attacking_coordinates(board, player, coordinate)
-		};
-		king_informations.push_back(king_information);
+			MoveGenerator::get_attacking_coordinates(board, player, coordinate));
 	}
 
-	std::vector<KingInformation> single_checks = {};
-	std::vector<KingInformation> double_checks = {};
+	std::vector<std::reference_wrapper<const KingInformation>> single_checks = {};
+	std::vector<std::reference_wrapper<const KingInformation>> double_checks = {};
 	for (const auto& king_information : king_informations)
 	{
 		switch (king_information.checkers.size())
@@ -39,6 +43,7 @@ const std::vector<Move> ChessEngine::get_moves(const Player player) const {
 			case 0:
 				break;
 			case 1:
+				single_checks.push_back(std::ref(king_information));
 				single_checks.push_back(king_information);
 				break;
 			default:
@@ -62,12 +67,12 @@ const std::vector<Move> ChessEngine::get_moves(const Player player) const {
 		{
 			// A king is under double check, so only moves by that king are valid.
 			const auto& double_check = double_checks.at(0);
-			const auto double_check_moves = double_check.move_mask.mask_coordinates(
+			const auto double_check_moves = double_check.get().move_mask.mask_coordinates(
 				MoveGenerator::get_valid_moves(
 					board,
 					player,
 					king_piece_data,
-					double_check.coordinate));
+					double_check.get().coordinate));
 
 			switch (single_checks.size())
 			{
@@ -77,7 +82,7 @@ const std::vector<Move> ChessEngine::get_moves(const Player player) const {
 					std::vector<Move> moves = {};
 					for (const auto& destination : double_check_moves)
 					{
-						moves.push_back(Move{ double_check.coordinate, destination });
+						moves.push_back(Move{ double_check.get().coordinate, destination });
 					}
 					return moves;
 				}
@@ -87,7 +92,7 @@ const std::vector<Move> ChessEngine::get_moves(const Player player) const {
 					std::set<Coordinate> other_checkers = {};
 					for (const auto& single_check : single_checks)
 					{
-						for (const auto& checker : single_check.checkers)
+						for (const auto& checker : single_check.get().checkers)
 						{
 							other_checkers.insert(checker);
 						}
@@ -108,7 +113,7 @@ const std::vector<Move> ChessEngine::get_moves(const Player player) const {
 					if (capturable)
 					{
 						// We can capture the piece putting the other kings in check.
-						return std::vector<Move>{ { double_check.coordinate, other_checker } };
+						return std::vector<Move>{ { double_check.get().coordinate, other_checker } };
 					}
 					else
 					{
@@ -130,7 +135,7 @@ const std::vector<Move> ChessEngine::get_moves(const Player player) const {
 	std::set<Coordinate> all_checkers = {};
 	for (const auto& single_check : single_checks)
 	{
-		for (const auto& checker : single_check.checkers)
+		for (const auto& checker : single_check.get().checkers)
 		{
 			all_checkers.insert(checker);
 		}

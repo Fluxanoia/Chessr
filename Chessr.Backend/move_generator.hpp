@@ -68,22 +68,20 @@ public:
 		return player == Player::WHITE ? Player::BLACK : Player::WHITE;
 	}
 
-private:
-
 	static std::vector<Coordinate> get_ray(
 		const Board& board,
 		const Player& player,
 		const Coordinate& ray,
 		const Coordinate& coordinate,
 		const std::optional<Coordinate>& ignore_coordinate,
-		const bool ignore_pieces);
+		const bool attack);
 
 	static std::optional<Coordinate> get_jump(
 		const Board& board,
 		const Player& player,
 		const Coordinate& jump,
 		const Coordinate& coordinate,
-		const bool ignore_pieces);
+		const bool attack);
 
 	static std::vector<Coordinate> get_moves(
 		const Board& board,
