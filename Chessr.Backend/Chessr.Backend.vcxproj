@@ -72,7 +72,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <TargetName>backend</TargetName>
-    <TargetExt>.pyd</TargetExt>
+    <TargetExt>.dll</TargetExt>
     <OutDir>$(SolutionDir)build\$(Platform)-$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)build\$(Platform)-$(Configuration)\intermediate\</IntDir>
     <CustomBuildAfterTargets>
@@ -80,7 +80,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <TargetName>backend</TargetName>
-    <TargetExt>.pyd</TargetExt>
+    <TargetExt>.dll</TargetExt>
     <OutDir>$(SolutionDir)build\$(Platform)-$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)build\$(Platform)-$(Configuration)\intermediate\</IntDir>
     <CustomBuildAfterTargets>
@@ -88,7 +88,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <TargetName>backend</TargetName>
-    <TargetExt>.pyd</TargetExt>
+    <TargetExt>.dll</TargetExt>
     <OutDir>$(SolutionDir)build\$(Platform)-$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)build\$(Platform)-$(Configuration)\intermediate\</IntDir>
     <CustomBuildAfterTargets>
@@ -96,7 +96,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <TargetName>backend</TargetName>
-    <TargetExt>.pyd</TargetExt>
+    <TargetExt>.dll</TargetExt>
     <OutDir>$(SolutionDir)build\$(Platform)-$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)build\$(Platform)-$(Configuration)\intermediate\</IntDir>
     <CustomBuildAfterTargets>
@@ -118,7 +118,7 @@
     </Link>
     <PostBuildEvent>
       <Command>echo Copying build to the build root...
-xcopy /y "$(TargetPath)" "$(OutDir).."
+echo F|xcopy /y "$(TargetPath)" "$(OutDir)..\$(TargetName).pyd"
 
 cd /D "$(OutDir).."
 
@@ -151,7 +151,7 @@ echo F|xcopy /y "$(OutDir)$(TargetName)-stubs\__init__.pyi" "$(OutDir)..\$(Targe
     </Link>
     <PostBuildEvent>
       <Command>echo Copying build to the build root...
-xcopy /y "$(TargetPath)" "$(OutDir).."
+echo F|xcopy /y "$(TargetPath)" "$(OutDir)..\$(TargetName).pyd"
 
 cd /D "$(OutDir).."
 
@@ -181,7 +181,7 @@ echo F|xcopy /y "$(OutDir)$(TargetName)-stubs\__init__.pyi" "$(OutDir)..\$(Targe
     </Link>
     <PostBuildEvent>
       <Command>echo Copying build to the build root...
-xcopy /y "$(TargetPath)" "$(OutDir).."
+echo F|xcopy /y "$(TargetPath)" "$(OutDir)..\$(TargetName).pyd"
 
 cd /D "$(OutDir).."
 
@@ -215,7 +215,7 @@ echo F|xcopy /y "$(OutDir)$(TargetName)-stubs\__init__.pyi" "$(OutDir)..\$(Targe
     </Link>
     <PostBuildEvent>
       <Command>echo Copying build to the build root...
-xcopy /y "$(TargetPath)" "$(OutDir).."
+echo F|xcopy /y "$(TargetPath)" "$(OutDir)..\$(TargetName).pyd"
 
 cd /D "$(OutDir).."
 
