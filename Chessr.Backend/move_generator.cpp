@@ -1,5 +1,7 @@
 #include "move_generator.hpp"
 
+#pragma region Endangerment, Blocking, and Pinning
+
 FlagBoard MoveGenerator::get_king_move_mask(
 	const Board& board,
 	const Player& player,
@@ -93,56 +95,6 @@ std::vector<Coordinate> MoveGenerator::get_attacking_coordinates(
 	return attacking_cells;
 }
 
-std::vector<Coordinate> MoveGenerator::get_valid_attack_moves(
-	const Board& board,
-	const Player& player,
-	const PieceData& piece_data,
-	const Coordinate& coordinate)
-{
-	auto& rays = piece_data.get_attack_rays(player);
-	auto& jumps = piece_data.get_attack_jumps(player);
-	auto attacks = get_moves(board, player, rays, jumps, coordinate, {}, true);
-
-	auto it = attacks.begin();
-	while (it != attacks.end())
-	{
-		const auto& attack = *it;
-		if (board.has_piece(attack) && board.get_piece(attack).get_player() != player)
-		{
-			it++;
-		}
-		else
-		{
-			it = attacks.erase(it);
-		}
-	}
-
-	return attacks;
-}
-
-std::vector<Coordinate> MoveGenerator::get_valid_push_moves(
-	const Board& board,
-	const Player& player,
-	const PieceData& piece_data,
-	const Coordinate& coordinate)
-{
-	auto& rays = piece_data.get_push_rays(player);
-	auto& jumps = piece_data.get_push_jumps(player);
-	return get_moves(board, player, rays, jumps, coordinate, {}, false);
-}
-
-std::vector<Coordinate> MoveGenerator::get_valid_moves(
-	const Board& board,
-	const Player& player,
-	const PieceData& piece_data,
-	const Coordinate& coordinate)
-{
-	auto moves = get_valid_push_moves(board, player, piece_data, coordinate);
-	auto attacks = get_valid_attack_moves(board, player, piece_data, coordinate);
-	moves.insert(moves.end(), attacks.begin(), attacks.end());
-	return moves;
-}
-
 std::vector<Coordinate> MoveGenerator::get_blocks_to_attack(
 	const Board& board,
 	const Player& player,
@@ -201,24 +153,83 @@ std::vector<PinnedPiece> MoveGenerator::get_pins(
 			auto found = false;
 			for (auto& pinned_piece : pinned_pieces)
 			{
-				if (pinned_piece.coordinate == pin_coordinate)
+				if (pinned_piece.get_coordinate() == pin_coordinate)
 				{
 					found = true;
-					pinned_piece.move_mask.restrict(possible_moves);
+					pinned_piece.get_move_mask().restrict(possible_moves);
 					break;
 				}
 			}
-						
+
 			if (!found)
 			{
-				pinned_pieces.push_back({ pin_coordinate, { board.get_dimensions(), true } });
-				pinned_pieces.back().move_mask.restrict(possible_moves);
+				FlagBoard move_mask = { board.get_dimensions(), true };
+				move_mask.restrict(possible_moves);
+				pinned_pieces.emplace_back(pin_coordinate, move_mask);
 			}
 		}
 	}
 
 	return pinned_pieces;
 }
+
+#pragma endregion
+
+#pragma region Valid Move Calculations
+
+std::vector<Coordinate> MoveGenerator::get_valid_attack_moves(
+	const Board& board,
+	const Player& player,
+	const PieceData& piece_data,
+	const Coordinate& coordinate)
+{
+	auto& rays = piece_data.get_attack_rays(player);
+	auto& jumps = piece_data.get_attack_jumps(player);
+	auto attacks = get_moves(board, player, rays, jumps, coordinate, {}, true);
+
+	auto it = attacks.begin();
+	while (it != attacks.end())
+	{
+		const auto& attack = *it;
+		if (board.has_piece(attack) && board.get_piece(attack).get_player() != player)
+		{
+			it++;
+		}
+		else
+		{
+			it = attacks.erase(it);
+		}
+	}
+
+	return attacks;
+}
+
+std::vector<Coordinate> MoveGenerator::get_valid_push_moves(
+	const Board& board,
+	const Player& player,
+	const PieceData& piece_data,
+	const Coordinate& coordinate)
+{
+	auto& rays = piece_data.get_push_rays(player);
+	auto& jumps = piece_data.get_push_jumps(player);
+	return get_moves(board, player, rays, jumps, coordinate, {}, false);
+}
+
+std::vector<Coordinate> MoveGenerator::get_valid_moves(
+	const Board& board,
+	const Player& player,
+	const PieceData& piece_data,
+	const Coordinate& coordinate)
+{
+	auto moves = get_valid_push_moves(board, player, piece_data, coordinate);
+	auto attacks = get_valid_attack_moves(board, player, piece_data, coordinate);
+	moves.insert(moves.end(), attacks.begin(), attacks.end());
+	return moves;
+}
+
+#pragma endregion
+
+#pragma region Fundamental Calculations
 
 std::vector<Coordinate> MoveGenerator::get_ray(
 	const Board& board,
@@ -311,3 +322,5 @@ std::vector<Coordinate> MoveGenerator::get_moves(
 
 	return cells;
 }
+
+#pragma endregion

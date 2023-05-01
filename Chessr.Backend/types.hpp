@@ -5,9 +5,8 @@
 
 template <class T>
 using Grid = std::vector<std::vector<std::optional<T>>>;
-
-typedef signed long long CoordinateValue;
-typedef std::pair<CoordinateValue, CoordinateValue> Coordinate;
+using CoordinateValue = signed long long;
+using Coordinate = std::pair<CoordinateValue, CoordinateValue>;
 
 enum class PieceType
 {
@@ -16,9 +15,7 @@ enum class PieceType
     BISHOP,
     ROOK,
     KNIGHT,
-    PAWN,
-
-    PIECE_TYPE_MAX
+    PAWN
 };
 
 enum class Player

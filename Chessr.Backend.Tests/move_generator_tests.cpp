@@ -1,20 +1,15 @@
 #include "pch.h"
+#include "test_helpers.hpp"
 
 #include "../Chessr.Backend/move_generator.hpp"
-
-// TODO: move to some test helpers class
-std::optional<Piece> get_piece(PieceType piece_type, Player player)
-{
-	return Piece{ piece_type, player };
-}
 
 #pragma region get_king_move_mask
 
 TEST(MoveGeneratorTests, TestGetKingMoveMask1)
 {
-	const auto bk = get_piece(PieceType::KING, Player::BLACK);
-	const auto wk = get_piece(PieceType::KING, Player::WHITE);
-	const auto wr = get_piece(PieceType::ROOK, Player::WHITE);
+	const auto bk = TestHelpers::get_piece(PieceType::KING, Player::BLACK);
+	const auto wk = TestHelpers::get_piece(PieceType::KING, Player::WHITE);
+	const auto wr = TestHelpers::get_piece(PieceType::ROOK, Player::WHITE);
 	auto board = Board({
 		{ {}, {}, bk, {}, {} },
 		{ {}, {}, {}, {}, {} },
@@ -40,9 +35,9 @@ TEST(MoveGeneratorTests, TestGetKingMoveMask1)
 
 TEST(MoveGeneratorTests, TestGetKingMoveMask2)
 {
-	const auto bk = get_piece(PieceType::KING, Player::BLACK);
-	const auto wk = get_piece(PieceType::KING, Player::WHITE);
-	const auto wr = get_piece(PieceType::ROOK, Player::WHITE);
+	const auto bk = TestHelpers::get_piece(PieceType::KING, Player::BLACK);
+	const auto wk = TestHelpers::get_piece(PieceType::KING, Player::WHITE);
+	const auto wr = TestHelpers::get_piece(PieceType::ROOK, Player::WHITE);
 	auto board = Board({
 		{ {}, {}, {}, {}, {} },
 		{ {}, {}, {}, bk, {} },
@@ -68,9 +63,9 @@ TEST(MoveGeneratorTests, TestGetKingMoveMask2)
 
 TEST(MoveGeneratorTests, TestGetKingMoveMask3)
 {
-	const auto wk = get_piece(PieceType::KING, Player::WHITE);
-	const auto bk = get_piece(PieceType::KING, Player::BLACK);
-	const auto bb = get_piece(PieceType::BISHOP, Player::BLACK);
+	const auto wk = TestHelpers::get_piece(PieceType::KING, Player::WHITE);
+	const auto bk = TestHelpers::get_piece(PieceType::KING, Player::BLACK);
+	const auto bb = TestHelpers::get_piece(PieceType::BISHOP, Player::BLACK);
 	auto board = Board({
 		{ {}, {}, {}, {}, {} },
 		{ {}, {}, {}, {}, {} },
@@ -96,13 +91,97 @@ TEST(MoveGeneratorTests, TestGetKingMoveMask3)
 
 #pragma endregion
 
+#pragma region get_possible_attacks
+
+TEST(MoveGeneratorTests, TestGetPossibleAttacks)
+{
+	const auto bk = TestHelpers::get_piece(PieceType::KING, Player::BLACK);
+	const auto br = TestHelpers::get_piece(PieceType::ROOK, Player::BLACK);
+	const auto wk = TestHelpers::get_piece(PieceType::KING, Player::WHITE);
+	const auto wr = TestHelpers::get_piece(PieceType::ROOK, Player::WHITE);
+	auto board = Board({
+		{ br, {}, bk, {}, {} },
+		{ {}, {}, {}, {}, {} },
+		{ {}, {}, {}, {}, {} },
+		{ {}, {}, {}, wr, {} },
+		{ wr, {}, wk, {}, br },
+	});
+
+	auto piece_data = TestHelpers::get_piece_data(
+		{ { 1, 0 }, { 1, -1 }, { -1, 0 } },
+		{ { -2, 2 }, { 0, -2 }, { -2, -2 } },
+		{},
+		{});
+	auto attacks = MoveGenerator::get_possible_attacks(board, Player::BLACK, piece_data, { 2, 2 }, {});
+
+	EXPECT_EQ(attacks.size(), 6);
+	EXPECT_TRUE(std::find(attacks.begin(), attacks.end(), Coordinate(4, 0)) != attacks.end());
+	EXPECT_TRUE(std::find(attacks.begin(), attacks.end(), Coordinate(3, 2)) != attacks.end());
+	EXPECT_TRUE(std::find(attacks.begin(), attacks.end(), Coordinate(4, 2)) != attacks.end());
+	EXPECT_TRUE(std::find(attacks.begin(), attacks.end(), Coordinate(1, 1)) != attacks.end());
+	EXPECT_TRUE(std::find(attacks.begin(), attacks.end(), Coordinate(1, 2)) != attacks.end());
+	EXPECT_TRUE(std::find(attacks.begin(), attacks.end(), Coordinate(2, 0)) != attacks.end());
+}
+
+TEST(MoveGeneratorTests, TestGetPossibleAttacks_Ignoring)
+{
+	const auto bk = TestHelpers::get_piece(PieceType::KING, Player::BLACK);
+	const auto br = TestHelpers::get_piece(PieceType::ROOK, Player::BLACK);
+	const auto wk = TestHelpers::get_piece(PieceType::KING, Player::WHITE);
+	const auto wr = TestHelpers::get_piece(PieceType::ROOK, Player::WHITE);
+	auto board = Board({
+		{ br, {}, bk, {}, {} },
+		{ {}, {}, {}, {}, {} },
+		{ {}, {}, {}, {}, {} },
+		{ {}, {}, {}, wr, {} },
+		{ wr, {}, wk, {}, wr },
+	});
+
+	auto piece_data = TestHelpers::get_piece_data(
+		{ { 1, 0 }, { 1, -1 }, { -1, 0 }, { -1, 1 } },
+		{ { 0, -2 }, { -2, -2 } },
+		{},
+		{});
+	auto attacks = MoveGenerator::get_possible_attacks(board, Player::BLACK, piece_data, { 2, 2 }, Coordinate{ 3, 3 });
+
+	EXPECT_EQ(attacks.size(), 8);
+	EXPECT_TRUE(std::find(attacks.begin(), attacks.end(), Coordinate(4, 0)) != attacks.end());
+	EXPECT_TRUE(std::find(attacks.begin(), attacks.end(), Coordinate(3, 2)) != attacks.end());
+	EXPECT_TRUE(std::find(attacks.begin(), attacks.end(), Coordinate(4, 2)) != attacks.end());
+	EXPECT_TRUE(std::find(attacks.begin(), attacks.end(), Coordinate(1, 1)) != attacks.end());
+	EXPECT_TRUE(std::find(attacks.begin(), attacks.end(), Coordinate(1, 2)) != attacks.end());
+	EXPECT_TRUE(std::find(attacks.begin(), attacks.end(), Coordinate(2, 0)) != attacks.end());
+	EXPECT_TRUE(std::find(attacks.begin(), attacks.end(), Coordinate(3, 3)) != attacks.end());
+	EXPECT_TRUE(std::find(attacks.begin(), attacks.end(), Coordinate(4, 4)) != attacks.end());
+}
+
+#pragma endregion
+
+#pragma region get_attacking_coordinates
+
+// TODO
+
+#pragma endregion
+
+#pragma region get_blocks_to_attack
+
+// TODO
+
+#pragma endregion
+
+#pragma region get_pins
+
+// TODO
+
+#pragma endregion
+
 #pragma region get_ray
 
 TEST(MoveGeneratorTests, TestGetRay)
 {
 	auto board = Board({
 		{ {}, {}, {}, {}, {} },
-		{ {}, {}, {}, get_piece(PieceType::PAWN, Player::BLACK), {}},
+		{ {}, {}, {}, TestHelpers::get_piece(PieceType::PAWN, Player::BLACK), {}},
 		{ {}, {}, {}, {}, {} },
 		{ {}, {}, {}, {}, {} },
 		});
@@ -128,8 +207,8 @@ TEST(MoveGeneratorTests, TestGetRay_Attacks)
 {
 	auto board = Board({
 		{ {}, {}, {}, {}, {} },
-		{ {}, {}, {}, get_piece(PieceType::PAWN, Player::BLACK), {}},
-		{ {}, get_piece(PieceType::PAWN, Player::WHITE), {}, {}, {}},
+		{ {}, {}, {}, TestHelpers::get_piece(PieceType::PAWN, Player::BLACK), {}},
+		{ {}, TestHelpers::get_piece(PieceType::PAWN, Player::WHITE), {}, {}, {}},
 		{ {}, {}, {}, {}, {} },
 		});
 
@@ -151,8 +230,8 @@ TEST(MoveGeneratorTests, TestGetRay_Ignoring)
 {
 	auto board = Board({
 		{ {}, {}, {}, {}, {} },
-		{ {}, {}, get_piece(PieceType::PAWN, Player::BLACK), {}, {}},
-		{ {}, get_piece(PieceType::PAWN, Player::WHITE), {}, {}, {}},
+		{ {}, {}, TestHelpers::get_piece(PieceType::PAWN, Player::BLACK), {}, {}},
+		{ {}, TestHelpers::get_piece(PieceType::PAWN, Player::WHITE), {}, {}, {}},
 		{ {}, {}, {}, {}, {} },
 		});
 
@@ -182,7 +261,7 @@ TEST(MoveGeneratorTests, TestGetJump)
 	auto board = Board({
 		{ {}, {}, {}, {}, {} },
 		{ {}, {}, {}, {}, {} },
-		{ {}, {}, get_piece(PieceType::PAWN, Player::BLACK), {}, {} },
+		{ {}, {}, TestHelpers::get_piece(PieceType::PAWN, Player::BLACK), {}, {} },
 		{ {}, {}, {}, {}, {} },
 		{ {}, {}, {}, {}, {} },
 	});
@@ -208,9 +287,9 @@ TEST(MoveGeneratorTests, TestGetJump_Attacks)
 	auto board = Board({
 		{ {}, {}, {}, {}, {} },
 		{ {}, {}, {}, {}, {} },
-		{ {}, {}, get_piece(PieceType::PAWN, Player::BLACK), {}, {} },
+		{ {}, {}, TestHelpers::get_piece(PieceType::PAWN, Player::BLACK), {}, {} },
 		{ {}, {}, {}, {}, {} },
-		{ {}, {}, {}, {}, get_piece(PieceType::PAWN, Player::WHITE) },
+		{ {}, {}, {}, {}, TestHelpers::get_piece(PieceType::PAWN, Player::WHITE) },
 		});
 
 	auto jump_1 = MoveGenerator::get_jump(board, Player::WHITE, { 0, 1 }, { 2, 1 }, true);
@@ -236,8 +315,8 @@ TEST(MoveGeneratorTests, TestGetJump_Attacks)
 
 TEST(MoveGeneratorTests, TestGetMoves)
 {
-	const auto bl = get_piece(PieceType::PAWN, Player::BLACK);
-	const auto wh = get_piece(PieceType::PAWN, Player::WHITE);
+	const auto bl = TestHelpers::get_piece(PieceType::PAWN, Player::BLACK);
+	const auto wh = TestHelpers::get_piece(PieceType::PAWN, Player::WHITE);
 	auto board = Board({
 		{ {}, {}, {}, {}, {} },
 		{ {}, bl, {}, {}, bl },
@@ -261,8 +340,8 @@ TEST(MoveGeneratorTests, TestGetMoves)
 
 TEST(MoveGeneratorTests, TestGetMoves_Attacks)
 {
-	const auto bl = get_piece(PieceType::PAWN, Player::BLACK);
-	const auto wh = get_piece(PieceType::PAWN, Player::WHITE);
+	const auto bl = TestHelpers::get_piece(PieceType::PAWN, Player::BLACK);
+	const auto wh = TestHelpers::get_piece(PieceType::PAWN, Player::WHITE);
 	auto board = Board({
 		{ {}, {}, {}, {}, {} },
 		{ {}, bl, {}, {}, bl },
@@ -289,8 +368,8 @@ TEST(MoveGeneratorTests, TestGetMoves_Attacks)
 
 TEST(MoveGeneratorTests, TestGetMoves_Ignoring)
 {
-	const auto bl = get_piece(PieceType::PAWN, Player::BLACK);
-	const auto wh = get_piece(PieceType::PAWN, Player::WHITE);
+	const auto bl = TestHelpers::get_piece(PieceType::PAWN, Player::BLACK);
+	const auto wh = TestHelpers::get_piece(PieceType::PAWN, Player::WHITE);
 	auto board = Board({
 		{ {}, {}, {}, {}, {} },
 		{ {}, bl, {}, {}, bl },

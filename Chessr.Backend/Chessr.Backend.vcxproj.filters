@@ -36,12 +36,21 @@
     <ClCompile Include="piece_data.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="piece.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="pinned_piece.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="move.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="board.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="data.hpp">
+    <ClInclude Include="move.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="chess_engine.hpp">
@@ -66,6 +75,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="piece_data.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="piece.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="pinned_piece.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -50,11 +50,11 @@
   </PropertyGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
+    <ClInclude Include="test_helpers.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="board_tests.cpp" />
     <ClCompile Include="chess_engine_tests.cpp" />
-    <ClCompile Include="data_tests.cpp" />
     <ClCompile Include="flag_board_tests.cpp" />
     <ClCompile Include="maths_tests.cpp" />
     <ClCompile Include="move_generator_tests.cpp" />
@@ -66,6 +66,7 @@
     </ClCompile>
     <ClCompile Include="piece_configuration_tests.cpp" />
     <ClCompile Include="piece_data_tests.cpp" />
+    <ClCompile Include="test_helpers.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -95,7 +96,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
       <AdditionalLibraryDirectories>$(SolutionDir)build\$(Platform)-$(Configuration)\;$(SolutionDir)build\$(Platform)-$(Configuration)\intermediate\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>backend.lib;board.obj;chess_engine.obj;flag_board.obj;move_generator.obj;piece_configuration.obj;piece_data.obj;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>backend.lib;board.obj;chess_engine.obj;flag_board.obj;move.obj;move_generator.obj;piece.obj;piece_configuration.obj;piece_data.obj;pinned_piece.obj;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -113,7 +114,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
       <AdditionalLibraryDirectories>$(SolutionDir)build\$(Platform)-$(Configuration)\;$(SolutionDir)build\$(Platform)-$(Configuration)\intermediate\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>backend.lib;board.obj;chess_engine.obj;flag_board.obj;move_generator.obj;piece_configuration.obj;piece_data.obj;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>backend.lib;board.obj;chess_engine.obj;flag_board.obj;move.obj;move_generator.obj;piece.obj;piece_configuration.obj;piece_data.obj;pinned_piece.obj;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -132,7 +133,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <AdditionalLibraryDirectories>$(SolutionDir)build\$(Platform)-$(Configuration)\;$(SolutionDir)build\$(Platform)-$(Configuration)\intermediate\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>backend.lib;board.obj;chess_engine.obj;flag_board.obj;move_generator.obj;piece_configuration.obj;piece_data.obj;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>backend.lib;board.obj;chess_engine.obj;flag_board.obj;move.obj;move_generator.obj;piece.obj;piece_configuration.obj;piece_data.obj;pinned_piece.obj;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -151,7 +152,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <AdditionalLibraryDirectories>$(SolutionDir)build\$(Platform)-$(Configuration)\;$(SolutionDir)build\$(Platform)-$(Configuration)\intermediate\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>backend.lib;board.obj;chess_engine.obj;flag_board.obj;move_generator.obj;piece_configuration.obj;piece_data.obj;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>backend.lib;board.obj;chess_engine.obj;flag_board.obj;move.obj;move_generator.obj;piece.obj;piece_configuration.obj;piece_data.obj;pinned_piece.obj;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">

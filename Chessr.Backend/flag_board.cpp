@@ -2,35 +2,20 @@
 
 #pragma region Public Methods
 
-FlagBoard::FlagBoard(const Coordinate& dimensions, const bool default_value)
-	: std::vector<std::vector<bool>>(), dimensions(dimensions)
+FlagBoard::FlagBoard(const Coordinate dimensions, const bool default_value)
+	: flags(), dimensions(dimensions)
 {
 	const auto& [width, height] = this->dimensions;
 	for (auto i = 0; i < height; i++)
 	{
-		this->push_back(std::vector<bool>(width, default_value));
+		this->flags.push_back(std::vector<bool>(width, default_value));
 	}
 }
 
-void FlagBoard::flag(const std::optional<Coordinate> coordinate)
-{
-	set_coordinates(coordinate, true);
-}
-
-void FlagBoard::flag(const std::vector<Coordinate> coordinates)
-{
-	set_coordinates(coordinates, true);
-}
-
-void FlagBoard::unflag(const std::optional<Coordinate> coordinate)
-{
-	set_coordinates(coordinate, false);
-}
-
-void FlagBoard::unflag(const std::vector<Coordinate> coordinates)
-{
-	set_coordinates(coordinates, false);
-}
+void FlagBoard::flag(const std::optional<Coordinate>& coordinate) { set_coordinates(coordinate, true); }
+void FlagBoard::flag(const std::vector<Coordinate>& coordinates) { set_coordinates(coordinates, true); }
+void FlagBoard::unflag(const std::optional<Coordinate>& coordinate) { set_coordinates(coordinate, false); }
+void FlagBoard::unflag(const std::vector<Coordinate>& coordinates) { set_coordinates(coordinates, false); }
 
 void FlagBoard::set_all(const bool value)
 {
@@ -39,12 +24,12 @@ void FlagBoard::set_all(const bool value)
 	{
 		for (auto j = 0; j < width; j++)
 		{
-			this->operator[](i)[j] = value;
+			this->flags[i][j] = value;
 		}
 	}
 }
 
-void FlagBoard::restrict(const std::vector<Coordinate> coordinates)
+void FlagBoard::restrict(const std::vector<Coordinate>& coordinates)
 {
 	const auto& [width, height] = this->dimensions;
 	for (auto i = 0; i < height; i++)
@@ -53,24 +38,29 @@ void FlagBoard::restrict(const std::vector<Coordinate> coordinates)
 		{
 			if (std::find(coordinates.begin(), coordinates.end(), Coordinate{ i, j }) == coordinates.end())
 			{
-				this->operator[](i)[j] = false;
+				this->flags[i][j] = false;
 			}
 		}
 	}
 }
 
-std::vector<Coordinate> FlagBoard::mask_coordinates(const std::vector<Coordinate> coordinates) const
+std::vector<Coordinate>& FlagBoard::mask(std::vector<Coordinate> coordinates) const
 {
-	std::vector<Coordinate> masked = {};
-	for (auto& coordinate : coordinates)
+	auto it = coordinates.begin();
+	while (it != coordinates.end())
 	{
-		const auto& [i, j] = coordinate;
-		if (this->operator[](i)[j])
+		const auto& [i, j] = *it;
+		if (this->flags[i][j])
 		{
-			masked.push_back(coordinate);
+			it++;
+		}
+		else
+		{
+			it = coordinates.erase(it);
 		}
 	}
-	return masked;
+
+	return coordinates;
 }
 
 std::vector<Coordinate> FlagBoard::get_flagged() const
@@ -81,19 +71,20 @@ std::vector<Coordinate> FlagBoard::get_flagged() const
 	{
 		for (auto j = 0; j < width; j++)
 		{
-			if (this->operator[](i)[j])
+			if (this->flags[i][j])
 			{
-				flagged.push_back({ i, j });
+				flagged.emplace_back(i, j);
 			}
 		}
 	}
 	return flagged;
 }
+
 #pragma endregion
 
 #pragma region Private Methods
 
-void FlagBoard::set_coordinates(const std::optional<Coordinate> coordinate, const bool value)
+void FlagBoard::set_coordinates(const std::optional<Coordinate>& coordinate, const bool value)
 {
 	if (!coordinate.has_value())
 	{
@@ -101,15 +92,15 @@ void FlagBoard::set_coordinates(const std::optional<Coordinate> coordinate, cons
 	}
 
 	const auto& [i, j] = coordinate.value();
-	this->operator[](i)[j] = value;
+	this->flags[i][j] = value;
 }
 
-void FlagBoard::set_coordinates(const std::vector<Coordinate> coordinates, const bool value)
+void FlagBoard::set_coordinates(const std::vector<Coordinate>& coordinates, const bool value)
 {
 	for (auto& cell : coordinates)
 	{
 		const auto& [i, j] = cell;
-		this->operator[](i)[j] = value;
+		this->flags[i][j] = value;
 	}
 }
 

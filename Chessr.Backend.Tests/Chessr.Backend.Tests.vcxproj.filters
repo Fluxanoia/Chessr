@@ -13,9 +13,6 @@
     <ClCompile Include="chess_engine_tests.cpp">
       <Filter>Tests</Filter>
     </ClCompile>
-    <ClCompile Include="data_tests.cpp">
-      <Filter>Tests</Filter>
-    </ClCompile>
     <ClCompile Include="maths_tests.cpp">
       <Filter>Tests</Filter>
     </ClCompile>
@@ -28,6 +25,9 @@
     <ClCompile Include="piece_data_tests.cpp">
       <Filter>Tests</Filter>
     </ClCompile>
+    <ClCompile Include="test_helpers.cpp">
+      <Filter>Helpers</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="GoogleTest">
@@ -36,10 +36,16 @@
     <Filter Include="Tests">
       <UniqueIdentifier>{93223779-c7b0-4b75-95a9-ca30a405dafe}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Helpers">
+      <UniqueIdentifier>{ad978da3-80cc-4105-896b-b52ae25d4bb2}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
       <Filter>GoogleTest</Filter>
+    </ClInclude>
+    <ClInclude Include="test_helpers.hpp">
+      <Filter>Helpers</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

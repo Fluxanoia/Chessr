@@ -1,7 +1,7 @@
 #include "chess_engine.hpp"
 
-ChessEngine::ChessEngine(const Grid<Piece> starting_position) {
-	this->positions.push_back(Board{ starting_position });
+ChessEngine::ChessEngine(const Grid<Piece>& starting_position) {
+	this->positions.emplace_back(starting_position);
 }
 
 struct KingInformation
@@ -43,7 +43,6 @@ const std::vector<Move> ChessEngine::get_moves(const Player player) const {
 			case 0:
 				break;
 			case 1:
-				single_checks.push_back(std::ref(king_information));
 				single_checks.push_back(king_information);
 				break;
 			default:
@@ -67,7 +66,7 @@ const std::vector<Move> ChessEngine::get_moves(const Player player) const {
 		{
 			// A king is under double check, so only moves by that king are valid.
 			const auto& double_check = double_checks.at(0);
-			const auto double_check_moves = double_check.get().move_mask.mask_coordinates(
+			const auto& double_check_moves = double_check.get().move_mask.mask(
 				MoveGenerator::get_valid_moves(
 					board,
 					player,
@@ -82,7 +81,7 @@ const std::vector<Move> ChessEngine::get_moves(const Player player) const {
 					std::vector<Move> moves = {};
 					for (const auto& destination : double_check_moves)
 					{
-						moves.push_back(Move{ double_check.get().coordinate, destination });
+						moves.emplace_back(double_check.get().coordinate, destination);
 					}
 					return moves;
 				}
@@ -180,16 +179,16 @@ const std::vector<Move> ChessEngine::get_moves(const Player player) const {
 
 	for (const auto& king_information : king_informations)
 	{
-		const auto attacks = attackable.mask_coordinates(
-			king_information.move_mask.mask_coordinates(
+		const auto& attacks = attackable.mask(
+			king_information.move_mask.mask(
 				MoveGenerator::get_valid_attack_moves(
 					board,
 					player,
 					king_piece_data,
 					king_information.coordinate)));
 
-		const auto pushes = pushable.mask_coordinates(
-			king_information.move_mask.mask_coordinates(
+		const auto& pushes = pushable.mask(
+			king_information.move_mask.mask(
 				MoveGenerator::get_valid_push_moves(
 					board,
 					player,
@@ -198,12 +197,12 @@ const std::vector<Move> ChessEngine::get_moves(const Player player) const {
 
 		for (const auto& attack : attacks)
 		{
-			moves.push_back({ king_information.coordinate, attack });
+			moves.emplace_back(king_information.coordinate, attack);
 		}
 
 		for (const auto& push : pushes)
 		{
-			moves.push_back({ king_information.coordinate, push });
+			moves.emplace_back(king_information.coordinate, push);
 		}
 	}
 
@@ -214,12 +213,12 @@ const std::vector<Move> ChessEngine::get_moves(const Player player) const {
 	const auto& pins = MoveGenerator::get_pins(board, player);
 	for (const auto& pin : pins)
 	{
-		if (!board.has_piece(pin.coordinate))
+		if (!board.has_piece(pin.get_coordinate()))
 		{
 			continue;
 		}
 
-		const auto& piece = board.get_piece(pin.coordinate);
+		const auto& piece = board.get_piece(pin.get_coordinate());
 		if (piece.get_player() != player || piece.get_type() == PieceType::KING)
 		{
 			continue;
@@ -227,30 +226,30 @@ const std::vector<Move> ChessEngine::get_moves(const Player player) const {
 
 		const auto& piece_data = piece_configuration.get_data(piece.get_type());
 
-		const auto attacks = attackable.mask_coordinates(
-			pin.move_mask.mask_coordinates(
+		const auto& attacks = attackable.mask(
+			pin.get_move_mask().mask(
 				MoveGenerator::get_valid_attack_moves(
 					board,
 					player,
 					piece_data,
-					pin.coordinate)));
+					pin.get_coordinate())));
 
-		const auto pushes = pushable.mask_coordinates(
-			pin.move_mask.mask_coordinates(
+		const auto& pushes = pushable.mask(
+			pin.get_move_mask().mask(
 				MoveGenerator::get_valid_push_moves(
 					board,
 					player,
 					piece_data,
-					pin.coordinate)));
+					pin.get_coordinate())));
 
 		for (const auto& attack : attacks)
 		{
-			moves.push_back({ pin.coordinate, attack });
+			moves.emplace_back(pin.get_coordinate(), attack);
 		}
 
 		for (const auto& push : pushes)
 		{
-			moves.push_back({ pin.coordinate, push });
+			moves.emplace_back(pin.get_coordinate(), push);
 		}
 	}
 
@@ -263,7 +262,7 @@ const std::vector<Move> ChessEngine::get_moves(const Player player) const {
 		std::vector<Coordinate> coordinates = {};
 		for (const auto& pin : pins)
 		{
-			coordinates.push_back(pin.coordinate);
+			coordinates.emplace_back(pin.get_coordinate());
 		}
 		return coordinates;
 	}(pins);
@@ -291,14 +290,14 @@ const std::vector<Move> ChessEngine::get_moves(const Player player) const {
 
 			const auto& piece_data = piece_configuration.get_data(piece.get_type());
 
-			const auto attacks = attackable.mask_coordinates(
+			const auto& attacks = attackable.mask(
 				MoveGenerator::get_valid_attack_moves(
 					board,
 					player,
 					piece_data,
 					cell));
 
-			const auto pushes = pushable.mask_coordinates(
+			const auto& pushes = pushable.mask(
 				MoveGenerator::get_valid_push_moves(
 					board,
 					player,
@@ -307,12 +306,12 @@ const std::vector<Move> ChessEngine::get_moves(const Player player) const {
 
 			for (const auto& attack : attacks)
 			{
-				moves.push_back({ cell, attack });
+				moves.emplace_back(cell, attack);
 			}
 
 			for (const auto& push : pushes)
 			{
-				moves.push_back({ cell, push });
+				moves.emplace_back(cell, push);
 			}
 		}
 	}

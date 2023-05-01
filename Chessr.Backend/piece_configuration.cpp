@@ -75,8 +75,7 @@ std::vector<PieceType> generate_piece_types(std::map<PieceType, PieceData> map)
 }
 
 PieceConfiguration::PieceConfiguration()
-	: data(generate_piece_data()),
-	piece_types(generate_piece_types(data))
+	: data(generate_piece_data()), piece_types(generate_piece_types(data))
 {
 }
 
