@@ -19,9 +19,6 @@
     <ClCompile Include="move_generator_tests.cpp">
       <Filter>Tests</Filter>
     </ClCompile>
-    <ClCompile Include="piece_configuration_tests.cpp">
-      <Filter>Tests</Filter>
-    </ClCompile>
     <ClCompile Include="piece_data_tests.cpp">
       <Filter>Tests</Filter>
     </ClCompile>

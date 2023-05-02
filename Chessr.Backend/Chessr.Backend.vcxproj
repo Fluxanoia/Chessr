@@ -115,6 +115,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>$(PythonDir)\libs</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
       <Command>echo Copying build to the build root...
@@ -148,6 +149,7 @@ echo F|xcopy /y "$(OutDir)$(TargetName)-stubs\__init__.pyi" "$(OutDir)..\$(Targe
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>$(PythonDir)\libs</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
       <Command>echo Copying build to the build root...

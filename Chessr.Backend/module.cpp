@@ -1,6 +1,5 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
-#include <sstream>
 #include "types.hpp"
 #include "move.hpp"
 #include "chess_engine.hpp"
@@ -10,8 +9,10 @@ namespace py = pybind11;
 
 PYBIND11_MODULE(backend, m) {
     py::class_<ChessEngine>(m, "ChessEngine")
-        .def(py::init<const Grid<Piece>>())
-        .def("get_moves", &ChessEngine::get_moves);
+        .def(py::init<const Grid<Piece>, Player>())
+        .def("get_move_history", &ChessEngine::get_move_history)
+        .def("get_current_moves", &ChessEngine::get_current_moves)
+        .def("make_move", &ChessEngine::make_move);
 
     py::class_<Piece>(m, "Piece")
         .def(py::init<PieceType, Player>())
@@ -19,7 +20,6 @@ PYBIND11_MODULE(backend, m) {
         .def_property_readonly("player", &Piece::get_player);
 
     py::class_<Move>(m, "Move")
-        .def(py::init<Coordinate, Coordinate>())
         .def_property_readonly("from_gxy", &Move::get_from)
         .def_property_readonly("to_gxy", &Move::get_to);
 

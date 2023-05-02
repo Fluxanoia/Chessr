@@ -1,9 +1,5 @@
 #include "chess_engine.hpp"
 
-ChessEngine::ChessEngine(const Grid<Piece>& starting_position) {
-	this->positions.emplace_back(starting_position);
-}
-
 struct KingInformation
 {
 	const Coordinate coordinate;
@@ -14,14 +10,149 @@ struct KingInformation
 		: coordinate(coordinate), move_mask(move_mask), checkers(checkers)
 	{
 	}
-	
 };
 
-const std::vector<Move> ChessEngine::get_moves(const Player player) const {
+ChessEngine::ChessEngine(const Grid<Piece>& starting_position, const Player starting_player) : current_player(starting_player)
+{
+	this->positions.emplace_back(starting_position);
+	this->calculate_moves();
+}
+
+void ChessEngine::make_move(const Move move)
+{
+	const auto& current_board = this->positions.back();
+	if (!current_board.has_piece(move.get_from()))
+	{
+		return;
+	}
+
+	const auto& piece = current_board.get_piece(move.get_from());
+
+#pragma region Board Modifications
+
+	const auto& [from_i, from_j] = move.get_from();
+	const auto& [to_i, to_j] = move.get_to();
+	Grid<Piece> position = current_board.get_grid();
+	position[to_i][to_j].emplace(piece);
+	position[from_i][from_j].reset();
+
+	// TODO: move side-effects
+
+	this->positions.emplace_back(position);
+	this->played_moves.push_back(move);
+	this->current_player = MoveGenerator::get_opposing_player(current_player);
+
+#pragma endregion
+
+	this->calculate_moves();
+
+	this->game_state = this->current_moves.size() == 0
+		? this->currently_in_check ? GameState::CHECKMATE : GameState::STALEMATE
+		: this->currently_in_check ? GameState::CHECK : GameState::NONE;
+
+	this->move_history.push_back(get_move_representation(move));
+}
+
+std::vector<Move> ChessEngine::get_current_moves() const
+{
+	return this->current_moves;
+}
+
+std::vector<std::string> ChessEngine::get_move_history() const
+{
+	return this->move_history;
+}
+
+GameState ChessEngine::get_game_state() const
+{
+	return this->game_state;
+}
+
+std::string ChessEngine::get_move_representation(const Move move) const
+{
+	const auto& from = move.get_from();
+	const auto& to = move.get_to();
+	switch (move.get_property())
+	{
+		case MoveProperty::CASTLE:
+			return from.second - to.second > 0 ? "O-O-O" : "O-O";
+	}
+
+	const auto& current_board = this->positions.back();
+	if (!current_board.has_piece(from))
+	{
+		return "-";
+	}
+
+	const auto& piece = current_board.get_piece(from);
+	const auto& piece_data = PieceConfiguration::get_instance().get_data(piece.get_type());
+	const auto attack = current_board.has_piece(to);
+
+	auto destination = get_notation_from_coordinate(to, current_board.get_dimensions().second);
+
+	std::string ambiguity = "";
+	bool rank_ambigious = current_board.rank_contains_multiple_of(from.first, piece.get_type(), piece.get_player());
+	bool file_ambigious = current_board.file_contains_multiple_of(from.second, piece.get_type(), piece.get_player());
+	if (file_ambigious)
+	{
+		ambiguity += get_file_from_coordinate(from.second);
+	}
+	if (rank_ambigious)
+	{
+		ambiguity += get_rank_from_coordinate(from.first, current_board.get_dimensions().second);
+	}
+
+	std::string piece_string;
+	switch (piece.get_type())
+	{
+		case PieceType::PAWN:
+			piece_string = "";
+			file_ambigious = file_ambigious || attack;
+			break;
+		default:
+			piece_string = piece_data.get_representation();
+			break;
+	}
+
+	std::string capture = attack ? "x" : "";
+	std::string suffix = currently_in_check ? current_moves.size() == 0 ? "#" : "+" : "";
+
+	return piece_string + ambiguity + capture + destination;
+}
+
+std::string ChessEngine::get_notation_from_coordinate(const Coordinate coordinate, const CoordinateValue board_height)
+{
+	return get_file_from_coordinate(coordinate.second) + get_rank_from_coordinate(coordinate.first, board_height);
+}
+
+std::string ChessEngine::get_file_from_coordinate(CoordinateValue file)
+{
+	file++;
+	std::string repr = "";
+	while (file > 0)
+	{
+		auto r = (file - 1) % 26;
+		repr = std::to_string((char)((int)'a' + r)) + repr;
+		file = (file - r) / 26;
+	}
+	return repr;
+}
+
+std::string ChessEngine::get_rank_from_coordinate(const CoordinateValue rank, const CoordinateValue board_height)
+{
+	return std::to_string(board_height - rank);
+}
+
+void ChessEngine::calculate_moves()
+{
 	const auto& board = this->positions.back();
 	const auto& [width, height] = board.get_dimensions();
 	const auto& piece_configuration = PieceConfiguration::get_instance();
-	const auto opposing_player = MoveGenerator::get_opposing_player(player);
+
+	const auto player = current_player;
+	const auto opposing_player = MoveGenerator::get_opposing_player(current_player);
+
+	this->current_moves = std::vector<Move>{};
 
 #pragma region King Information
 
@@ -51,6 +182,8 @@ const std::vector<Move> ChessEngine::get_moves(const Player player) const {
 		}
 	}
 
+	this->currently_in_check = single_checks.size() + double_checks.size() > 0;
+
 #pragma endregion
 
 #pragma region Double Checks
@@ -66,7 +199,8 @@ const std::vector<Move> ChessEngine::get_moves(const Player player) const {
 		{
 			// A king is under double check, so only moves by that king are valid.
 			const auto& double_check = double_checks.at(0);
-			const auto& double_check_moves = [&board, &player, &king_piece_data, &double_check](){
+			const auto& double_check_moves = [&board, &player, &king_piece_data, &double_check]()
+			{
 				auto moves = MoveGenerator::get_valid_moves(
 					board,
 					player,
@@ -81,12 +215,11 @@ const std::vector<Move> ChessEngine::get_moves(const Player player) const {
 				case 0:
 				{
 					// This king must evade check. Possibly checkmate.
-					std::vector<Move> moves = {};
 					for (const auto& destination : double_check_moves)
 					{
-						moves.emplace_back(double_check.get().coordinate, destination);
+						this->current_moves.emplace_back(double_check.get().coordinate, destination);
 					}
-					return moves;
+					return;
 				}
 				default:
 					// This king must evade check and stop the check on other kings.
@@ -103,7 +236,7 @@ const std::vector<Move> ChessEngine::get_moves(const Player player) const {
 					if (other_checkers.size() > 1)
 					{
 						// The king can't take more than one piece. Checkmate.
-						return {};
+						return;
 					}
 
 					const auto& other_checker = *other_checkers.begin();
@@ -115,19 +248,46 @@ const std::vector<Move> ChessEngine::get_moves(const Player player) const {
 					if (capturable)
 					{
 						// We can capture the piece putting the other kings in check.
-						return std::vector<Move>{ { double_check.get().coordinate, other_checker } };
+						this->current_moves.emplace_back(double_check.get().coordinate, other_checker);
 					}
-					else
-					{
-						// We cannot capture the piece putting the other kings in check. Checkmate.
-						return {};
-					}
+					return;
 			}
 			break;
 		}
 		default:
 			// Two or more kings must both evade check simultaneously, impossible. Checkmate.
-			return {};
+			return;
+	}
+
+#pragma endregion
+
+#pragma region King Move Aggregation
+
+	for (const auto& king_information : king_informations)
+	{
+		auto attacks = MoveGenerator::get_valid_attack_moves(
+			board,
+			player,
+			king_piece_data,
+			king_information.coordinate);
+		auto pushes = MoveGenerator::get_valid_push_moves(
+			board,
+			player,
+			king_piece_data,
+			king_information.coordinate);
+
+		king_information.move_mask.mask(attacks);
+		king_information.move_mask.mask(pushes);
+
+		for (const auto& attack : attacks)
+		{
+			this->current_moves.emplace_back(king_information.coordinate, attack);
+		}
+
+		for (const auto& push : pushes)
+		{
+			this->current_moves.emplace_back(king_information.coordinate, push);
+		}
 	}
 
 #pragma endregion
@@ -176,42 +336,6 @@ const std::vector<Move> ChessEngine::get_moves(const Player player) const {
 
 #pragma endregion
 
-	std::vector<Move> moves = {};
-
-#pragma region King Move Aggregation
-
-	for (const auto& king_information : king_informations)
-	{
-		auto attacks = MoveGenerator::get_valid_attack_moves(
-			board,
-			player,
-			king_piece_data,
-			king_information.coordinate);
-		auto pushes = MoveGenerator::get_valid_push_moves(
-			board,
-			player,
-			king_piece_data,
-			king_information.coordinate);
-
-		king_information.move_mask.mask(attacks);
-		king_information.move_mask.mask(pushes);
-
-		attackable.mask(attacks);
-		pushable.mask(pushes);
-
-		for (const auto& attack : attacks)
-		{
-			moves.emplace_back(king_information.coordinate, attack);
-		}
-
-		for (const auto& push : pushes)
-		{
-			moves.emplace_back(king_information.coordinate, push);
-		}
-	}
-
-#pragma endregion
-
 #pragma region Pin Move Aggregation
 
 	auto pins = MoveGenerator::get_pins(board, player);
@@ -250,12 +374,12 @@ const std::vector<Move> ChessEngine::get_moves(const Player player) const {
 
 		for (const auto& attack : attacks)
 		{
-			moves.emplace_back(pin.get_coordinate(), attack);
+			this->current_moves.emplace_back(pin.get_coordinate(), attack);
 		}
 
 		for (const auto& push : pushes)
 		{
-			moves.emplace_back(pin.get_coordinate(), push);
+			this->current_moves.emplace_back(pin.get_coordinate(), push);
 		}
 	}
 
@@ -313,17 +437,16 @@ const std::vector<Move> ChessEngine::get_moves(const Player player) const {
 
 			for (const auto& attack : attacks)
 			{
-				moves.emplace_back(cell, attack);
+				this->current_moves.emplace_back(cell, attack);
 			}
 
 			for (const auto& push : pushes)
 			{
-				moves.emplace_back(cell, push);
+				this->current_moves.emplace_back(cell, push);
 			}
 		}
 	}
 
 #pragma endregion
 
-	return moves;
 }

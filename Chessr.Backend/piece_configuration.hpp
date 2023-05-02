@@ -1,6 +1,7 @@
 #pragma once
 
 #include <map>
+#include <string>
 #include "piece_data.hpp"
 
 class PieceConfiguration

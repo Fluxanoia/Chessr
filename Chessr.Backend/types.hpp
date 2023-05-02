@@ -23,3 +23,19 @@ enum class Player
     WHITE = 0,
     BLACK
 };
+
+enum class GameState
+{
+    NONE = 0,
+    CHECK,
+    CHECKMATE,
+    STALEMATE
+};
+
+enum class MoveProperty
+{
+    NONE = 0,
+    DOUBLE_MOVE,
+    EN_PASSANT,
+    CASTLE
+};
