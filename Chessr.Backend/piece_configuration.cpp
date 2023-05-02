@@ -52,7 +52,7 @@ std::map<PieceType, PieceData> generate_piece_data()
 	PieceData bishop = { "B", diagonals, {}, diagonals, {} };
 	PieceData rook = { "R", orthogonals, {}, orthogonals, {} };
 	PieceData knight = { "N", {}, knight_vectors, {}, knight_vectors };
-	PieceData pawn = { "P", {}, { PieceConfiguration::UP }, {}, { { -1, -1 }, { -1, 1 } } };
+	PieceData pawn = { "P", {}, { { -1, -1 }, { -1, 1 } }, {}, { PieceConfiguration::UP } };
 
 	return std::map<PieceType, PieceData>{
 		{ PieceType::QUEEN, queen },

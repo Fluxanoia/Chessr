@@ -27,5 +27,5 @@ public:
     void restrict(const std::vector<Coordinate>& coordinates);
 
     std::vector<Coordinate> get_flagged() const;
-    std::vector<Coordinate>& mask(std::vector<Coordinate> coordinates) const;
+    void mask(std::vector<Coordinate>& coordinates) const;
 };

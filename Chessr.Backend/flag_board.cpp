@@ -8,7 +8,7 @@ FlagBoard::FlagBoard(const Coordinate dimensions, const bool default_value)
 	const auto& [width, height] = this->dimensions;
 	for (auto i = 0; i < height; i++)
 	{
-		this->flags.push_back(std::vector<bool>(width, default_value));
+		this->flags.emplace_back(width, default_value);
 	}
 }
 
@@ -44,7 +44,7 @@ void FlagBoard::restrict(const std::vector<Coordinate>& coordinates)
 	}
 }
 
-std::vector<Coordinate>& FlagBoard::mask(std::vector<Coordinate> coordinates) const
+void FlagBoard::mask(std::vector<Coordinate>& coordinates) const
 {
 	auto it = coordinates.begin();
 	while (it != coordinates.end())
@@ -59,8 +59,6 @@ std::vector<Coordinate>& FlagBoard::mask(std::vector<Coordinate> coordinates) co
 			it = coordinates.erase(it);
 		}
 	}
-
-	return coordinates;
 }
 
 std::vector<Coordinate> FlagBoard::get_flagged() const

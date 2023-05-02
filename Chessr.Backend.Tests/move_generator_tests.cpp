@@ -159,19 +159,181 @@ TEST(MoveGeneratorTests, TestGetPossibleAttacks_Ignoring)
 
 #pragma region get_attacking_coordinates
 
-// TODO
+TEST(MoveGeneratorTests, TestGetAttackingCoordinates)
+{
+	const auto ro = TestHelpers::get_piece(PieceType::ROOK, Player::WHITE);
+	const auto bi = TestHelpers::get_piece(PieceType::BISHOP, Player::WHITE);
+	const auto kn = TestHelpers::get_piece(PieceType::KNIGHT, Player::WHITE);
+	const auto pa = TestHelpers::get_piece(PieceType::PAWN, Player::WHITE);
+	const auto qu = TestHelpers::get_piece(PieceType::QUEEN, Player::WHITE);
+	auto board = Board({
+		{ {}, {}, {}, {}, bi },
+		{ kn, {}, {}, {}, bi},
+		{ ro, {}, {}, {}, {} },
+		{ {}, {}, pa, pa, {} },
+		{ qu, {}, ro, {}, {} },
+	});
+
+	auto attacks = MoveGenerator::get_attacking_coordinates(board, Player::BLACK, { 2, 2 });
+
+	EXPECT_EQ(attacks.size(), 5);
+	EXPECT_TRUE(std::find(attacks.begin(), attacks.end(), Coordinate(3, 3)) != attacks.end());
+	EXPECT_TRUE(std::find(attacks.begin(), attacks.end(), Coordinate(4, 0)) != attacks.end());
+	EXPECT_TRUE(std::find(attacks.begin(), attacks.end(), Coordinate(2, 0)) != attacks.end());
+	EXPECT_TRUE(std::find(attacks.begin(), attacks.end(), Coordinate(1, 0)) != attacks.end());
+	EXPECT_TRUE(std::find(attacks.begin(), attacks.end(), Coordinate(0, 4)) != attacks.end());
+}
 
 #pragma endregion
 
 #pragma region get_blocks_to_attack
 
-// TODO
+TEST(MoveGeneratorTests, TestGetBlocksToAttack)
+{
+	auto board = Board({
+		{ {}, {}, {}, {}, {}, {} },
+		{ {}, {}, {}, {}, {}, {} },
+		{ {}, {}, {}, {}, {}, {} },
+		{ {}, {}, {}, {}, {}, {} },
+		{ {}, {}, {}, {}, {}, {} }
+	});
+
+	auto piece_data = TestHelpers::get_piece_data(
+		{ { 1, 1 }, { 0, 1 } },
+		{},
+		{},
+		{});
+	auto blocks_1 = MoveGenerator::get_blocks_to_attack(board, Player::WHITE, piece_data, { 1, 1 }, { 4, 4 });
+	auto blocks_2 = MoveGenerator::get_blocks_to_attack(board, Player::WHITE, piece_data, { 1, 1 }, { 1, 5 });
+
+	EXPECT_EQ(blocks_1.size(), 2);
+	EXPECT_TRUE(std::find(blocks_1.begin(), blocks_1.end(), Coordinate(2, 2)) != blocks_1.end());
+	EXPECT_TRUE(std::find(blocks_1.begin(), blocks_1.end(), Coordinate(3, 3)) != blocks_1.end());
+
+	EXPECT_EQ(blocks_2.size(), 3);
+	EXPECT_TRUE(std::find(blocks_2.begin(), blocks_2.end(), Coordinate(1, 2)) != blocks_2.end());
+	EXPECT_TRUE(std::find(blocks_2.begin(), blocks_2.end(), Coordinate(1, 3)) != blocks_2.end());
+	EXPECT_TRUE(std::find(blocks_2.begin(), blocks_2.end(), Coordinate(1, 4)) != blocks_2.end());
+}
+
+TEST(MoveGeneratorTests, TestGetBlocksToAttack_Jump)
+{
+	auto board = Board({
+		{ {}, {}, {}, {}, {}, {} },
+		{ {}, {}, {}, {}, {}, {} },
+		{ {}, {}, {}, {}, {}, {} },
+		{ {}, {}, {}, {}, {}, {} },
+		{ {}, {}, {}, {}, {}, {} }
+		});
+
+	auto piece_data = TestHelpers::get_piece_data(
+		{ { 1, 1 } },
+		{ { 3, 3 } },
+		{},
+		{});
+	auto blocks = MoveGenerator::get_blocks_to_attack(board, Player::WHITE, piece_data, { 1, 1 }, { 4, 4 });
+
+	EXPECT_EQ(blocks.size(), 0);
+}
+
+TEST(MoveGeneratorTests, TestGetBlocksToAttack_Invalid)
+{
+	auto board = Board({
+		{ {}, {}, {}, {}, {}, {} },
+		{ {}, {}, {}, {}, {}, {} },
+		{ {}, {}, {}, {}, {}, {} },
+		{ {}, {}, {}, {}, {}, {} },
+		{ {}, {}, {}, {}, {}, {} }
+	});
+
+	auto piece_data = TestHelpers::get_piece_data(
+		{ { 1, 1 }, { 0, 1 } },
+		{},
+		{},
+		{});
+
+	EXPECT_THROW(
+		MoveGenerator::get_blocks_to_attack(board, Player::BLACK, piece_data, { 1, 1 }, { 4, 4 }),
+		InvalidOperationException);
+}
 
 #pragma endregion
 
 #pragma region get_pins
 
-// TODO
+TEST(MoveGeneratorTests, TestGetPins)
+{
+	const auto wk = TestHelpers::get_piece(PieceType::KING, Player::WHITE);
+	const auto wp = TestHelpers::get_piece(PieceType::PAWN, Player::WHITE);
+
+	const auto br = TestHelpers::get_piece(PieceType::ROOK, Player::BLACK);
+	const auto bb = TestHelpers::get_piece(PieceType::BISHOP, Player::BLACK);
+	const auto bq = TestHelpers::get_piece(PieceType::QUEEN, Player::BLACK);
+	auto board = Board({
+		{ {}, {}, {}, wp, {}, {} },
+		{ {}, {}, {}, br, {}, {} },
+		{ {}, {}, {}, wp, {}, bb },
+		{ {}, {}, {}, {}, wp, {} },
+		{ bq, wp, {}, wk, {}, br },
+		{ {}, {}, {}, {}, {}, {} }
+	});
+	
+	auto pins = MoveGenerator::get_pins(board, Player::WHITE);
+
+	EXPECT_EQ(pins.size(), 3);
+
+	auto pin_1 = std::find_if(pins.begin(), pins.end(), [](const PinnedPiece& pin) { return pin.get_coordinate() == Coordinate(4, 1); });
+	auto pin_2 = std::find_if(pins.begin(), pins.end(), [](const PinnedPiece& pin) { return pin.get_coordinate() == Coordinate(2, 3); });
+	auto pin_3 = std::find_if(pins.begin(), pins.end(), [](const PinnedPiece& pin) { return pin.get_coordinate() == Coordinate(3, 4); });
+
+	EXPECT_FALSE(pin_1 == pins.end());
+	EXPECT_FALSE(pin_2 == pins.end());
+	EXPECT_FALSE(pin_3 == pins.end());
+
+	auto flags_1 = pin_1->get_move_mask().get_flagged();
+	auto flags_2 = pin_2->get_move_mask().get_flagged();
+	auto flags_3 = pin_3->get_move_mask().get_flagged();
+
+	EXPECT_EQ(flags_1.size(), 3);
+	EXPECT_EQ(flags_2.size(), 3);
+	EXPECT_EQ(flags_3.size(), 2);
+
+	EXPECT_TRUE(std::find(flags_1.begin(), flags_1.end(), Coordinate(4, 0)) != flags_1.end());
+	EXPECT_TRUE(std::find(flags_1.begin(), flags_1.end(), Coordinate(4, 1)) != flags_1.end());
+	EXPECT_TRUE(std::find(flags_1.begin(), flags_1.end(), Coordinate(4, 2)) != flags_1.end());
+
+	EXPECT_TRUE(std::find(flags_2.begin(), flags_2.end(), Coordinate(1, 3)) != flags_2.end());
+	EXPECT_TRUE(std::find(flags_2.begin(), flags_2.end(), Coordinate(2, 3)) != flags_2.end());
+	EXPECT_TRUE(std::find(flags_2.begin(), flags_2.end(), Coordinate(3, 3)) != flags_2.end());
+
+	EXPECT_TRUE(std::find(flags_3.begin(), flags_3.end(), Coordinate(3, 4)) != flags_3.end());
+	EXPECT_TRUE(std::find(flags_3.begin(), flags_3.end(), Coordinate(2, 5)) != flags_3.end());
+}
+
+TEST(MoveGeneratorTests, TestGetPin_Multiple)
+{
+	const auto wk = TestHelpers::get_piece(PieceType::KING, Player::WHITE);
+	const auto wp = TestHelpers::get_piece(PieceType::PAWN, Player::WHITE);
+	const auto br = TestHelpers::get_piece(PieceType::ROOK, Player::BLACK);
+	auto board = Board({
+		{ {}, {}, br, {}, {} },
+		{ {}, {}, {}, {}, {} },
+		{ br, {}, wp, {}, wk },
+		{ {}, {}, {}, {}, {} },
+		{ {}, {}, wk, {}, {} },
+		});
+
+	auto pins = MoveGenerator::get_pins(board, Player::WHITE);
+
+	EXPECT_EQ(pins.size(), 1);
+
+	auto& pin = pins.front();
+
+	auto flags = pin.get_move_mask().get_flagged();
+
+	EXPECT_EQ(flags.size(), 1);
+	EXPECT_EQ(flags.front(), Coordinate(2, 2));
+}
 
 #pragma endregion
 

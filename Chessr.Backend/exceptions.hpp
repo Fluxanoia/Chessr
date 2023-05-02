@@ -33,3 +33,20 @@ public:
         return this->message;
     }
 };
+
+class InvalidOperationException : public std::exception
+{
+private:
+
+    const char* message;
+
+public:
+
+    InvalidOperationException(const char* message) : message(message) {}
+
+    virtual const char* what() const throw()
+    {
+        return this->message;
+    }
+};
+

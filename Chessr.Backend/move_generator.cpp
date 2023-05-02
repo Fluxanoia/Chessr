@@ -59,36 +59,39 @@ std::vector<Coordinate> MoveGenerator::get_attacking_coordinates(
 	const Player& player,
 	const Coordinate& coordinate)
 {
-	auto& piece_configuration = PieceConfiguration::get_instance();
+	const auto& [width, height] = board.get_dimensions();
 	const auto opposing_player = get_opposing_player(player);
+	auto& piece_configuration = PieceConfiguration::get_instance();
 
 	std::vector<Coordinate> attacking_cells = {};
-	for (auto& piece_type : piece_configuration.get_piece_types())
+	for (auto i = 0; i < height; i++)
+	for (auto j = 0; j < width; j++)
 	{
-		const auto& piece_data = piece_configuration.get_data(piece_type);
-		auto& rays = piece_data.get_attack_rays(player, true);
-		auto& jumps = piece_data.get_attack_jumps(player, true);
-		auto possible_attacking_cells = get_moves(
+		const Coordinate cell = { i, j };
+		if (!board.has_piece(cell))
+		{
+			continue;
+		}
+
+		const auto& piece = board.get_piece(cell);
+		if (piece.get_player() == player)
+		{
+			continue;
+		}
+
+		const auto& piece_data = piece_configuration.get_data(piece.get_type());
+		auto cells = get_moves(
 			board,
-			player,
-			rays,
-			jumps,
-			coordinate,
+			opposing_player,
+			piece_data.get_attack_rays(opposing_player),
+			piece_data.get_attack_jumps(opposing_player),
+			cell,
 			{},
 			true);
 
-		for (auto& cell : possible_attacking_cells)
+		if (std::find(cells.begin(), cells.end(), coordinate) != cells.end())
 		{
-			if (!board.has_piece(cell))
-			{
-				continue;
-			}
-
-			auto& piece = board.get_piece(cell);
-			if (piece.get_player() == opposing_player && piece.get_type() == piece_type)
-			{
-				attacking_cells.push_back(cell);
-			}
+			attacking_cells.push_back(cell);
 		}
 	}
 
@@ -102,6 +105,15 @@ std::vector<Coordinate> MoveGenerator::get_blocks_to_attack(
 	const Coordinate& from,
 	const Coordinate& to)
 {
+	for (auto& jump : piece_data.get_attack_jumps(player))
+	{
+		auto cell = get_jump(board, player, jump, from, true);
+		if (cell.has_value() && cell.value() == to)
+		{
+			// We can't block jumps.
+			return {};
+		}
+	}
 	for (auto& ray : piece_data.get_attack_rays(player))
 	{
 		auto cells = get_ray(board, player, ray, from, {}, true);
@@ -111,7 +123,7 @@ std::vector<Coordinate> MoveGenerator::get_blocks_to_attack(
 			return cells;
 		}
 	}
-	return {};
+	throw InvalidOperationException("Unable to calculate blocks for an attack that can't land.");
 }
 
 std::vector<PinnedPiece> MoveGenerator::get_pins(
@@ -120,21 +132,21 @@ std::vector<PinnedPiece> MoveGenerator::get_pins(
 {
 	auto& piece_configuration = PieceConfiguration::get_instance();
 	const auto opposing_player = get_opposing_player(player);
-	const auto king_positions = board.positions_of(PieceType::KING, opposing_player);
+	const auto king_positions = board.positions_of(PieceType::KING, player);
 
 	std::vector<PinnedPiece> pinned_pieces = {};
 	for (const auto& piece_type : piece_configuration.get_piece_types())
 	{
 		const auto& piece_data = piece_configuration.get_data(piece_type);
-		auto& rays = piece_data.get_attack_rays(player);
-		auto& reverse_rays = piece_data.get_attack_rays(player, true);
+		auto& rays = piece_data.get_attack_rays(opposing_player);
 
 		for (const auto& king_position : king_positions)
 		for (const auto& coordinate : board.positions_of(piece_type, opposing_player))
-		for (auto i = 0; i < rays.size(); i++)
+		for (const auto& ray : rays)
 		{
-			auto outgoing = get_ray(board, opposing_player, rays[i], coordinate, {}, true);
-			auto incoming = get_ray(board, opposing_player, reverse_rays[i], king_position, {}, true);
+			Coordinate reverse_ray = { ray.first * -1, ray.second * -1 };
+			auto outgoing = get_ray(board, opposing_player, ray, coordinate, {}, true);
+			auto incoming = get_ray(board, opposing_player, reverse_ray, king_position, {}, true);
 			if (outgoing.size() == 0 || incoming.size() == 0 || outgoing.back() != incoming.back())
 			{
 				continue;
@@ -146,26 +158,35 @@ std::vector<PinnedPiece> MoveGenerator::get_pins(
 				continue;
 			}
 
-			auto& possible_moves = outgoing;
-			possible_moves.insert(outgoing.end(), incoming.begin(), incoming.end());
-			possible_moves.push_back(coordinate);
-
-			auto found = false;
-			for (auto& pinned_piece : pinned_pieces)
-			{
-				if (pinned_piece.get_coordinate() == pin_coordinate)
+			const auto possible_moves = [&coordinate, &pin_coordinate, &outgoing, &incoming](){
+				std::vector<Coordinate> moves = {};
+				moves.push_back(coordinate);
+				moves.push_back(pin_coordinate);
+				if (outgoing.size() > 1)
 				{
-					found = true;
-					pinned_piece.get_move_mask().restrict(possible_moves);
-					break;
+					moves.insert(moves.end(), outgoing.begin(), outgoing.end() - 1);
 				}
-			}
+				if (incoming.size() > 1)
+				{
+					moves.insert(moves.end(), incoming.begin(), incoming.end() - 1);
+				}
+				return moves;
+			}();
 
-			if (!found)
+			const auto existing_pin = std::find_if(
+				pinned_pieces.begin(),
+				pinned_pieces.end(),
+				[&pin_coordinate](const PinnedPiece& piece) { return piece.get_coordinate() == pin_coordinate; });
+
+			if (existing_pin == pinned_pieces.end())
 			{
-				FlagBoard move_mask = { board.get_dimensions(), true };
-				move_mask.restrict(possible_moves);
-				pinned_pieces.emplace_back(pin_coordinate, move_mask);
+				PinnedPiece pinned_piece = { pin_coordinate, FlagBoard{ board.get_dimensions(), true } };
+				pinned_piece.get_move_mask().restrict(possible_moves);
+				pinned_pieces.push_back(pinned_piece);
+			}
+			else
+			{
+				existing_pin->get_move_mask().restrict(possible_moves);
 			}
 		}
 	}
