@@ -1,7 +1,8 @@
 from src.engine.factory import Factory
 from src.engine.group_manager import DrawingPriority, GroupType
+from src.engine.spritesheets.shadow_spritesheet import ShadowType
 from src.sprites.sprite import ChessrSprite
-from src.utils.enums import Anchor, ShadowType
+from src.utils.enums import Anchor
 from src.utils.helpers import FloatVector
 
 
@@ -10,8 +11,8 @@ class PieceShadow(ChessrSprite):
     def __init__(self, xy : FloatVector, scale : float) -> None:
         self.__type = ShadowType.DARK
 
-        spritesheet = Factory.get().board_spritesheet
-        image_src_rect = spritesheet.get_shadow_srcrect(self.__type, scale)
+        spritesheet = Factory.get().shadow_spritesheet
+        image_src_rect = spritesheet.get_src_rect(self.__type, scale)
         image = spritesheet.get_image(image_src_rect, scale)
 
         self.__scale = scale

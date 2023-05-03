@@ -1,14 +1,17 @@
+from enum import auto
 from typing import Callable
 
 import pygame as pg
-
+from backend import PieceType
 from src.engine.group_manager import GroupType
 from src.sprites.board.board import Board
-from src.sprites.board.board_cell import BoardCell
 from src.sprites.ui.button import Button
-from src.utils.enums import Anchor, PendingMoveType, PieceType
+from src.utils.enums import Anchor, ArrayEnum
 from src.utils.helpers import IntVector
 
+
+class PendingMoveType(ArrayEnum):
+    PROMOTION = auto() 
 
 class PendingMoveAction:
 
@@ -57,7 +60,7 @@ class PendingMoveAction:
         finalise : Callable[[], None],
         cancel : Callable[[], None]
     ) -> 'PendingMoveAction':
-        if move_type == PendingMoveType.PIECE_PROMOTION:
+        if move_type == PendingMoveType.PROMOTION:
             return PiecePromotionMoveAction(board, from_gxy, to_gxy, finalise, cancel)
         raise SystemExit(f'Unexpected pending move type, \'{move_type}\'.')
 
@@ -71,13 +74,13 @@ class PiecePromotionMoveAction(PendingMoveAction):
         finalise: Callable[[], None],
         cancel: Callable[[], None]
     ) -> None:
-        super().__init__(PendingMoveType.PIECE_PROMOTION, finalise, cancel)
+        super().__init__(PendingMoveType.PROMOTION, finalise, cancel)
 
         cell = board.at(
             min(from_gxy[0], to_gxy[0]),
             max(from_gxy[1], to_gxy[1]))
         
-        if cell is None or not isinstance(cell, BoardCell):
+        if cell is None:
             raise SystemExit('Expected display element.')   
 
         buffer = 10 * board.scale

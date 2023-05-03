@@ -1,16 +1,6 @@
 #include "chess_engine.hpp"
 
-struct KingInformation
-{
-	const Coordinate coordinate;
-	const FlagBoard move_mask;
-	const std::vector<Coordinate> checkers;
-
-	KingInformation(Coordinate coordinate, FlagBoard move_mask, std::vector<Coordinate> checkers)
-		: coordinate(coordinate), move_mask(move_mask), checkers(checkers)
-	{
-	}
-};
+#pragma region Constructor
 
 ChessEngine::ChessEngine(const Grid<Piece>& starting_position, const Player starting_player) : current_player(starting_player)
 {
@@ -18,25 +8,97 @@ ChessEngine::ChessEngine(const Grid<Piece>& starting_position, const Player star
 	this->calculate_moves();
 }
 
-void ChessEngine::make_move(const Move move)
+#pragma endregion
+
+#pragma region Public Move Logic
+
+std::vector<Consequence> ChessEngine::make_move(const Move move)
 {
 	const auto& current_board = this->positions.back();
-	if (!current_board.has_piece(move.get_from()))
+
+#pragma region Consequences
+
+	Grid<Piece> position = current_board.get_grid();
+	std::vector<Consequence> consequences = {
+		MoveConsequence(move.get_from(), move.get_to())
+	};
+
+	switch (move.get_property())
 	{
-		return;
+		case MoveProperty::EN_PASSANT:
+		{
+			const auto& cell_behind = add_coordinates(
+				move.get_to(),
+				current_player == Player::WHITE ? PieceConfiguration::DOWN : PieceConfiguration::UP);
+			consequences.push_back(RemoveConsequence(cell_behind));
+			break;
+		}
+		case MoveProperty::CASTLE:
+		{
+			const auto direction = move.get_to().second - move.get_from().second < 0 ? -1 : 1;
+			consequences.push_back(MoveConsequence(
+				add_coordinates(move.get_to(), { 0, direction }),
+				add_coordinates(move.get_to(), { 0, -direction })));
+			break;
+		}
+		case MoveProperty::PROMOTION:
+		{
+			const auto& piece_type = move.get_promotion_piece_type();
+			if (!piece_type.has_value())
+			{
+				throw InvalidOperationException("There was an attempt to make a promotion move without a new piece type.");
+			}
+			consequences.push_back(ChangeConsequence(move.get_to(), piece_type.value()));
+			break;
+		}
 	}
 
-	const auto& piece = current_board.get_piece(move.get_from());
+	for (const auto& consequence : consequences)
+	{
+		switch (consequence.get_type())
+		{
+			case ConsequenceType::MOVE:
+			{
+				const auto& move_consequence = static_cast<const MoveConsequence&>(consequence);
+				const auto& [from_i, from_j] = move_consequence.get_from();
+				const auto& [to_i, to_j] = move_consequence.get_to();
+				const auto& piece = position[from_i][from_j];
 
-#pragma region Board Modifications
+				if (!piece.has_value())
+				{
+					continue;
+				}
 
-	const auto& [from_i, from_j] = move.get_from();
-	const auto& [to_i, to_j] = move.get_to();
-	Grid<Piece> position = current_board.get_grid();
-	position[to_i][to_j].emplace(piece);
-	position[from_i][from_j].reset();
+				position[to_i][to_j].emplace(piece.value());
+				position[from_i][from_j].reset();
+				break;
+			}
+			case ConsequenceType::REMOVE:
+			{
+				const auto& remove_consequence = static_cast<const RemoveConsequence&>(consequence);
+				const auto& [i, j] = remove_consequence.get_coordinate();
+				position[i][j].reset();
+				break;
+			}
+			case ConsequenceType::CHANGE:
+			{
+				const auto& change_consequence = static_cast<const ChangeConsequence&>(consequence);
+				const auto& [i, j] = change_consequence.get_coordinate();
+				const auto& piece = position[i][j];
 
-	// TODO: move side-effects
+				if (!piece.has_value())
+				{
+					continue;
+				}
+
+				position[i][j].reset();
+				position[i][j].emplace(change_consequence.get_piece_type(), piece.value().get_player());
+				break;
+			}
+			default:
+				throw UnexpectedCaseException("Unexpected consequence type.");
+		}
+	}
 
 	this->positions.emplace_back(position);
 	this->played_moves.push_back(move);
@@ -47,101 +109,15 @@ void ChessEngine::make_move(const Move move)
 	this->calculate_moves();
 
 	this->game_state = this->current_moves.size() == 0
-		? this->currently_in_check ? GameState::CHECKMATE : GameState::STALEMATE
-		: this->currently_in_check ? GameState::CHECK : GameState::NONE;
+		? this->currently_in_check ? State::CHECKMATE : State::STALEMATE
+		: this->currently_in_check ? State::CHECK : State::NONE;
 
 	this->move_history.push_back(get_move_representation(move));
 }
 
-std::vector<Move> ChessEngine::get_current_moves() const
-{
-	return this->current_moves;
-}
+#pragma endregion
 
-std::vector<std::string> ChessEngine::get_move_history() const
-{
-	return this->move_history;
-}
-
-GameState ChessEngine::get_game_state() const
-{
-	return this->game_state;
-}
-
-std::string ChessEngine::get_move_representation(const Move move) const
-{
-	const auto& from = move.get_from();
-	const auto& to = move.get_to();
-	switch (move.get_property())
-	{
-		case MoveProperty::CASTLE:
-			return from.second - to.second > 0 ? "O-O-O" : "O-O";
-	}
-
-	const auto& current_board = this->positions.back();
-	if (!current_board.has_piece(from))
-	{
-		return "-";
-	}
-
-	const auto& piece = current_board.get_piece(from);
-	const auto& piece_data = PieceConfiguration::get_instance().get_data(piece.get_type());
-	const auto attack = current_board.has_piece(to);
-
-	auto destination = get_notation_from_coordinate(to, current_board.get_dimensions().second);
-
-	std::string ambiguity = "";
-	bool rank_ambigious = current_board.rank_contains_multiple_of(from.first, piece.get_type(), piece.get_player());
-	bool file_ambigious = current_board.file_contains_multiple_of(from.second, piece.get_type(), piece.get_player());
-	if (file_ambigious)
-	{
-		ambiguity += get_file_from_coordinate(from.second);
-	}
-	if (rank_ambigious)
-	{
-		ambiguity += get_rank_from_coordinate(from.first, current_board.get_dimensions().second);
-	}
-
-	std::string piece_string;
-	switch (piece.get_type())
-	{
-		case PieceType::PAWN:
-			piece_string = "";
-			file_ambigious = file_ambigious || attack;
-			break;
-		default:
-			piece_string = piece_data.get_representation();
-			break;
-	}
-
-	std::string capture = attack ? "x" : "";
-	std::string suffix = currently_in_check ? current_moves.size() == 0 ? "#" : "+" : "";
-
-	return piece_string + ambiguity + capture + destination;
-}
-
-std::string ChessEngine::get_notation_from_coordinate(const Coordinate coordinate, const CoordinateValue board_height)
-{
-	return get_file_from_coordinate(coordinate.second) + get_rank_from_coordinate(coordinate.first, board_height);
-}
-
-std::string ChessEngine::get_file_from_coordinate(CoordinateValue file)
-{
-	file++;
-	std::string repr = "";
-	while (file > 0)
-	{
-		auto r = (file - 1) % 26;
-		repr = std::to_string((char)((int)'a' + r)) + repr;
-		file = (file - r) / 26;
-	}
-	return repr;
-}
-
-std::string ChessEngine::get_rank_from_coordinate(const CoordinateValue rank, const CoordinateValue board_height)
-{
-	return std::to_string(board_height - rank);
-}
+#pragma region Private Move Logic
 
 void ChessEngine::calculate_moves()
 {
@@ -450,3 +426,82 @@ void ChessEngine::calculate_moves()
 #pragma endregion
 
 }
+
+std::string ChessEngine::get_move_representation(const Move move) const
+{
+	const auto& from = move.get_from();
+	const auto& to = move.get_to();
+	switch (move.get_property())
+	{
+		case MoveProperty::CASTLE:
+			return from.second - to.second > 0 ? "O-O-O" : "O-O";
+	}
+
+	const auto& current_board = this->positions.back();
+	if (!current_board.has_piece(from))
+	{
+		return "-";
+	}
+
+	const auto& piece_configuration = PieceConfiguration::get_instance();
+	const auto& piece = current_board.get_piece(from);
+	const auto& piece_data = piece_configuration.get_data(piece.get_type());
+	const auto attack = current_board.has_piece(to);
+
+	auto destination = piece_configuration.get_notation_from_coordinate(to, current_board.get_dimensions().second);
+
+	std::string ambiguity = "";
+	bool rank_ambigious = current_board.rank_contains_multiple_of(from.first, piece.get_type(), piece.get_player());
+	bool file_ambigious = current_board.file_contains_multiple_of(from.second, piece.get_type(), piece.get_player());
+	if (file_ambigious)
+	{
+		ambiguity += piece_configuration.get_file_from_coordinate(from.second);
+	}
+	if (rank_ambigious)
+	{
+		ambiguity += piece_configuration.get_rank_from_coordinate(from.first, current_board.get_dimensions().second);
+	}
+
+	std::string piece_string;
+	switch (piece.get_type())
+	{
+		case PieceType::PAWN:
+			piece_string = "";
+			file_ambigious = file_ambigious || attack;
+			break;
+		default:
+			piece_string = piece_data.get_representation();
+			break;
+	}
+
+	std::string capture = attack ? "x" : "";
+	std::string suffix = currently_in_check ? current_moves.size() == 0 ? "#" : "+" : "";
+
+	return piece_string + ambiguity + capture + destination;
+}
+
+#pragma endregion
+
+#pragma region Getters
+
+std::vector<Move> ChessEngine::get_current_moves() const
+{
+	return this->current_moves;
+}
+
+std::vector<std::string> ChessEngine::get_move_history() const
+{
+	return this->move_history;
+}
+
+State ChessEngine::get_state() const
+{
+	return this->game_state;
+}
+
+Player ChessEngine::get_current_player() const
+{
+	return this->current_player;
+}
+
+#pragma endregion

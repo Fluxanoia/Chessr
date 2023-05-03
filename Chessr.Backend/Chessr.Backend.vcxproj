@@ -233,6 +233,7 @@ echo F|xcopy /y "$(OutDir)$(TargetName)-stubs\__init__.pyi" "$(OutDir)..\$(Targe
   <ItemGroup>
     <ClCompile Include="board.cpp" />
     <ClCompile Include="chess_engine.cpp" />
+    <ClCompile Include="consequence.cpp" />
     <ClCompile Include="flag_board.cpp" />
     <ClCompile Include="module.cpp" />
     <ClCompile Include="move.cpp" />
@@ -245,6 +246,7 @@ echo F|xcopy /y "$(OutDir)$(TargetName)-stubs\__init__.pyi" "$(OutDir)..\$(Targe
   <ItemGroup>
     <ClInclude Include="board.hpp" />
     <ClInclude Include="chess_engine.hpp" />
+    <ClInclude Include="consequence.hpp" />
     <ClInclude Include="move.hpp" />
     <ClInclude Include="exceptions.hpp" />
     <ClInclude Include="flag_board.hpp" />

@@ -1,23 +1,25 @@
-from typing import NoReturn, Optional
+from typing import Optional
 
 import pygame as pg
-
-from src.engine.spritesheets.board_spritesheet import BoardSpritesheet
+from src.engine.spritesheets.board_spritesheet import (BoardColour,
+                                                       BoardSpritesheet,
+                                                       CellColour)
 from src.logic.board_event import BoardDataType, BoardEvent, BoardEventType
-from src.logic.logic_board import LogicBoard, MoveSupplier
 from src.sprites.board.board_cell import BoardCell
-from src.utils.enums import BoardColour, CellColour, MouseButton
-from src.utils.helpers import FloatVector, IntVector
+from src.sprites.board.piece import Piece
+from src.utils.enums import MouseButton
+from src.utils.helpers import FloatVector, IntVector, inbounds
 
 
-class Board(LogicBoard):
+class Board():
 
     def __init__(
         self,
-        move_supplier : MoveSupplier,
         colour : BoardColour = BoardColour.BLACK_WHITE,
     ):
-        super().__init__(move_supplier)
+        self.__width = 0
+        self.__height = 0
+        self.__cells : tuple[tuple[BoardCell, ...], ...] = tuple([tuple([])])
         self.__bounds : pg.Rect = pg.Rect(0, 0, 0, 0)
 
         self.__colour = colour
@@ -31,9 +33,8 @@ class Board(LogicBoard):
         for i in range(self.height):
             for j in range(self.width):
                 cell = self.at(i, j)
-                if not isinstance(cell, BoardCell):
-                    self.__raise_display_cast_error()
-                cell.delete()
+                if not cell is None:
+                    cell.delete()
 
         self._width = width
         self._height = height
@@ -58,7 +59,7 @@ class Board(LogicBoard):
                 row.append(cell)
             cells.append(tuple(row))
 
-        self._set_cells(tuple(cells))
+        self.__cells = tuple(cells)
 
     def set_position(self, x : int, y : int):
         cell_size = BoardSpritesheet.BOARD_WIDTH * self.__cell_scale
@@ -74,10 +75,9 @@ class Board(LogicBoard):
 
         for i in range(self.height):
             for j in range(self.width):
-                sprite = self.at(i, j)
-                if not isinstance(sprite, BoardCell):
-                    self.__raise_display_cast_error()
-                sprite.set_position(calculate_cell_position(i, j))
+                cell = self.at(i, j)
+                if not cell is None:
+                    cell.set_position(calculate_cell_position(i, j))
 
     def mouse_down(self, event : pg.event.Event) -> bool:
         if event.button == MouseButton.LEFT:
@@ -109,12 +109,62 @@ class Board(LogicBoard):
         for i in range(self.height):
             for j in range(self.width):
                 cell = self.at(i, j)
-                if not isinstance(cell, BoardCell):
-                    self.__raise_display_cast_error()
-                if cell.point_intersects(point):
+                if not cell is None and cell.point_intersects(point):
                     return cell.gxy
         return None
+    
+    def move(
+        self,
+        from_gxy : IntVector,
+        to_gxy : IntVector
+    ) -> None:
+        if from_gxy == to_gxy:
+            return
+        
+        piece_to_move = self.piece_at(*from_gxy)
+        if piece_to_move is None:
+            return
 
+        from_cell = self.at(*from_gxy)
+        to_cell = self.at(*to_gxy)
+
+        if from_cell is None or to_cell is None:
+            return
+
+        to_cell.take_piece_from(from_cell)
+        
+    def remove(self, i : int, j : int) -> None:
+        cell = self.at(i, j)
+        if cell is None:
+            return
+        cell.remove_piece()
+
+#region Properties, Getters, and Setters
+
+    def at(self, i : int, j : int) -> Optional[BoardCell]:
+        if not inbounds(self.width, self.height, (i, j)):
+            return None
+        return self.__cells[i][j]
+
+    def row_at(self, i : int) -> Optional[tuple[BoardCell]]:
+        if not inbounds(self.width, self.height, (i, 0)):
+            return None
+        return self.__cells[i]
+
+    def piece_at(self, i : int, j : int) -> Optional[Piece]:
+        cell = self.at(i, j)
+        if cell is None:
+            return None
+        return cell.piece
+    
+    @property
+    def width(self) -> int:
+        return self.__width
+    
+    @property
+    def height(self) -> int:
+        return self.__height
+    
     @property
     def scale(self) -> float:
         return self.__scale
@@ -122,7 +172,5 @@ class Board(LogicBoard):
     @property
     def bounds(self) -> pg.Rect:
         return self.__bounds
-    
-    @staticmethod
-    def __raise_display_cast_error() -> NoReturn:
-        raise SystemExit('There was a failed attempt to cast a logic object to a display object.')
+
+#endregion

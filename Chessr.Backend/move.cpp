@@ -22,3 +22,17 @@ const MoveProperty& Move::get_property() const
 {
 	return this->move_property;
 }
+
+const std::optional<PieceType>& Move::get_promotion_piece_type() const
+{
+	return this->promotion_piece_type;
+}
+
+void Move::set_promotion_type(const PieceType piece_type)
+{
+	if (this->move_property != MoveProperty::PROMOTION)
+	{
+		throw InvalidOperationException("There was an attempt to set the promotion piece type for a non-promotion move.");
+	}
+	this->promotion_piece_type = piece_type;
+}

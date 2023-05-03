@@ -1,10 +1,9 @@
 from typing import Optional, cast
 
+from backend import PieceConfiguration, Player
 from src.engine.factory import Factory
 from src.engine.file_manager import PathLike
 from src.logic.board_data import BoardData, PieceData
-from src.logic.notation import Notation
-from src.utils.enums import Side
 from src.utils.helpers import IntVector
 
 
@@ -28,16 +27,16 @@ class BoardLoader:
 
         name = 'MISSING_NAME'
         description = 'MISSING_DESC'
-        turn = Side.FRONT
+        turn = Player.WHITE
         pieces : list[PieceData] = []
 
-        notation = Notation.get()
+        piece_configuration = PieceConfiguration.get_instance()
 
         for key, value in file_data.items():
             if key in ('w', 'h'):
                 continue
             if key == 'turn':
-                parsed_turn = self.__get_side_from_text(value)
+                parsed_turn = self.__get_player_from_text(value)
                 if parsed_turn is None:
                     return self.__get_invalid_board(
                         path,
@@ -53,10 +52,10 @@ class BoardLoader:
                         path,
                         f'The piece data was invalid: \'{key}:{value}\'.')
 
-                side = self.__get_side_from_text(key[0])
-                piece_type = notation.get_piece_type(key[1])
+                side = self.__get_player_from_text(key[0])
+                piece_type = piece_configuration.get_piece_type(key[1])
                 coords = list(map(
-                    lambda c : notation.get_coordinate_from_notation(c, height),
+                    lambda c : piece_configuration.get_coordinate_from_notation(c, height),
                     value.split(' ')))
 
                 if side is None or piece_type is None or any(map(lambda x : x is None, coords)):
@@ -78,11 +77,11 @@ class BoardLoader:
 
 #region Private Methods
 
-    def __get_side_from_text(self, c : str) -> Optional[Side]:
+    def __get_player_from_text(self, c : str) -> Optional[Player]:
         if c == 'w':
-            return Side.FRONT
+            return Player.WHITE
         if c == 'b':
-            return Side.BACK
+            return Player.BLACK
         return None
 
     def __get_invalid_board(self, path : PathLike, description : str) -> BoardData:
@@ -90,7 +89,7 @@ class BoardLoader:
             False,
             0,
             0,
-            Side.FRONT,
+            Player.WHITE,
             'INVALID_BOARD',
             f'{description} Path: {path}.',
             [])

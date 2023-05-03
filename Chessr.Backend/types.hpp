@@ -24,7 +24,7 @@ enum class Player
     BLACK
 };
 
-enum class GameState
+enum class State
 {
     NONE = 0,
     CHECK,
@@ -37,5 +37,6 @@ enum class MoveProperty
     NONE = 0,
     DOUBLE_MOVE,
     EN_PASSANT,
-    CASTLE
+    CASTLE,
+    PROMOTION
 };

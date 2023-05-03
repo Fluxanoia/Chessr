@@ -1,7 +1,7 @@
+from backend import Player
+from src.engine.spritesheets.piece_spritesheet import PieceColour
 from src.logic.board_data import BoardData
 from src.sprites.board.board import Board
-from src.sprites.board.board_cell import BoardCell
-from src.utils.enums import PieceColour, Side
 
 
 class BoardApplier:
@@ -13,14 +13,12 @@ class BoardApplier:
             cell = board.at(*piece_data.gxy)
             if cell is None:
                 continue
-            if not isinstance(cell, BoardCell):
-                raise SystemExit('Expected display element.')    
             cell.add_piece(
-                self.__get_piece_colour(piece_data.side), piece_data.type, piece_data.side)
+                self.__get_piece_colour(piece_data.player), piece_data.type, piece_data.player)
 
-    def __get_piece_colour(self, side : Side) -> PieceColour:
-        if side == Side.FRONT:
+    def __get_piece_colour(self, player : Player) -> PieceColour:
+        if player == Player.WHITE:
             return PieceColour.WHITE
-        if side == Side.BACK:
+        if player == Player.BLACK:
             return PieceColour.BLACK
-        raise SystemExit(f'Unexpected side value \'{side}\'.')
+        raise SystemExit(f'Unexpected player value \'{player}\'.')

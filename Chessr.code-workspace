@@ -11,7 +11,8 @@
 		"python.analysis.typeCheckingMode": "strict",
 		"python.analysis.diagnosticMode": "workspace",
 		"python.analysis.extraPaths": [
-			"../build"
+			"../build",
+			"../Chessr.Python/src",
 		],
 		"pylint.args": [
 			"--rcfile Chessr.Python/.pylintrc"

@@ -1,27 +1,8 @@
 from typing import Iterable
 
-from src.utils.enums import PieceType, Side
-from src.utils.helpers import IntVector
+from backend import Player
+from src.logic.piece_data import PieceData
 
-
-class PieceData:
-
-    def __init__(self, piece_type : PieceType, side : Side, gxy : IntVector):
-        self.__type = piece_type
-        self.__side = side
-        self.__gxy = gxy
-
-    @property
-    def type(self):
-        return self.__type
-
-    @property
-    def side(self):
-        return self.__side
-
-    @property
-    def gxy(self):
-        return self.__gxy
 
 class BoardData:
 
@@ -30,7 +11,7 @@ class BoardData:
         valid : bool,
         width : int,
         height : int,
-        starting_turn : Side,
+        starting_turn : Player,
         name : str,
         description : str,
         pieces : Iterable[PieceData]

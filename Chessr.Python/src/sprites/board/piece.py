@@ -1,18 +1,18 @@
 from typing import Any, Optional
 
 import pygame as pg
-
+from backend import PieceType, Player
 from src.engine.factory import Factory
 from src.engine.group_manager import GroupType
-from src.logic.logic_piece import LogicPiece
+from src.engine.spritesheets.piece_spritesheet import PieceColour
 from src.sprites.board.piece_shadow import PieceShadow
 from src.sprites.sprite import ChessrSprite
-from src.utils.enums import Anchor, PieceColour, PieceType, Side
+from src.utils.enums import Anchor
 from src.utils.helpers import FloatVector, clamp
 from src.utils.tween import Tween, TweenType
 
 
-class Piece(ChessrSprite, LogicPiece):
+class Piece(ChessrSprite):
 
     def __init__(
         self,
@@ -20,9 +20,10 @@ class Piece(ChessrSprite, LogicPiece):
         scale : float,
         colour : PieceColour,
         piece_type : PieceType,
-        side : Side
+        player : Player
     ):
-        LogicPiece.__init__(self, piece_type, side)
+        self.__piece_type = piece_type
+        self.__player = player
         self.__colour = self.__fallback_colour = colour
 
         self.__scale = scale
@@ -34,8 +35,7 @@ class Piece(ChessrSprite, LogicPiece):
         self.__shadow = PieceShadow(xy, scale)
         self.__update_shadow_alpha()
 
-        ChessrSprite.__init__(
-            self,
+        super().__init__(
             xy,
             GroupType.GAME_PIECE,
             None,
@@ -44,9 +44,8 @@ class Piece(ChessrSprite, LogicPiece):
             Anchor.BOTTOM_LEFT)
 
     def delete(self) -> None:
-        ChessrSprite.delete(self)
         self.__shadow.delete()
-        LogicPiece.delete(self)
+        super().delete()
 
     def update(self, *args : list[Any]) -> None:
         if not self.__lift_tween is None:
@@ -83,7 +82,7 @@ class Piece(ChessrSprite, LogicPiece):
         self.__lift_tween.restart()
 
     def change_type(self, piece_type : PieceType) -> None:
-        LogicPiece.change_type(self, piece_type)
+        self.__piece_type = piece_type
         self.src_rect = self.__get_src_rect()
 
     def highlight(self) -> None:
@@ -96,9 +95,13 @@ class Piece(ChessrSprite, LogicPiece):
 
     def __get_src_rect(self, scale : Optional[float] = None) -> pg.Rect:
         scale = scale if not scale is None else self.__scale
-        spritesheet = Factory.get().board_spritesheet
-        return spritesheet.get_piece_srcrect(self.__colour, self.type, self.side, scale)
+        spritesheet = Factory.get().piece_spritesheet
+        return spritesheet.get_src_rect(self.__colour, self.__piece_type, self.__player, scale)
 
     def __update_shadow_alpha(self) -> None:
         alpha = 255 * (1 - self.__lift / 60.0) if not self.__lift == 0 else 0
         self.__shadow.set_alpha(clamp(int(alpha), 0, 255))
+
+    @property
+    def player(self):
+        return self.__player
