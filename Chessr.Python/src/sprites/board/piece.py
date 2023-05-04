@@ -27,7 +27,7 @@ class Piece(ChessrSprite):
         self.__colour = self.__fallback_colour = colour
 
         self.__scale = scale
-        image = Factory.get().board_spritesheet.get_sheet(scale)
+        image = Factory.get().piece_spritesheet.get_sheet(scale)
 
         self.__lift : float = 0
         self.__lift_tween : Optional[Tween] = None

@@ -10,6 +10,7 @@ TEST(MoveGeneratorTests, TestGetKingMoveMask1)
 	const auto bk = TestHelpers::get_piece(PieceType::KING, Player::BLACK);
 	const auto wk = TestHelpers::get_piece(PieceType::KING, Player::WHITE);
 	const auto wr = TestHelpers::get_piece(PieceType::ROOK, Player::WHITE);
+	PieceConfiguration piece_config = {};
 	auto boards = Boards({
 		{ {}, {}, bk, {}, {} },
 		{ {}, {}, {}, {}, {} },
@@ -18,7 +19,7 @@ TEST(MoveGeneratorTests, TestGetKingMoveMask1)
 		{ {}, {}, wk, {}, {} },
 	}, Player::WHITE);
 
-	auto mask = MoveGenerator::get_king_move_mask(boards, Player::BLACK, { 0, 2 });
+	auto mask = MoveGenerator::get_king_move_mask(boards, piece_config, Player::BLACK, { 0, 2 });
 	auto flagged = mask->get_flagged();
 
 	EXPECT_EQ(flagged.size(), 16);
@@ -38,6 +39,7 @@ TEST(MoveGeneratorTests, TestGetKingMoveMask2)
 	const auto bk = TestHelpers::get_piece(PieceType::KING, Player::BLACK);
 	const auto wk = TestHelpers::get_piece(PieceType::KING, Player::WHITE);
 	const auto wr = TestHelpers::get_piece(PieceType::ROOK, Player::WHITE);
+	PieceConfiguration piece_config = {};
 	auto boards = Boards({
 		{ {}, {}, {}, {}, {} },
 		{ {}, {}, {}, bk, {} },
@@ -46,7 +48,7 @@ TEST(MoveGeneratorTests, TestGetKingMoveMask2)
 		{ {}, {}, wk, {}, {} },
 	}, Player::WHITE);
 
-	auto mask = MoveGenerator::get_king_move_mask(boards, Player::BLACK, { 1, 3 });
+	auto mask = MoveGenerator::get_king_move_mask(boards, piece_config, Player::BLACK, { 1, 3 });
 	auto flagged = mask->get_flagged();
 
 	EXPECT_EQ(flagged.size(), 16);
@@ -66,6 +68,7 @@ TEST(MoveGeneratorTests, TestGetKingMoveMask3)
 	const auto wk = TestHelpers::get_piece(PieceType::KING, Player::WHITE);
 	const auto bk = TestHelpers::get_piece(PieceType::KING, Player::BLACK);
 	const auto bb = TestHelpers::get_piece(PieceType::BISHOP, Player::BLACK);
+	PieceConfiguration piece_config = {};
 	auto boards = Boards({
 		{ {}, {}, {}, {}, {} },
 		{ {}, {}, {}, {}, {} },
@@ -74,7 +77,7 @@ TEST(MoveGeneratorTests, TestGetKingMoveMask3)
 		{ {}, {}, bk, {}, {} },
 	}, Player::WHITE);
 
-	auto mask = MoveGenerator::get_king_move_mask(boards, Player::WHITE, { 2, 2 });
+	auto mask = MoveGenerator::get_king_move_mask(boards, piece_config, Player::WHITE, { 2, 2 });
 	auto flagged = mask->get_flagged();
 
 	EXPECT_EQ(flagged.size(), 16);
@@ -166,6 +169,7 @@ TEST(MoveGeneratorTests, TestGetAttackingCoordinates)
 	const auto kn = TestHelpers::get_piece(PieceType::KNIGHT, Player::WHITE);
 	const auto pa = TestHelpers::get_piece(PieceType::PAWN, Player::WHITE);
 	const auto qu = TestHelpers::get_piece(PieceType::QUEEN, Player::WHITE);
+	PieceConfiguration piece_config = {};
 	auto boards = Boards({
 		{ {}, {}, {}, {}, bi },
 		{ kn, {}, {}, {}, bi},
@@ -174,7 +178,7 @@ TEST(MoveGeneratorTests, TestGetAttackingCoordinates)
 		{ qu, {}, ro, {}, {} },
 	}, Player::WHITE);
 
-	auto attacks = MoveGenerator::get_attacking_coordinates(boards, Player::BLACK, { 2, 2 });
+	auto attacks = MoveGenerator::get_attacking_coordinates(boards, piece_config, Player::BLACK, { 2, 2 });
 
 	EXPECT_EQ(attacks.size(), 5);
 	EXPECT_TRUE(std::find(attacks.begin(), attacks.end(), Coordinate(3, 3)) != attacks.end());
@@ -269,6 +273,7 @@ TEST(MoveGeneratorTests, TestGetPins)
 	const auto br = TestHelpers::get_piece(PieceType::ROOK, Player::BLACK);
 	const auto bb = TestHelpers::get_piece(PieceType::BISHOP, Player::BLACK);
 	const auto bq = TestHelpers::get_piece(PieceType::QUEEN, Player::BLACK);
+	PieceConfiguration piece_config = {};
 	auto boards = Boards({
 		{ {}, {}, {}, wp, {}, {} },
 		{ {}, {}, {}, br, {}, {} },
@@ -278,7 +283,7 @@ TEST(MoveGeneratorTests, TestGetPins)
 		{ {}, {}, {}, {}, {}, {} }
 	}, Player::WHITE);
 	
-	auto pins = MoveGenerator::get_pins(boards, Player::WHITE);
+	auto pins = MoveGenerator::get_pins(boards, piece_config, Player::WHITE);
 
 	EXPECT_EQ(pins.size(), 3);
 
@@ -315,6 +320,7 @@ TEST(MoveGeneratorTests, TestGetPin_Multiple)
 	const auto wk = TestHelpers::get_piece(PieceType::KING, Player::WHITE);
 	const auto wp = TestHelpers::get_piece(PieceType::PAWN, Player::WHITE);
 	const auto br = TestHelpers::get_piece(PieceType::ROOK, Player::BLACK);
+	PieceConfiguration piece_config = {};
 	auto boards = Boards({
 		{ {}, {}, br, {}, {} },
 		{ {}, {}, {}, {}, {} },
@@ -323,7 +329,7 @@ TEST(MoveGeneratorTests, TestGetPin_Multiple)
 		{ {}, {}, wk, {}, {} },
 	}, Player::WHITE);
 
-	auto pins = MoveGenerator::get_pins(boards, Player::WHITE);
+	auto pins = MoveGenerator::get_pins(boards, piece_config, Player::WHITE);
 
 	EXPECT_EQ(pins.size(), 1);
 

@@ -9,6 +9,9 @@ from src.utils.helpers import IntVector
 
 class BoardLoader:
 
+    def __init__(self, piece_configuration : PieceConfiguration):
+        self.__piece_configuration = piece_configuration
+
     def load_board(self, path : PathLike) -> BoardData:
         file_data = Factory.get().file_manager.load_board(path)
         if file_data is None:
@@ -29,8 +32,6 @@ class BoardLoader:
         description = 'MISSING_DESC'
         turn = Player.WHITE
         pieces : list[PieceData] = []
-
-        piece_configuration = PieceConfiguration.get_instance()
 
         for key, value in file_data.items():
             if key in ('w', 'h'):
@@ -53,9 +54,9 @@ class BoardLoader:
                         f'The piece data was invalid: \'{key}:{value}\'.')
 
                 side = self.__get_player_from_text(key[0])
-                piece_type = piece_configuration.get_piece_type(key[1])
+                piece_type = self.__piece_configuration.get_piece_type(key[1])
                 coords = list(map(
-                    lambda c : piece_configuration.get_coordinate_from_notation(c, height),
+                    lambda c : self.__piece_configuration.get_coordinate_from_notation(c, height),
                     value.split(' ')))
 
                 if side is None or piece_type is None or any(map(lambda x : x is None, coords)):

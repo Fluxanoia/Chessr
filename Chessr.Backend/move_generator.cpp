@@ -4,6 +4,7 @@
 
 std::shared_ptr<FlagBoard> MoveGenerator::get_king_move_mask(
 	const Boards& boards,
+	const PieceConfiguration& piece_configuration,
 	const Player& player,
 	const Coordinate& coordinate)
 {
@@ -11,7 +12,6 @@ std::shared_ptr<FlagBoard> MoveGenerator::get_king_move_mask(
 	auto king_move_mask = std::make_shared<FlagBoard>(board.get_dimensions(), true);
 
 	const auto& [width, height] = board.get_dimensions();
-	const auto& piece_configuration = PieceConfiguration::get_instance();
 	const auto opposing_player = Maths::get_opposing_player(player);
 	for (auto i = 0; i < height; i++)
 	{
@@ -72,13 +72,13 @@ std::vector<Coordinate> MoveGenerator::get_possible_attacks(
 
 std::vector<Coordinate> MoveGenerator::get_attacking_coordinates(
 	const Boards& boards,
+	const PieceConfiguration& piece_configuration,
 	const Player& player,
 	const Coordinate& coordinate)
 {
 	const auto& board = boards.get_current_board();
 	const auto& [width, height] = board.get_dimensions();
 	const auto opposing_player = Maths::get_opposing_player(player);
-	auto& piece_configuration = PieceConfiguration::get_instance();
 
 	std::vector<Coordinate> attacking_cells = {};
 	for (auto i = 0; i < height; i++)
@@ -164,10 +164,10 @@ std::vector<Coordinate> MoveGenerator::get_blocks_to_attack(
 
 std::vector<PinnedPiece> MoveGenerator::get_pins(
 	const Boards& boards,
+	const PieceConfiguration& piece_configuration,
 	const Player& player)
 {
 	const auto& board = boards.get_current_board();
-	auto& piece_configuration = PieceConfiguration::get_instance();
 	const auto opposing_player = Maths::get_opposing_player(player);
 	const auto king_positions = board.positions_of(PieceType::KING, player);
 

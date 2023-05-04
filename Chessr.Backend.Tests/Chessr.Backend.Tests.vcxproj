@@ -53,17 +53,20 @@
     <ClInclude Include="test_helpers.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="boards_tests.cpp" />
     <ClCompile Include="board_tests.cpp" />
     <ClCompile Include="chess_engine_tests.cpp" />
     <ClCompile Include="flag_board_tests.cpp" />
     <ClCompile Include="maths_tests.cpp" />
     <ClCompile Include="move_generator_tests.cpp" />
+    <ClCompile Include="move_tests.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="piece_configuration_tests.cpp" />
     <ClCompile Include="piece_data_tests.cpp" />
     <ClCompile Include="test_helpers.cpp" />
   </ItemGroup>

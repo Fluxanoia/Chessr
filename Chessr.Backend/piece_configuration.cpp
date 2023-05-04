@@ -105,11 +105,10 @@ const std::vector<PieceType>& PieceConfiguration::get_piece_types() const
 std::optional<Coordinate> PieceConfiguration::get_coordinate_from_notation(const std::string notation, const CoordinateValue board_height) const
 {
 	std::string lowered_notation = {};
-	std::transform(
-		notation.begin(),
-		notation.end(),
-		lowered_notation.begin(),
-		[](unsigned char c) { return (char)std::tolower(c); });
+	for (const auto& c : notation)
+	{
+		lowered_notation += static_cast<char>(std::tolower(c));
+	}
 
 	std::string row = "";
 	std::string column = "";
@@ -141,7 +140,7 @@ std::optional<Coordinate> PieceConfiguration::get_coordinate_from_notation(const
 	for (const auto& x : column)
 	{
 		j *= 26;
-		j += ((int)x) - ((int)'a');
+		j += static_cast<int>(x) - static_cast<int>('a');
 	}
 
 	auto i = board_height - std::stoi(row);
@@ -160,7 +159,7 @@ std::string PieceConfiguration::get_file_from_coordinate(CoordinateValue file) c
 	while (file > 0)
 	{
 		auto r = (file - 1) % 26;
-		repr = std::to_string((char)((int)'a' + r)) + repr;
+		repr = std::to_string(static_cast<char>(static_cast<int>('a') + r)) + repr;
 		file = (file - r) / 26;
 	}
 	return repr;

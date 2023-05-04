@@ -1,6 +1,8 @@
-from typing import Optional
+from typing import Optional, cast
 
 import pygame as pg
+from backend import (ChangeConsequence, Consequence, ConsequenceType,
+                     MoveConsequence, PieceType, RemoveConsequence)
 from src.engine.spritesheets.board_spritesheet import (BoardColour,
                                                        BoardSpritesheet,
                                                        CellColour)
@@ -36,8 +38,8 @@ class Board():
                 if not cell is None:
                     cell.delete()
 
-        self._width = width
-        self._height = height
+        self.__width = width
+        self.__height = height
 
         cell_colours = (CellColour.LIGHT, CellColour.DARK)
         def calculate_cell_colour(i : int, j : int) -> CellColour:
@@ -113,7 +115,25 @@ class Board():
                     return cell.gxy
         return None
     
-    def move(
+    def apply_consequences(self, consequences : list[Consequence]):
+        for consequence in consequences:
+            self.apply_consequence(consequence)
+
+    def apply_consequence(self, consequence : Consequence):
+        type = consequence.get_type()
+        if type == ConsequenceType.MOVE:
+            consequence = cast(MoveConsequence, consequence)
+            self.__move(consequence.from_gxy, consequence.to_gxy)
+        elif type == ConsequenceType.REMOVE:
+            consequence = cast(RemoveConsequence, consequence)
+            self.__remove(consequence.gxy)
+        elif type == ConsequenceType.CHANGE:
+            consequence = cast(ChangeConsequence, consequence)
+            self.__change(consequence.gxy, consequence.piece_type)
+        else:
+            raise SystemExit('Unexpected consequence type.')
+
+    def __move(
         self,
         from_gxy : IntVector,
         to_gxy : IntVector
@@ -132,6 +152,31 @@ class Board():
             return
 
         to_cell.take_piece_from(from_cell)
+
+    def __remove(
+        self,
+        gxy : IntVector,
+    ) -> None:
+        piece_to_remove = self.piece_at(*gxy)
+        if piece_to_remove is None:
+            return
+
+        cell = self.at(*gxy)
+        if cell is None:
+            return
+
+        cell.remove_piece()
+
+    def __change(
+        self,
+        gxy : IntVector,
+        piece_type : PieceType
+    ):
+        piece_to_change = self.piece_at(*gxy)
+        if piece_to_change is None:
+            return
+
+        piece_to_change.change_type(piece_type)
         
     def remove(self, i : int, j : int) -> None:
         cell = self.at(i, j)

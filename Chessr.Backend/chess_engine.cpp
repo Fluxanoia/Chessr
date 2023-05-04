@@ -2,7 +2,8 @@
 
 #pragma region Constructor
 
-ChessEngine::ChessEngine(const Grid<Piece>& starting_position, const Player starting_player) : boards(Boards(starting_position, starting_player))
+ChessEngine::ChessEngine(PieceConfiguration& piece_configuration, const Grid<Piece>& starting_position, const Player starting_player)
+	: piece_configuration(piece_configuration), boards(Boards(starting_position, starting_player))
 {
 	this->calculate_moves();
 }
@@ -35,7 +36,6 @@ void ChessEngine::calculate_moves()
 	auto& board = boards.get_current_board();
 	const auto& player = boards.get_current_player();
 	const auto& [width, height] = board.get_dimensions();
-	const auto& piece_configuration = PieceConfiguration::get_instance();
 
 	const auto opposing_player = Maths::get_opposing_player(player);
 
@@ -48,8 +48,8 @@ void ChessEngine::calculate_moves()
 	{
 		king_informations.emplace_back(
 			coordinate,
-			MoveGenerator::get_king_move_mask(boards, player, coordinate),
-			MoveGenerator::get_attacking_coordinates(boards, player, coordinate));
+			MoveGenerator::get_king_move_mask(boards, piece_configuration, player, coordinate),
+			MoveGenerator::get_attacking_coordinates(boards, piece_configuration, player, coordinate));
 	}
 
 	std::vector<std::reference_wrapper<const KingInformation>> single_checks = {};
@@ -218,7 +218,7 @@ void ChessEngine::calculate_moves()
 
 #pragma region Pin Move Aggregation
 
-	auto pins = MoveGenerator::get_pins(boards, player);
+	auto pins = MoveGenerator::get_pins(boards, piece_configuration, player);
 	for (auto& pin : pins)
 	{
 		if (!board.has_piece(pin.get_coordinate()))
@@ -353,7 +353,6 @@ std::string ChessEngine::get_move_representation(const std::shared_ptr<Move> mov
 		return "-";
 	}
 
-	const auto& piece_configuration = PieceConfiguration::get_instance();
 	const auto& piece = current_board.get_piece(from);
 	const auto& piece_data = piece_configuration.get_data(piece.get_type());
 	const auto attack = move->attacks();
@@ -397,6 +396,11 @@ std::string ChessEngine::get_move_representation(const std::shared_ptr<Move> mov
 std::vector<std::shared_ptr<Move>> ChessEngine::get_current_moves() const
 {
 	return this->current_moves;
+}
+
+const PieceConfiguration& ChessEngine::get_piece_configuration() const
+{
+	return this->piece_configuration;
 }
 
 std::vector<std::string> ChessEngine::get_move_history() const

@@ -25,6 +25,15 @@
     <ClCompile Include="test_helpers.cpp">
       <Filter>Helpers</Filter>
     </ClCompile>
+    <ClCompile Include="piece_configuration_tests.cpp">
+      <Filter>Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="boards_tests.cpp">
+      <Filter>Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="move_tests.cpp">
+      <Filter>Tests</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="GoogleTest">

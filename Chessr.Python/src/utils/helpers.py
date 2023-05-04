@@ -1,4 +1,4 @@
-from typing import Any, Collection, Iterable, TypeVar, Union
+from typing import Any, Iterable, TypeVar, Union
 
 import pygame as pg
 
@@ -13,10 +13,6 @@ def add_vectors(x : IntVector, y : IntVector) -> IntVector:
 
 def scale_rect(rect : pg.rect.Rect, scale : float) -> None:
     rect.update(rect.x * scale, rect.y * scale, rect.w * scale, rect.h * scale)
-
-T = TypeVar('T')
-def pad(arr : Collection[T], size : int, default : T = None) -> tuple[T, ...]:
-    return tuple([*arr] + [default] * (size - len(arr)))
 
 U = TypeVar('U', bound = Numeric)
 def clamp(x : U, l : U, u : U) -> U:

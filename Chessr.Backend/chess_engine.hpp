@@ -31,10 +31,10 @@ private:
     };
 
     State state;
-    std::vector<std::shared_ptr<Move>> current_moves;
-
     Boards boards;
-    std::vector<std::string> move_history;
+    PieceConfiguration piece_configuration;
+    std::vector<std::shared_ptr<Move>> current_moves = {};
+    std::vector<std::string> move_history = {};
 
     std::string get_move_representation(const std::shared_ptr<Move> move);
 
@@ -42,12 +42,16 @@ private:
 
 public:
 
-    ChessEngine(const Grid<Piece>& starting_position, const Player starting_player);
+    ChessEngine(
+        PieceConfiguration& piece_configuration,
+        const Grid<Piece>& starting_position,
+        const Player starting_player);
 
     std::vector<std::shared_ptr<Consequence>> make_move(const std::shared_ptr<Move> move);
 
     State get_state() const;
     Player get_current_player() const;
+    const PieceConfiguration& get_piece_configuration() const;
     std::vector<std::shared_ptr<Move>> get_current_moves() const;
     std::vector<std::string> get_move_history() const;
 };

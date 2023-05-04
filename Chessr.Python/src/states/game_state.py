@@ -1,16 +1,16 @@
 from threading import Thread
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 
 import pygame as pg
-from backend import ChessEngine, PieceConfiguration, Player
+from backend import ChessEngine, Consequence, MoveProperty, Player
 from backend import State as BackendState
 from src.engine.group_manager import GroupType
+from src.engine.spritesheets.highlight_spritesheet import CellHighlightType
 from src.engine.state import State, StateType
+from src.engine.state_type import GameStateData
 from src.logic.board_applier import BoardApplier
-from src.logic.board_data import BoardData
 from src.logic.pending_move_action import PendingMoveAction
-from src.sprites.board.board import Board, BoardCell, BoardEventType
-from src.sprites.board.piece import Piece
+from src.sprites.board.board import Board, BoardEventType
 from src.sprites.ui.button import Button
 from src.sprites.ui.text import Text
 from src.utils.enums import Anchor, Direction, ViewState
@@ -31,7 +31,8 @@ class GameState(State):
         self.__coords_text : Text
         self.__back_button : Button
 
-        self.__engine = ChessEngine([], Player.WHITE)
+        self.__engine : ChessEngine
+        self.__consequences : Optional[list[Consequence]] = None
         self.__pending_move_action : Optional[PendingMoveAction] = None
         self.__processing_thread : Optional[Thread] = None
         self.__selected : Optional[IntVector] = None
@@ -86,33 +87,51 @@ class GameState(State):
         self._update_view()
 
     def start(self, data : Any) -> None:
-        if not isinstance(data, BoardData):
-            raise SystemExit('The GameState requires board data to initialise.')
+        if not isinstance(data, GameStateData) or data.board_data is None:
+            raise SystemExit('The GameState requires certain data to initialise.')
 
-        self.__state = BackendState.NONE
+        board_data = data.board_data
+
         self.__pending_move_action = None 
         self.__processing_thread = None
         self.__selected = None
 
-        self.__turn = data.starting_turn
-        self.__board_applier.apply_board(self.__board, data)
+        self.__board_applier.apply_board(self.__board, board_data)
         self._update_view()
 
         self.__coords_text.set_state(ViewState.INVISIBLE)
         self.__state_text.set_state(ViewState.INVISIBLE)
 
-        self.__turn_text.set_text_by_key(self.__engine.get_state())
-        self.__turn_text.set_state(ViewState.VISIBLE)
-        self.__process_state()
+        def process():
+            self.__engine = ChessEngine(
+                data.piece_configuration,
+                board_data.grid, 
+                board_data.starting_turn)
+
+        self.__process_backend(process)
 
     def update(self) -> None:
         if not self.__processing_thread is None \
             and not self.__processing_thread.is_alive():
             self.__processing_thread = None
-            if self.__state == BackendState.NONE:
+
+            if not self.__consequences is None:
+                self.__board.apply_consequences(self.__consequences)
+                self.__consequences = None
+
+            self.__clear_pending_action()
+            self.__deselect()
+            self.__update_highlighting()
+            self.__turn_text.set_text_with_slide_by_key(self.__engine.get_current_player())
+
+            self.__turn_text.set_text_by_key(self.__engine.get_current_player())
+            self.__turn_text.set_state(ViewState.VISIBLE)
+
+            state = self.__engine.get_state()
+            if state == BackendState.NONE:
                 self.__state_text.do_slide(ViewState.INVISIBLE)
             else:
-                self.__state_text.set_text_with_slide_by_key(self.__state)
+                self.__state_text.set_text_with_slide_by_key(state)
 
         board_event = self.__board.pop_event()
         while not board_event is None:
@@ -166,7 +185,9 @@ class GameState(State):
                 pause = 500 if self.__coords_text.is_completely_visible() else 0
                 self.__coords_text.do_slide(ViewState.INVISIBLE, pause=pause)
         else:
-            coords = PieceConfiguration.get_instance().get_notation_from_coordinate(gxy, self.__board.height)
+            coords = self.__engine \
+                .get_piece_configuration() \
+                .get_notation_from_coordinate(gxy, self.__board.height)
             self.__coords_text.set_text(coords.upper(), (240, 240, 240))
             if not self.__coords_text.is_tweening_to(ViewState.VISIBLE):
                 self.__coords_text.do_slide(ViewState.VISIBLE)
@@ -185,10 +206,10 @@ class GameState(State):
             click_piece = self.__board.piece_at(*gxy)
             if gxy == self.__selected:
                 self.__deselect()
-            elif not click_piece is None and click_piece.player == self.__turn:
+            elif not click_piece is None and click_piece.player == self.__engine.get_current_player():
                 self.__select(gxy)
             elif not self.__selected is None \
-                and (click_piece is None or not click_piece.player == self.__turn):
+                and (click_piece is None or not click_piece.player == self.__engine.get_current_player()):
                 self.__execute_move(self.__selected, gxy)
 
         self.__update_highlighting()
@@ -203,9 +224,6 @@ class GameState(State):
         self.__selected = gxy
         cell = self.__board.at(*gxy)
 
-        if not isinstance(cell, Optional[BoardCell]):
-            raise SystemExit('Expected display cell.')            
-
         if not cell is None:
             cell.select()
 
@@ -214,9 +232,6 @@ class GameState(State):
             return
         cell = self.__board.at(*self.__selected)
         
-        if not isinstance(cell, Optional[BoardCell]):
-            raise SystemExit('Expected display element.')    
-
         if not cell is None:
             cell.unselect()
 
@@ -226,48 +241,32 @@ class GameState(State):
         if self.__is_pending_action() or self.__is_processing():
             return
 
-        moves = tuple(x for x in self.__engine.get_current_moves() if x.from_gxy == from_gxy)
-        if len(moves) == 0:
-            return
-        
-        move = next((x for x in moves if x.to_gxy == to_gxy), None)
+        moves = tuple(x for x in self.__engine.get_current_moves() if x.moves_from(from_gxy))
+        move = next((x for x in moves if x.moves_to(to_gxy)), None)
         if move is None:
             return
-        
-        def clear_action():
-            if not self.__pending_move_action is None:
-                self.__pending_move_action.delete()
-                self.__pending_move_action = None
 
-        def finalise():
-            clear_action()
-            self.__board.move(from_gxy, to_gxy)
-            self.__deselect()
-            self.__update_highlighting()
-            self.__turn_text.set_text_with_slide_by_key(self.__turn)
-            self.__process_state()
+        def process():
+            self.__consequences = self.__engine.make_move(move)
 
-        if valid_move.pending_action is None:
-            finalise()
+        if not move.property is MoveProperty.PROMOTION:
+            self.__process_backend(process)
         else:
             self.__pending_move_action = PendingMoveAction.get_action(
-                valid_move.pending_action,
-                self.__board,
-                from_gxy,
-                to_gxy,
-                finalise,
-                clear_action
+                move,
+                lambda : self.__process_backend(process),
+                self.__clear_pending_action,
+                (10, 10),
+                self.__board.scale
             )
     
-    def __process_state(self):
+    def __process_backend(self, process : Callable[[], None]):
         if self.__state_text.is_visible():
             self.__state_text.set_text_with_slide_by_key(PROCESSING)
         else:
             self.__state_text.set_text_by_key(PROCESSING)
             self.__state_text.do_slide(ViewState.VISIBLE, pause=200)
-
-        def process():
-            self.__state = self.__move_logic.get_state(self.__board, self.__turn)
+        
         self.__processing_thread = Thread(target=process)
         self.__processing_thread.daemon = True
         self.__processing_thread.start()
@@ -280,12 +279,7 @@ class GameState(State):
             self.__clear_highlights()
             return
         
-        moves = self.__board.moves_at(*self.__selected)
-        if moves is None:
-            self.__clear_highlights()
-            return
-        
-        valid_moves = tuple(map(lambda x : x.gxy, moves.get_valid_moves()))
+        moves = tuple(x for x in self.__engine.get_current_moves() if x.moves_from(self.__selected))
         for i in range(self.__board.height):
             for j in range(self.__board.width):
                 cell = self.__board.at(i, j)
@@ -293,11 +287,7 @@ class GameState(State):
                     continue
 
                 piece = cell.piece
-                if not isinstance(cell, BoardCell) \
-                    or not isinstance(piece, Optional[Piece]):
-                    raise SystemExit('Expected display element.')   
-
-                if (i, j) in valid_moves:
+                if any(map(lambda x : x.moves_to((i, j)), moves)):
                     if piece is None:
                         cell.highlight(CellHighlightType.MOVE)
                     else:
@@ -313,18 +303,19 @@ class GameState(State):
                 cell = self.__board.at(i, j)
                 if cell is None:
                     continue
-                if not isinstance(cell, BoardCell):
-                    raise SystemExit('Expected display element.')   
                 cell.unhighlight()
                 piece = cell.piece
                 if piece is None:
                     continue
-                if not isinstance(piece, Piece):
-                    raise SystemExit('Expected display element.')   
                 piece.unhighlight()
 
     def __is_processing(self) -> bool:
-        return not self.__processing_thread is None or self.__board.is_dirty()
+        return not self.__processing_thread is None
+    
+    def __clear_pending_action(self):
+        if not self.__pending_move_action is None:
+            self.__pending_move_action.delete()
+            self.__pending_move_action = None
     
     def __is_pending_action(self) -> bool:
         return not self.__pending_move_action is None

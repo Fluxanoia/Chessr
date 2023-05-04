@@ -1,5 +1,9 @@
 #include "consequence.hpp"
 
+Consequence::~Consequence()
+{
+}
+
 MoveConsequence::MoveConsequence(
 	const MoveType move_type,
 	const MoveStyle move_style,

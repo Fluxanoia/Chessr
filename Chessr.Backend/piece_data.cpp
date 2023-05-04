@@ -1,7 +1,6 @@
 #include "piece_data.hpp"
 
 std::shared_ptr<Move> create_basic_move(
-	const Boards& boards,
 	const MoveType move_type,
 	const MoveStyle move_style,
 	const Coordinate move_vector,
@@ -10,7 +9,6 @@ std::shared_ptr<Move> create_basic_move(
 	bool attack)
 {
 	std::vector<std::shared_ptr<Consequence>> consequences = { };
-	const auto& current_board = boards.get_current_board();
 	if (attack)
 	{
 		consequences.push_back(std::make_shared<RemoveConsequence>(to));
@@ -194,7 +192,7 @@ std::vector<std::shared_ptr<Move>> PieceData::get_moves(
 		const auto cells = get_ray(boards, player, ray, coordinate, ignore_coordinate, attack);
 		for (const auto& cell : cells)
 		{
-			moves.push_back(create_basic_move(boards, move_type, MoveStyle::RAY, ray, coordinate, cell, attack));
+			moves.push_back(create_basic_move(move_type, MoveStyle::RAY, ray, coordinate, cell, attack));
 		}
 	}
 
@@ -203,7 +201,7 @@ std::vector<std::shared_ptr<Move>> PieceData::get_moves(
 		auto cell = get_jump(boards, player, jump, coordinate, attack);
 		if (cell.has_value())
 		{
-			moves.push_back(create_basic_move(boards, move_type, MoveStyle::JUMP, jump, coordinate, cell.value(), attack));
+			moves.push_back(create_basic_move(move_type, MoveStyle::JUMP, jump, coordinate, cell.value(), attack));
 		}
 	}
 

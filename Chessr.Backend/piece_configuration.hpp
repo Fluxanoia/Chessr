@@ -13,15 +13,10 @@ private:
     const std::map<PieceType, PieceData> data;
     const std::vector<PieceType> piece_types;
 
-    PieceConfiguration();
 
 public:
 
-    static const PieceConfiguration& get_instance()
-    {
-        static PieceConfiguration instance;
-        return instance;
-    }
+    PieceConfiguration();
 
     const PieceData& get_data(const PieceType piece_type) const;
     const std::vector<PieceType>& get_piece_types() const;
@@ -30,8 +25,5 @@ public:
     std::string get_notation_from_coordinate(const Coordinate coordinate, const CoordinateValue board_height) const;
     std::string get_file_from_coordinate(CoordinateValue file) const;
     std::string get_rank_from_coordinate(const CoordinateValue rank, const CoordinateValue board_height) const;
-
-    PieceConfiguration(PieceConfiguration const&) = delete;
-    void operator=(PieceConfiguration const&) = delete;
 
 };

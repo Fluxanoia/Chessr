@@ -1,6 +1,6 @@
-from typing import Iterable
+from typing import Iterable, Optional
 
-from backend import Player
+from backend import Piece, Player
 from src.logic.piece_data import PieceData
 
 
@@ -51,3 +51,14 @@ class BoardData:
     @property
     def pieces(self):
         return self.__pieces
+    
+    @property
+    def grid(self):
+        x : list[list[Optional[Piece]]] = []
+        for i in range(self.height):
+            rank : list[Optional[Piece]] = []
+            for j in range(self.width):
+                piece = next((Piece(x.type, x.player) for x in self.__pieces if x.gxy == (i, j)), None)
+                rank.append(piece)
+            x.append(rank)
+        return x

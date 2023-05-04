@@ -1,23 +1,18 @@
-from enum import auto
 from typing import Callable
 
 import pygame as pg
-from backend import PieceType
+from backend import Move, MoveProperty, PieceType
 from src.engine.group_manager import GroupType
-from src.sprites.board.board import Board
 from src.sprites.ui.button import Button
-from src.utils.enums import Anchor, ArrayEnum
+from src.utils.enums import Anchor
 from src.utils.helpers import IntVector
 
-
-class PendingMoveType(ArrayEnum):
-    PROMOTION = auto() 
 
 class PendingMoveAction:
 
     def __init__(
         self,
-        action : PendingMoveType,
+        action : MoveProperty,
         finalise : Callable[[], None],
         cancel : Callable[[], None]
     ) -> None:
@@ -53,52 +48,38 @@ class PendingMoveAction:
 
     @staticmethod
     def get_action(
-        move_type : PendingMoveType,
-        board : Board,
-        from_gxy : IntVector,
-        to_gxy : IntVector,
+        move : Move,
         finalise : Callable[[], None],
-        cancel : Callable[[], None]
+        cancel : Callable[[], None],
+        ui_xy : IntVector,
+        ui_scale : float
     ) -> 'PendingMoveAction':
-        if move_type == PendingMoveType.PROMOTION:
-            return PiecePromotionMoveAction(board, from_gxy, to_gxy, finalise, cancel)
-        raise SystemExit(f'Unexpected pending move type, \'{move_type}\'.')
+        if move.property is MoveProperty.PROMOTION:
+            return PiecePromotionMoveAction(move, finalise, cancel, ui_xy, ui_scale)
+        raise SystemExit(f'Unexpected pending move type, \'{move.property}\'.')
 
 class PiecePromotionMoveAction(PendingMoveAction):
 
     def __init__(
         self,
-        board : Board,
-        from_gxy : IntVector,
-        to_gxy : IntVector,
+        move : Move,
         finalise: Callable[[], None],
-        cancel: Callable[[], None]
+        cancel: Callable[[], None],
+        ui_xy : IntVector,
+        ui_scale : float
     ) -> None:
-        super().__init__(PendingMoveType.PROMOTION, finalise, cancel)
+        super().__init__(MoveProperty.PROMOTION, finalise, cancel)
 
-        cell = board.at(
-            min(from_gxy[0], to_gxy[0]),
-            max(from_gxy[1], to_gxy[1]))
-        
-        if cell is None:
-            raise SystemExit('Expected display element.')   
-
-        buffer = 10 * board.scale
-        x = 0 if cell.dst_rect is None else cell.dst_rect.right + buffer
-        y = 0 if cell.dst_rect is None else cell.dst_rect.top
+        x, y = ui_xy
 
         buttons : list[Button] = []
 
         def add_button(piece_type : PieceType, text : str, ix : int, iy : int):
             def finalise_with_piece_setting():
-                cell = board.at(*from_gxy)
-                if cell is None or cell.piece is None:
-                    self._cancel()
-                    return
-                cell.piece.change_type(piece_type)
+                move.set_promotion_type(piece_type)
                 self._finalise()
             buttons.append(Button(
-                (x + ix * board.scale * 24, y + iy * board.scale * 24),
+                (x + ix * ui_scale * 24, y + iy * ui_scale * 24),
                 text,
                 finalise_with_piece_setting,
                 12,

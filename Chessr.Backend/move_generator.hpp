@@ -20,6 +20,7 @@ public:
 	/// </summary>
 	static std::shared_ptr<FlagBoard> get_king_move_mask(
 		const Boards& boards,
+		const PieceConfiguration& piece_configuration,
 		const Player& player,
 		const Coordinate& coordinate);
 
@@ -38,6 +39,7 @@ public:
 	/// </summary>
 	static std::vector<Coordinate> get_attacking_coordinates(
 		const Boards& boards,
+		const PieceConfiguration& piece_configuration,
 		const Player& player,
 		const Coordinate& coordinate);
 
@@ -56,6 +58,7 @@ public:
 	/// </summary>
 	static std::vector<PinnedPiece> get_pins(
 		const Boards& boards,
+		const PieceConfiguration& piece_configuration,
 		const Player& player);
 
 #pragma endregion

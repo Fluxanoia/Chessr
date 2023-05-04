@@ -12,9 +12,9 @@ enum class ConsequenceType
 
 class Consequence
 {
-private:
-
 public:
+
+	virtual ~Consequence();
 
 	virtual ConsequenceType get_type() const = 0;
 

@@ -1,10 +1,11 @@
 from typing import Any, Optional
 
 import pygame as pg
-
+from backend import PieceConfiguration
 from src.engine.factory import Factory
 from src.engine.group_manager import GroupType
 from src.engine.state import State, StateType
+from src.engine.state_type import GameStateData
 from src.logic.board_data import BoardData
 from src.logic.board_loader import BoardLoader
 from src.sprites.ui.button import Button
@@ -23,10 +24,12 @@ class BoardSelectionState(State):
         self.__board_data_buttons : tuple[Button]
         self.__chosen_board_data : Optional[BoardData] = None
 
+        self.__piece_configuration = PieceConfiguration()
+
 #region Game Loop Methods
 
     def load(self) -> None:
-        board_loader = BoardLoader()
+        board_loader = BoardLoader(self.__piece_configuration)
         board_data : list[BoardData] = []
         paths = Factory.get().file_manager.get_board_paths()
 
@@ -60,7 +63,9 @@ class BoardSelectionState(State):
         def continue_action():
             self.__title_text.do_slide(
                 ViewState.INVISIBLE,
-                callback=lambda : self.change_state(StateType.GAME, self.__chosen_board_data))
+                callback=lambda : self.change_state(
+                    StateType.GAME,
+                    GameStateData(self.__piece_configuration, self.__chosen_board_data)))
 
         self.__continue_button = Button(
             (0, 0),
