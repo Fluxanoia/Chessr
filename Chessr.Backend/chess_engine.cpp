@@ -2,9 +2,8 @@
 
 #pragma region Constructor
 
-ChessEngine::ChessEngine(const Grid<Piece>& starting_position, const Player starting_player) : current_player(starting_player)
+ChessEngine::ChessEngine(const Grid<Piece>& starting_position, const Player starting_player) : boards(Boards(starting_position, starting_player))
 {
-	this->positions.emplace_back(starting_position);
 	this->calculate_moves();
 }
 
@@ -12,107 +11,19 @@ ChessEngine::ChessEngine(const Grid<Piece>& starting_position, const Player star
 
 #pragma region Public Move Logic
 
-std::vector<Consequence> ChessEngine::make_move(const Move move)
+std::vector<std::shared_ptr<Consequence>> ChessEngine::make_move(const std::shared_ptr<Move> move)
 {
-	const auto& current_board = this->positions.back();
-
-#pragma region Consequences
-
-	Grid<Piece> position = current_board.get_grid();
-	std::vector<Consequence> consequences = {
-		MoveConsequence(move.get_from(), move.get_to())
-	};
-
-	switch (move.get_property())
-	{
-		case MoveProperty::EN_PASSANT:
-		{
-			const auto& cell_behind = add_coordinates(
-				move.get_to(),
-				current_player == Player::WHITE ? PieceConfiguration::DOWN : PieceConfiguration::UP);
-			consequences.push_back(RemoveConsequence(cell_behind));
-			break;
-		}
-		case MoveProperty::CASTLE:
-		{
-			const auto direction = move.get_to().second - move.get_from().second < 0 ? -1 : 1;
-			consequences.push_back(MoveConsequence(
-				add_coordinates(move.get_to(), { 0, direction }),
-				add_coordinates(move.get_to(), { 0, -direction })));
-			break;
-		}
-		case MoveProperty::PROMOTION:
-		{
-			const auto& piece_type = move.get_promotion_piece_type();
-			if (!piece_type.has_value())
-			{
-				throw InvalidOperationException("There was an attempt to make a promotion move without a new piece type.");
-			}
-			consequences.push_back(ChangeConsequence(move.get_to(), piece_type.value()));
-			break;
-		}
-	}
-
-	for (const auto& consequence : consequences)
-	{
-		switch (consequence.get_type())
-		{
-			case ConsequenceType::MOVE:
-			{
-				const auto& move_consequence = static_cast<const MoveConsequence&>(consequence);
-				const auto& [from_i, from_j] = move_consequence.get_from();
-				const auto& [to_i, to_j] = move_consequence.get_to();
-				const auto& piece = position[from_i][from_j];
-
-				if (!piece.has_value())
-				{
-					continue;
-				}
-
-				position[to_i][to_j].emplace(piece.value());
-				position[from_i][from_j].reset();
-				break;
-			}
-			case ConsequenceType::REMOVE:
-			{
-				const auto& remove_consequence = static_cast<const RemoveConsequence&>(consequence);
-				const auto& [i, j] = remove_consequence.get_coordinate();
-				position[i][j].reset();
-				break;
-			}
-			case ConsequenceType::CHANGE:
-			{
-				const auto& change_consequence = static_cast<const ChangeConsequence&>(consequence);
-				const auto& [i, j] = change_consequence.get_coordinate();
-				const auto& piece = position[i][j];
-
-				if (!piece.has_value())
-				{
-					continue;
-				}
-
-				position[i][j].reset();
-				position[i][j].emplace(change_consequence.get_piece_type(), piece.value().get_player());
-				break;
-			}
-			default:
-				throw UnexpectedCaseException("Unexpected consequence type.");
-		}
-	}
-
-	this->positions.emplace_back(position);
-	this->played_moves.push_back(move);
-	this->current_player = MoveGenerator::get_opposing_player(current_player);
-
-#pragma endregion
+	this->boards.apply_move(move);
 
 	this->calculate_moves();
 
-	this->game_state = this->current_moves.size() == 0
-		? this->currently_in_check ? State::CHECKMATE : State::STALEMATE
-		: this->currently_in_check ? State::CHECK : State::NONE;
-
+	const auto& board = boards.get_current_board();
+	this->state = this->current_moves.size() == 0
+		? board.is_in_check() ? State::CHECKMATE : State::STALEMATE
+		: board.is_in_check() ? State::CHECK : State::NONE;
 	this->move_history.push_back(get_move_representation(move));
+
+	return move->get_consequences();
 }
 
 #pragma endregion
@@ -121,14 +32,14 @@ std::vector<Consequence> ChessEngine::make_move(const Move move)
 
 void ChessEngine::calculate_moves()
 {
-	const auto& board = this->positions.back();
+	auto& board = boards.get_current_board();
+	const auto& player = boards.get_current_player();
 	const auto& [width, height] = board.get_dimensions();
 	const auto& piece_configuration = PieceConfiguration::get_instance();
 
-	const auto player = current_player;
-	const auto opposing_player = MoveGenerator::get_opposing_player(current_player);
+	const auto opposing_player = Maths::get_opposing_player(player);
 
-	this->current_moves = std::vector<Move>{};
+	this->current_moves = {};
 
 #pragma region King Information
 
@@ -137,8 +48,8 @@ void ChessEngine::calculate_moves()
 	{
 		king_informations.emplace_back(
 			coordinate,
-			MoveGenerator::get_king_move_mask(board, player, coordinate),
-			MoveGenerator::get_attacking_coordinates(board, player, coordinate));
+			MoveGenerator::get_king_move_mask(boards, player, coordinate),
+			MoveGenerator::get_attacking_coordinates(boards, player, coordinate));
 	}
 
 	std::vector<std::reference_wrapper<const KingInformation>> single_checks = {};
@@ -158,7 +69,10 @@ void ChessEngine::calculate_moves()
 		}
 	}
 
-	this->currently_in_check = single_checks.size() + double_checks.size() > 0;
+	if (single_checks.size() + double_checks.size() > 0)
+	{
+		board.set_in_check();
+	}
 
 #pragma endregion
 
@@ -175,26 +89,20 @@ void ChessEngine::calculate_moves()
 		{
 			// A king is under double check, so only moves by that king are valid.
 			const auto& double_check = double_checks.at(0);
-			const auto& double_check_moves = [&board, &player, &king_piece_data, &double_check]()
-			{
-				auto moves = MoveGenerator::get_valid_moves(
-					board,
-					player,
-					king_piece_data,
-					double_check.get().coordinate);
-				double_check.get().move_mask.mask(moves);
-				return moves;
-			}();
+			auto moves = MoveGenerator::get_valid_moves(
+				boards,
+				player,
+				king_piece_data,
+				double_check.get().coordinate);
+
+			double_check.get().move_mask->mask(moves);
 
 			switch (single_checks.size())
 			{
 				case 0:
 				{
 					// This king must evade check. Possibly checkmate.
-					for (const auto& destination : double_check_moves)
-					{
-						this->current_moves.emplace_back(double_check.get().coordinate, destination);
-					}
+					this->current_moves = moves;
 					return;
 				}
 				default:
@@ -216,16 +124,12 @@ void ChessEngine::calculate_moves()
 					}
 
 					const auto& other_checker = *other_checkers.begin();
-					auto capturable = std::find(
-						double_check_moves.begin(),
-						double_check_moves.end(),
-						other_checker) != double_check_moves.end();
+					
+					FlagBoard flag_board = { board.get_dimensions() };
+					flag_board.flag(other_checker);
+					flag_board.mask(moves);
 
-					if (capturable)
-					{
-						// We can capture the piece putting the other kings in check.
-						this->current_moves.emplace_back(double_check.get().coordinate, other_checker);
-					}
+					this->current_moves = moves;
 					return;
 			}
 			break;
@@ -242,27 +146,27 @@ void ChessEngine::calculate_moves()
 	for (const auto& king_information : king_informations)
 	{
 		auto attacks = MoveGenerator::get_valid_attack_moves(
-			board,
+			boards,
 			player,
 			king_piece_data,
 			king_information.coordinate);
 		auto pushes = MoveGenerator::get_valid_push_moves(
-			board,
+			boards,
 			player,
 			king_piece_data,
 			king_information.coordinate);
 
-		king_information.move_mask.mask(attacks);
-		king_information.move_mask.mask(pushes);
+		king_information.move_mask->mask(attacks);
+		king_information.move_mask->mask(pushes);
 
 		for (const auto& attack : attacks)
 		{
-			this->current_moves.emplace_back(king_information.coordinate, attack);
+			this->current_moves.push_back(attack);
 		}
 
 		for (const auto& push : pushes)
 		{
-			this->current_moves.emplace_back(king_information.coordinate, push);
+			this->current_moves.push_back(push);
 		}
 	}
 
@@ -301,7 +205,7 @@ void ChessEngine::calculate_moves()
 		{
 			auto& piece = board.get_piece(checker);
 			const auto blocks = MoveGenerator::get_blocks_to_attack(
-				board,
+				boards,
 				opposing_player,
 				piece_configuration.get_data(piece.get_type()),
 				checker,
@@ -314,7 +218,7 @@ void ChessEngine::calculate_moves()
 
 #pragma region Pin Move Aggregation
 
-	auto pins = MoveGenerator::get_pins(board, player);
+	auto pins = MoveGenerator::get_pins(boards, player);
 	for (auto& pin : pins)
 	{
 		if (!board.has_piece(pin.get_coordinate()))
@@ -331,31 +235,31 @@ void ChessEngine::calculate_moves()
 		const auto& piece_data = piece_configuration.get_data(piece.get_type());
 
 		auto attacks = MoveGenerator::get_valid_attack_moves(
-			board,
+			boards,
 			player,
 			piece_data,
 			pin.get_coordinate());
 
 		auto pushes = MoveGenerator::get_valid_push_moves(
-			board,
+			boards,
 			player,
 			piece_data,
 			pin.get_coordinate());
 
-		pin.get_move_mask().mask(attacks);
-		pin.get_move_mask().mask(pushes);
+		pin.get_move_mask()->mask(attacks);
+		pin.get_move_mask()->mask(pushes);
 
 		attackable.mask(attacks);
 		pushable.mask(pushes);
 
 		for (const auto& attack : attacks)
 		{
-			this->current_moves.emplace_back(pin.get_coordinate(), attack);
+			this->current_moves.push_back(attack);
 		}
 
 		for (const auto& push : pushes)
 		{
-			this->current_moves.emplace_back(pin.get_coordinate(), push);
+			this->current_moves.push_back(push);
 		}
 	}
 
@@ -397,13 +301,13 @@ void ChessEngine::calculate_moves()
 			const auto& piece_data = piece_configuration.get_data(piece.get_type());
 
 			auto attacks = MoveGenerator::get_valid_attack_moves(
-				board,
+				boards,
 				player,
 				piece_data,
 				cell);
 
 			auto pushes = MoveGenerator::get_valid_push_moves(
-				board,
+				boards,
 				player,
 				piece_data,
 				cell);
@@ -413,12 +317,12 @@ void ChessEngine::calculate_moves()
 
 			for (const auto& attack : attacks)
 			{
-				this->current_moves.emplace_back(cell, attack);
+				this->current_moves.push_back(attack);
 			}
 
 			for (const auto& push : pushes)
 			{
-				this->current_moves.emplace_back(cell, push);
+				this->current_moves.push_back(push);
 			}
 		}
 	}
@@ -427,17 +331,23 @@ void ChessEngine::calculate_moves()
 
 }
 
-std::string ChessEngine::get_move_representation(const Move move) const
+std::string ChessEngine::get_move_representation(const std::shared_ptr<Move> move)
 {
-	const auto& from = move.get_from();
-	const auto& to = move.get_to();
-	switch (move.get_property())
+	const auto move_consequence = move->get_move_consequence();
+	if (!move_consequence.has_value())
+	{
+		return "-";
+	}
+
+	const auto& from = move_consequence.value()->get_from();
+	const auto& to = move_consequence.value()->get_to();
+	switch (move->get_property())
 	{
 		case MoveProperty::CASTLE:
 			return from.second - to.second > 0 ? "O-O-O" : "O-O";
 	}
 
-	const auto& current_board = this->positions.back();
+	const auto& current_board = boards.get_previous_board();
 	if (!current_board.has_piece(from))
 	{
 		return "-";
@@ -446,7 +356,7 @@ std::string ChessEngine::get_move_representation(const Move move) const
 	const auto& piece_configuration = PieceConfiguration::get_instance();
 	const auto& piece = current_board.get_piece(from);
 	const auto& piece_data = piece_configuration.get_data(piece.get_type());
-	const auto attack = current_board.has_piece(to);
+	const auto attack = move->attacks();
 
 	auto destination = piece_configuration.get_notation_from_coordinate(to, current_board.get_dimensions().second);
 
@@ -475,7 +385,7 @@ std::string ChessEngine::get_move_representation(const Move move) const
 	}
 
 	std::string capture = attack ? "x" : "";
-	std::string suffix = currently_in_check ? current_moves.size() == 0 ? "#" : "+" : "";
+	std::string suffix = state == State::CHECK ? "+" : state == State::CHECKMATE ? "#" : "";
 
 	return piece_string + ambiguity + capture + destination;
 }
@@ -484,7 +394,7 @@ std::string ChessEngine::get_move_representation(const Move move) const
 
 #pragma region Getters
 
-std::vector<Move> ChessEngine::get_current_moves() const
+std::vector<std::shared_ptr<Move>> ChessEngine::get_current_moves() const
 {
 	return this->current_moves;
 }
@@ -496,12 +406,12 @@ std::vector<std::string> ChessEngine::get_move_history() const
 
 State ChessEngine::get_state() const
 {
-	return this->game_state;
+	return this->state;
 }
 
 Player ChessEngine::get_current_player() const
 {
-	return this->current_player;
+	return this->boards.get_current_player();
 }
 
 #pragma endregion

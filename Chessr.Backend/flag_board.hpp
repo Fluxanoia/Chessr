@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <algorithm>
+#include "move.hpp"
 #include "types.hpp"
 #include "exceptions.hpp"
 
@@ -27,5 +28,5 @@ public:
     void restrict(const std::vector<Coordinate>& coordinates);
 
     std::vector<Coordinate> get_flagged() const;
-    void mask(std::vector<Coordinate>& coordinates) const;
+    void mask(std::vector<std::shared_ptr<Move>>& moves) const;
 };

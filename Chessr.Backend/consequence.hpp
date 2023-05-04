@@ -1,6 +1,7 @@
 #pragma once
 
 #include "types.hpp"
+#include "exceptions.hpp"
 
 enum class ConsequenceType
 {
@@ -13,13 +14,9 @@ class Consequence
 {
 private:
 
-	const ConsequenceType type;
-
 public:
 
-	Consequence(const ConsequenceType type);
-
-	ConsequenceType get_type() const;
+	virtual ConsequenceType get_type() const = 0;
 
 };
 
@@ -27,13 +24,28 @@ class MoveConsequence : public Consequence
 {
 private:
 
+	const MoveType move_type;
+	const MoveStyle move_style;
+	const Coordinate move_vector;
+
 	const Coordinate from;
 	const Coordinate to;
 
 public:
 
-	MoveConsequence(const Coordinate from, const Coordinate to);
+	MoveConsequence(
+		const MoveType move_type,
+		const MoveStyle move_style,
+		const Coordinate move_vector,
+		const Coordinate from,
+		const Coordinate to);
 	
+	ConsequenceType get_type() const;
+
+	const MoveType& get_move_type() const;
+	const MoveStyle& get_style() const;
+	const Coordinate& get_move_vector() const;
+
 	Coordinate get_from() const;
 	Coordinate get_to() const;
 
@@ -49,6 +61,7 @@ public:
 
 	RemoveConsequence(const Coordinate coordinate);
 
+	ConsequenceType get_type() const;
 	Coordinate get_coordinate() const;
 
 };
@@ -64,6 +77,7 @@ public:
 
 	ChangeConsequence(const Coordinate coordinate, const PieceType piece_type);
 
+	ConsequenceType get_type() const;
 	Coordinate get_coordinate() const;
 	PieceType get_piece_type() const;
 

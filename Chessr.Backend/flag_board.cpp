@@ -44,19 +44,26 @@ void FlagBoard::restrict(const std::vector<Coordinate>& coordinates)
 	}
 }
 
-void FlagBoard::mask(std::vector<Coordinate>& coordinates) const
+void FlagBoard::mask(std::vector<std::shared_ptr<Move>>& moves) const
 {
-	auto it = coordinates.begin();
-	while (it != coordinates.end())
+	auto it = moves.begin();
+	while (it != moves.end())
 	{
-		const auto& [i, j] = *it;
+		const auto move_consequence = (*it)->get_move_consequence();
+		if (!move_consequence.has_value())
+		{
+			it++;
+			continue;
+		}
+
+		const auto& [i, j] = move_consequence.value()->get_to();
 		if (this->flags[i][j])
 		{
 			it++;
 		}
 		else
 		{
-			it = coordinates.erase(it);
+			it = moves.erase(it);
 		}
 	}
 }

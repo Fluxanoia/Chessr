@@ -1,17 +1,17 @@
 #include "board.hpp"
 
-Coordinate get_board_dimensions(const Grid<Piece>& position)
+Coordinate get_board_dimensions(const Grid<Piece>& grid)
 {
-	size_t height = position.size();
+	size_t height = grid.size();
 	switch (height)
 	{
 		case 0:
 			return { 0, 0 };
 		case 1:
-			return { position.front().size(), 1 };
+			return { grid.front().size(), 1 };
 		default:
-			auto width = position.front().size();
-			for (auto& v : position)
+			auto width = grid.front().size();
+			for (auto& v : grid)
 			{
 				if (v.size() != width)
 				{
@@ -23,20 +23,30 @@ Coordinate get_board_dimensions(const Grid<Piece>& position)
 	}
 }
 
-Board::Board(const Grid<Piece> position) : position(position), dimensions(get_board_dimensions(position))
+Board::Board(const Grid<Piece> grid) : grid(grid), dimensions(get_board_dimensions(grid))
 {
+}
+
+bool Board::is_in_check() const
+{
+	return in_check;
+}
+
+void Board::set_in_check()
+{
+	this->in_check = true;
 }
 
 bool Board::has_piece(const Coordinate& coordinate) const
 {
 	const auto& [i, j] = coordinate;
-	return this->position[i][j].has_value();
+	return this->grid[i][j].has_value();
 }
 
 const Piece& Board::get_piece(const Coordinate& coordinate) const
 {
 	const auto& [i, j] = coordinate;
-	return this->position[i][j].value();
+	return this->grid[i][j].value();
 }
 
 bool Board::rank_contains_multiple_of(
@@ -45,7 +55,7 @@ bool Board::rank_contains_multiple_of(
 	const Player player) const
 {
 	auto found = 0;
-	for (const auto& cell : this->position[rank])
+	for (const auto& cell : this->grid[rank])
 	{
 		if (!cell.has_value())
 		{
@@ -73,7 +83,7 @@ bool Board::file_contains_multiple_of(
 	const Player player) const
 {
 	auto found = 0;
-	for (const auto& rank : this->position)
+	for (const auto& rank : this->grid)
 	{
 		const auto& cell = rank[file];
 		if (!cell.has_value())
@@ -103,7 +113,7 @@ std::vector<Coordinate> Board::positions_of(const PieceType piece_type, const Pl
 	for (auto i = 0; i < height; i++)
 	for (auto j = 0; j < width; j++)
 	{
-		auto& maybe_piece = this->position[i][j];
+		auto& maybe_piece = this->grid[i][j];
 		if (!maybe_piece.has_value())
 		{
 			continue;
@@ -119,12 +129,12 @@ std::vector<Coordinate> Board::positions_of(const PieceType piece_type, const Pl
 	return positions;
 }
 
-const Coordinate& Board::get_dimensions() const
+Coordinate Board::get_dimensions() const
 {
 	return this->dimensions;
 }
 
 const Grid<Piece>& Board::get_grid() const
 {
-	return this->position;
+	return this->grid;
 }

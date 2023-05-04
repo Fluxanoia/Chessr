@@ -17,15 +17,6 @@ private:
 
 public:
 
-    static const Coordinate UP;
-    static const Coordinate DOWN;
-    static const Coordinate LEFT;
-    static const Coordinate RIGHT;
-    static const Coordinate UP_LEFT;
-    static const Coordinate UP_RIGHT;
-    static const Coordinate DOWN_LEFT;
-    static const Coordinate DOWN_RIGHT;
-
     static const PieceConfiguration& get_instance()
     {
         static PieceConfiguration instance;

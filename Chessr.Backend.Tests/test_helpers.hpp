@@ -15,4 +15,9 @@ public:
 		std::vector<Coordinate> push_rays,
 		std::vector<Coordinate> push_jumps);
 
+	static bool contains_move(
+		const std::vector<std::shared_ptr<Move>>& moves,
+		const Coordinate from,
+		const Coordinate to);
+
 };

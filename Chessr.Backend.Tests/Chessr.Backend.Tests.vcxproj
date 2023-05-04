@@ -95,7 +95,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
       <AdditionalLibraryDirectories>$(SolutionDir)build\$(Platform)-$(Configuration)\;$(SolutionDir)build\$(Platform)-$(Configuration)\intermediate\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>backend.lib;board.obj;chess_engine.obj;flag_board.obj;move.obj;move_generator.obj;piece.obj;piece_configuration.obj;piece_data.obj;pinned_piece.obj;consequence.obj;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>backend.lib;board.obj;boards.obj;chess_engine.obj;flag_board.obj;move.obj;move_generator.obj;piece.obj;piece_configuration.obj;piece_data.obj;pinned_piece.obj;consequence.obj;maths.obj;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -113,7 +113,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
       <AdditionalLibraryDirectories>$(SolutionDir)build\$(Platform)-$(Configuration)\;$(SolutionDir)build\$(Platform)-$(Configuration)\intermediate\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>backend.lib;board.obj;chess_engine.obj;flag_board.obj;move.obj;move_generator.obj;piece.obj;piece_configuration.obj;piece_data.obj;pinned_piece.obj;consequence.obj;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>backend.lib;board.obj;boards.obj;chess_engine.obj;flag_board.obj;move.obj;move_generator.obj;piece.obj;piece_configuration.obj;piece_data.obj;pinned_piece.obj;consequence.obj;maths.obj;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -132,7 +132,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <AdditionalLibraryDirectories>$(SolutionDir)build\$(Platform)-$(Configuration)\;$(SolutionDir)build\$(Platform)-$(Configuration)\intermediate\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>backend.lib;board.obj;chess_engine.obj;flag_board.obj;move.obj;move_generator.obj;piece.obj;piece_configuration.obj;piece_data.obj;pinned_piece.obj;consequence.obj;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>backend.lib;board.obj;boards.obj;chess_engine.obj;flag_board.obj;move.obj;move_generator.obj;piece.obj;piece_configuration.obj;piece_data.obj;pinned_piece.obj;consequence.obj;maths.obj;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -151,7 +151,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <AdditionalLibraryDirectories>$(SolutionDir)build\$(Platform)-$(Configuration)\;$(SolutionDir)build\$(Platform)-$(Configuration)\intermediate\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>backend.lib;board.obj;chess_engine.obj;flag_board.obj;move.obj;move_generator.obj;piece.obj;piece_configuration.obj;piece_data.obj;pinned_piece.obj;consequence.obj;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>backend.lib;board.obj;boards.obj;chess_engine.obj;flag_board.obj;move.obj;move_generator.obj;piece.obj;piece_configuration.obj;piece_data.obj;pinned_piece.obj;consequence.obj;maths.obj;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">

@@ -40,3 +40,17 @@ enum class MoveProperty
     CASTLE,
     PROMOTION
 };
+
+enum class MoveType
+{
+    ALL = 0,
+    PUSH,
+    ATTACK
+};
+
+enum class MoveStyle
+{
+    ALL = 0,
+    JUMP,
+    RAY
+};

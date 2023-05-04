@@ -12,12 +12,16 @@ class Board
 private:
 
 	const Coordinate dimensions;
-	const Grid<Piece> position;
+	const Grid<Piece> grid;
+	bool in_check = false;
 
 public:
 
 	Board(const Grid<Piece> position);
 	
+	bool is_in_check() const;
+	void set_in_check();
+
 	bool has_piece(const Coordinate& coordinate) const;
 	const Piece& get_piece(const Coordinate& coordinate) const;
 
@@ -33,7 +37,7 @@ public:
 		const PieceType piece_type,
 		const Player player) const;
 	
-	const Coordinate& get_dimensions() const;
+	Coordinate get_dimensions() const;
 	const Grid<Piece>& get_grid() const;
 
 };

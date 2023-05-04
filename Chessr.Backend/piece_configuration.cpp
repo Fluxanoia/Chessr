@@ -1,45 +1,32 @@
 #include "piece_configuration.hpp"
 
-#pragma region Constants
-
-const Coordinate PieceConfiguration::UP = { -1, 0 };
-const Coordinate PieceConfiguration::DOWN = { 1, 0 };
-const Coordinate PieceConfiguration::LEFT = { 0, -1 };
-const Coordinate PieceConfiguration::RIGHT = { 0, 1 };
-const Coordinate PieceConfiguration::UP_LEFT = { -1, -1 };
-const Coordinate PieceConfiguration::UP_RIGHT = { -1, 1 };
-const Coordinate PieceConfiguration::DOWN_LEFT = { 1, -1 };
-const Coordinate PieceConfiguration::DOWN_RIGHT = { 1, 1 };
-
-#pragma endregion
-
 #pragma region Constructor
 
 std::map<PieceType, PieceData> generate_piece_data()
 {
 	std::vector<Coordinate> all_directions = {
-		PieceConfiguration::UP,
-		PieceConfiguration::DOWN,
-		PieceConfiguration::LEFT,
-		PieceConfiguration::RIGHT,
-		PieceConfiguration::UP_LEFT,
-		PieceConfiguration::UP_RIGHT,
-		PieceConfiguration::DOWN_LEFT,
-		PieceConfiguration::DOWN_RIGHT
+		Maths::UP,
+		Maths::DOWN,
+		Maths::LEFT,
+		Maths::RIGHT,
+		Maths::UP_LEFT,
+		Maths::UP_RIGHT,
+		Maths::DOWN_LEFT,
+		Maths::DOWN_RIGHT
 	};
 
 	std::vector<Coordinate> diagonals = {
-		PieceConfiguration::UP_LEFT,
-		PieceConfiguration::UP_RIGHT,
-		PieceConfiguration::DOWN_LEFT,
-		PieceConfiguration::DOWN_RIGHT
+		Maths::UP_LEFT,
+		Maths::UP_RIGHT,
+		Maths::DOWN_LEFT,
+		Maths::DOWN_RIGHT
 	};
 
 	std::vector<Coordinate> orthogonals = {
-		PieceConfiguration::UP,
-		PieceConfiguration::DOWN,
-		PieceConfiguration::LEFT,
-		PieceConfiguration::RIGHT
+		Maths::UP,
+		Maths::DOWN,
+		Maths::LEFT,
+		Maths::RIGHT
 	};
 
 	std::vector<Coordinate> knight_vectors = {
@@ -54,11 +41,11 @@ std::map<PieceType, PieceData> generate_piece_data()
 	};
 
 	PieceData queen = { "Q", all_directions, {}, all_directions, {} };
-	PieceData king = { "K", {}, all_directions, {}, all_directions };
 	PieceData bishop = { "B", diagonals, {}, diagonals, {} };
 	PieceData rook = { "R", orthogonals, {}, orthogonals, {} };
 	PieceData knight = { "N", {}, knight_vectors, {}, knight_vectors };
-	PieceData pawn = { "P", {}, { { -1, -1 }, { -1, 1 } }, {}, { PieceConfiguration::UP } };
+	PieceData king = KingPieceData{ "K", {}, all_directions, {}, all_directions };
+	PieceData pawn = PawnPieceData{ "P", {}, { { -1, -1 }, { -1, 1 } }, {}, { Maths::UP } };
 
 	return std::map<PieceType, PieceData>{
 		{ PieceType::QUEEN, queen },

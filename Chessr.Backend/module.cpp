@@ -28,8 +28,6 @@ PYBIND11_MODULE(backend, m) {
         .def_property_readonly("player", &Piece::get_player);
 
     py::class_<Move>(m, "Move")
-        .def_property_readonly("from_gxy", &Move::get_from)
-        .def_property_readonly("to_gxy", &Move::get_to)
         .def_property_readonly("property", &Move::get_property)
         .def_property_readonly("set_promotion_type", &Move::set_promotion_type);
 

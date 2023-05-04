@@ -7,14 +7,14 @@ class PinnedPiece
 private:
 
 	const Coordinate coordinate;
-	FlagBoard move_mask;
+	std::shared_ptr<FlagBoard> move_mask;
 
 public:
 
-	PinnedPiece(const Coordinate coordinate, FlagBoard move_mask);
+	PinnedPiece(const Coordinate coordinate, std::shared_ptr<FlagBoard> move_mask);
 
 	const Coordinate& get_coordinate() const;
-	FlagBoard& get_move_mask();
+	std::shared_ptr<FlagBoard> get_move_mask();
 
 };
 

@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "test_helpers.hpp"
 
 #include "../Chessr.Backend/flag_board.hpp"
 
@@ -133,47 +134,58 @@ TEST(FlagBoardTests, TestMasking)
 {
 	FlagBoard board = { { 5, 5 }, true };
 
-	std::vector<Coordinate> coordinates = {
-		{ 0, 0 },
-		{ 1, 1 },
-		{ 2, 2 },
-		{ 3, 3 },
-		{ 4, 4 }
+	auto consequence_1 = std::make_shared<MoveConsequence>(
+		MoveType::PUSH, MoveStyle::JUMP, Coordinate{ 0, 0 }, Coordinate{ 0, 0 }, Coordinate{ 0, 0 });
+	auto consequence_2 = std::make_shared<MoveConsequence>(
+		MoveType::PUSH, MoveStyle::JUMP, Coordinate{ 0, 0 }, Coordinate{ 0, 0 }, Coordinate{ 1, 1 });
+	auto consequence_3 = std::make_shared<MoveConsequence>(
+		MoveType::PUSH, MoveStyle::JUMP, Coordinate{ 0, 0 }, Coordinate{ 0, 0 }, Coordinate{ 2, 2 });
+	auto consequence_4 = std::make_shared<MoveConsequence>(
+		MoveType::PUSH, MoveStyle::JUMP, Coordinate{ 0, 0 }, Coordinate{ 0, 0 }, Coordinate{ 3, 3 });
+	auto consequence_5 = std::make_shared<MoveConsequence>(
+		MoveType::PUSH, MoveStyle::JUMP, Coordinate{ 0, 0 }, Coordinate{ 0, 0 }, Coordinate{ 4, 4 });
+
+	std::vector<std::shared_ptr<Move>> moves = {
+		std::make_shared<Move>(std::vector<std::shared_ptr<Consequence>>{ consequence_1 }),
+		std::make_shared<Move>(std::vector<std::shared_ptr<Consequence>>{ consequence_2 }),
+		std::make_shared<Move>(std::vector<std::shared_ptr<Consequence>>{ consequence_3 }),
+		std::make_shared<Move>(std::vector<std::shared_ptr<Consequence>>{ consequence_4 }),
+		std::make_shared<Move>(std::vector<std::shared_ptr<Consequence>>{ consequence_5 }),
 	};
 
-	board.mask(coordinates);
+	board.mask(moves);
 
-	EXPECT_EQ(coordinates.size(), 5);
-	EXPECT_TRUE(std::find(coordinates.begin(), coordinates.end(), Coordinate(0, 0)) != coordinates.end());
-	EXPECT_TRUE(std::find(coordinates.begin(), coordinates.end(), Coordinate(1, 1)) != coordinates.end());
-	EXPECT_TRUE(std::find(coordinates.begin(), coordinates.end(), Coordinate(2, 2)) != coordinates.end());
-	EXPECT_TRUE(std::find(coordinates.begin(), coordinates.end(), Coordinate(3, 3)) != coordinates.end());
-	EXPECT_TRUE(std::find(coordinates.begin(), coordinates.end(), Coordinate(4, 4)) != coordinates.end());
+	EXPECT_EQ(moves.size(), 5);
+	EXPECT_TRUE(TestHelpers::contains_move(moves, Coordinate(0, 0), Coordinate(0, 0)));
+	EXPECT_TRUE(TestHelpers::contains_move(moves, Coordinate(0, 0), Coordinate(1, 1)));
+	EXPECT_TRUE(TestHelpers::contains_move(moves, Coordinate(0, 0), Coordinate(2, 2)));
+	EXPECT_TRUE(TestHelpers::contains_move(moves, Coordinate(0, 0), Coordinate(3, 3)));
+	EXPECT_TRUE(TestHelpers::contains_move(moves, Coordinate(0, 0), Coordinate(4, 4)));
 
 	board.set_all(false);
 	board.flag(Coordinate{ 0, 0 });
 	board.flag(Coordinate{ 1, 1 });
 	board.flag(Coordinate{ 2, 2 });
 
-	board.mask(coordinates);
+	board.mask(moves);
 
-	EXPECT_EQ(coordinates.size(), 3);
-	EXPECT_TRUE(std::find(coordinates.begin(), coordinates.end(), Coordinate(0, 0)) != coordinates.end());
-	EXPECT_TRUE(std::find(coordinates.begin(), coordinates.end(), Coordinate(1, 1)) != coordinates.end());
-	EXPECT_TRUE(std::find(coordinates.begin(), coordinates.end(), Coordinate(2, 2)) != coordinates.end());
+	EXPECT_EQ(moves.size(), 3);
+	EXPECT_TRUE(TestHelpers::contains_move(moves, Coordinate(0, 0), Coordinate(0, 0)));
+	EXPECT_TRUE(TestHelpers::contains_move(moves, Coordinate(0, 0), Coordinate(1, 1)));
+	EXPECT_TRUE(TestHelpers::contains_move(moves, Coordinate(0, 0), Coordinate(2, 2)));
 
 	board.set_all(false);
 	board.flag(Coordinate{ 0, 0 });
 	board.flag(Coordinate{ 0, 1 });
 	board.flag(Coordinate{ 0, 2 });
 
-	board.mask(coordinates);
+	board.mask(moves);
 
-	EXPECT_EQ(coordinates.size(), 1);
-	EXPECT_TRUE(std::find(coordinates.begin(), coordinates.end(), Coordinate(0, 0)) != coordinates.end());
+	EXPECT_EQ(moves.size(), 1);
+	EXPECT_TRUE(TestHelpers::contains_move(moves, Coordinate(0, 0), Coordinate(0, 0)));
 
 	board.set_all(false);
-	board.mask(coordinates);
+	board.mask(moves);
 
-	EXPECT_EQ(coordinates.size(), 0);
+	EXPECT_EQ(moves.size(), 0);
 }
