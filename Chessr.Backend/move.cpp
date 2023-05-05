@@ -38,15 +38,16 @@ std::optional<std::shared_ptr<MoveConsequence>> Move::get_move_consequence() con
 {
 	for (const auto& consequence : consequences)
 	{
-		if (consequence->get_type() == ConsequenceType::MOVE)
+		if (consequence->get_type() != ConsequenceType::MOVE)
 		{
-			auto cast = std::dynamic_pointer_cast<MoveConsequence>(consequence);
-			if (cast == nullptr)
-			{
-				return {};
-			}
-			return cast;
+			continue;
 		}
+		auto cast = std::dynamic_pointer_cast<MoveConsequence>(consequence);
+		if (cast == nullptr)
+		{
+			return {};
+		}
+		return cast;
 	}
 	return {};
 }
@@ -55,7 +56,7 @@ bool Move::moves_from(const Coordinate coordinate) const
 {
 	for (const auto& consequence : consequences)
 	{
-		if (consequence->get_type() == ConsequenceType::MOVE)
+		if (consequence->get_type() != ConsequenceType::MOVE)
 		{
 			continue;
 		}

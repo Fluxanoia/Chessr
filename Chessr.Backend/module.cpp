@@ -33,22 +33,22 @@ PYBIND11_MODULE(backend, m) {
         .def("get_current_player", &ChessEngine::get_current_player)
         .def("make_move", &ChessEngine::make_move);
 
-    py::class_<Consequence, PyConsequence>(m, "Consequence")
+    py::class_<Consequence, PyConsequence, std::shared_ptr<Consequence>>(m, "Consequence")
         .def(py::init<>())
         .def("get_type", &Consequence::get_type);
 
-    py::class_<MoveConsequence, Consequence>(m, "MoveConsequence")
+    py::class_<MoveConsequence, Consequence, std::shared_ptr<MoveConsequence>>(m, "MoveConsequence")
         .def_property_readonly("to_gxy", &MoveConsequence::get_to)
         .def_property_readonly("from_gxy", &MoveConsequence::get_from);
 
-    py::class_<RemoveConsequence, Consequence>(m, "RemoveConsequence")
+    py::class_<RemoveConsequence, Consequence, std::shared_ptr<RemoveConsequence>>(m, "RemoveConsequence")
         .def_property_readonly("gxy", &RemoveConsequence::get_coordinate);
 
-    py::class_<ChangeConsequence, Consequence>(m, "ChangeConsequence")
+    py::class_<ChangeConsequence, Consequence, std::shared_ptr<ChangeConsequence>>(m, "ChangeConsequence")
         .def_property_readonly("piece_type", &ChangeConsequence::get_piece_type)
         .def_property_readonly("gxy", &ChangeConsequence::get_coordinate);
 
-    py::class_<Move>(m, "Move")
+    py::class_<Move, std::shared_ptr<Move>>(m, "Move")
         .def("get_consequences", &Move::get_consequences)
         .def("moves_to", &Move::moves_to)
         .def("moves_from", &Move::moves_from)
