@@ -27,9 +27,9 @@ class HighlightSpritesheet(Spritesheet):
     ) -> pg.Rect:
         r = pg.Rect(
             cell_highlight * HighlightSpritesheet.HIGHLIGHT_WIDTH,
-            colour_scheme * HighlightSpritesheet.HIGHLIGHT_WIDTH,
+            colour_scheme * HighlightSpritesheet.HIGHLIGHT_HEIGHT,
             HighlightSpritesheet.HIGHLIGHT_WIDTH,
-            HighlightSpritesheet.HIGHLIGHT_WIDTH
+            HighlightSpritesheet.HIGHLIGHT_HEIGHT
         )
         scale_rect(r, scale)
         return r
