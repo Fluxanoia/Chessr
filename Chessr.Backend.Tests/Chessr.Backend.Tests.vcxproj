@@ -93,11 +93,12 @@
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <WarningLevel>Level4</WarningLevel>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalIncludeDirectories>$(SolutionDir)Chessr.Python\.env\Lib\site-packages\pybind11\include;$(PythonDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
-      <AdditionalLibraryDirectories>$(SolutionDir)build\$(Platform)-$(Configuration)\;$(SolutionDir)build\$(Platform)-$(Configuration)\intermediate\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)build\$(Platform)-$(Configuration)\;$(SolutionDir)build\$(Platform)-$(Configuration)\intermediate\;$(PythonDir)\libs;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>backend.lib;board.obj;boards.obj;chess_engine.obj;flag_board.obj;move.obj;move_generator.obj;piece.obj;piece_configuration.obj;piece_data.obj;pinned_piece.obj;consequence.obj;maths.obj;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -111,11 +112,12 @@
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <WarningLevel>Level4</WarningLevel>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalIncludeDirectories>$(SolutionDir)Chessr.Python\.env\Lib\site-packages\pybind11\include;$(PythonDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
-      <AdditionalLibraryDirectories>$(SolutionDir)build\$(Platform)-$(Configuration)\;$(SolutionDir)build\$(Platform)-$(Configuration)\intermediate\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)build\$(Platform)-$(Configuration)\;$(SolutionDir)build\$(Platform)-$(Configuration)\intermediate\;$(PythonDir)\libs;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>backend.lib;board.obj;boards.obj;chess_engine.obj;flag_board.obj;move.obj;move_generator.obj;piece.obj;piece_configuration.obj;piece_data.obj;pinned_piece.obj;consequence.obj;maths.obj;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -128,13 +130,14 @@
       <WarningLevel>Level4</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalIncludeDirectories>$(SolutionDir)Chessr.Python\.env\Lib\site-packages\pybind11\include;$(PythonDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
-      <AdditionalLibraryDirectories>$(SolutionDir)build\$(Platform)-$(Configuration)\;$(SolutionDir)build\$(Platform)-$(Configuration)\intermediate\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)build\$(Platform)-$(Configuration)\;$(SolutionDir)build\$(Platform)-$(Configuration)\intermediate\;$(PythonDir)\libs;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>backend.lib;board.obj;boards.obj;chess_engine.obj;flag_board.obj;move.obj;move_generator.obj;piece.obj;piece_configuration.obj;piece_data.obj;pinned_piece.obj;consequence.obj;maths.obj;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -147,13 +150,14 @@
       <WarningLevel>Level4</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalIncludeDirectories>$(SolutionDir)Chessr.Python\.env\Lib\site-packages\pybind11\include;$(PythonDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
-      <AdditionalLibraryDirectories>$(SolutionDir)build\$(Platform)-$(Configuration)\;$(SolutionDir)build\$(Platform)-$(Configuration)\intermediate\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)build\$(Platform)-$(Configuration)\;$(SolutionDir)build\$(Platform)-$(Configuration)\intermediate\;$(PythonDir)\libs;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>backend.lib;board.obj;boards.obj;chess_engine.obj;flag_board.obj;move.obj;move_generator.obj;piece.obj;piece_configuration.obj;piece_data.obj;pinned_piece.obj;consequence.obj;maths.obj;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>

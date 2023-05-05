@@ -102,11 +102,10 @@ class GameState(State):
         self.__coords_text.set_state(ViewState.INVISIBLE)
         self.__state_text.set_state(ViewState.INVISIBLE)
 
+        self.__engine = ChessEngine(data.piece_configuration)
+        
         def process():
-            self.__engine = ChessEngine(
-                data.piece_configuration,
-                board_data.grid, 
-                board_data.starting_turn)
+            self.__engine.start(board_data.grid, board_data.starting_turn)
 
         self.__process_backend(process)
 

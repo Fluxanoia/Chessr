@@ -25,7 +25,8 @@ public:
 
 PYBIND11_MODULE(backend, m) {
     py::class_<ChessEngine>(m, "ChessEngine")
-        .def(py::init<PieceConfiguration&, const Grid<Piece>&, Player>())
+        .def(py::init<PieceConfiguration&>())
+        .def("start", &ChessEngine::start)
         .def("get_piece_configuration", &ChessEngine::get_piece_configuration)
         .def("get_move_history", &ChessEngine::get_move_history)
         .def("get_current_moves", &ChessEngine::get_current_moves)

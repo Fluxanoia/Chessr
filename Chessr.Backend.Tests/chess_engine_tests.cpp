@@ -16,7 +16,9 @@ TEST(ChessEngineTests, Test)
 		{ {}, wh, {}, bl, {} },
 		{ {}, {}, {}, {}, {} },
 	};
-	ChessEngine engine = { piece_configuration, grid, Player::WHITE };
+	ChessEngine engine = { piece_configuration };
+	engine.do_not_release_gil();
+	engine.start(grid, Player::WHITE);
 
 	const auto& moves = engine.get_current_moves();
 

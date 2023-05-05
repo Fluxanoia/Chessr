@@ -1,24 +1,41 @@
 #include "chess_engine.hpp"
 
+namespace py = pybind11;
+
 #pragma region Constructor
 
-ChessEngine::ChessEngine(PieceConfiguration& piece_configuration, const Grid<Piece>& starting_position, const Player starting_player)
-	: piece_configuration(piece_configuration), boards(Boards(starting_position, starting_player))
+ChessEngine::ChessEngine(PieceConfiguration& piece_configuration) : piece_configuration(piece_configuration)
 {
-	this->calculate_moves();
 }
 
 #pragma endregion
 
 #pragma region Public Move Logic
 
+void ChessEngine::start(
+	const Grid<Piece>& starting_position,
+	const Player starting_player)
+{
+	state = State::NONE;
+	current_moves = {};
+	move_history = {};
+
+	boards = Boards(starting_position, starting_player);
+	this->calculate_moves();
+}
+
 std::vector<std::shared_ptr<Consequence>> ChessEngine::make_move(const std::shared_ptr<Move> move)
 {
-	this->boards.apply_move(move);
+	if (!this->boards.has_value())
+	{
+		return {};
+	}
+
+	this->boards.value().apply_move(move);
 
 	this->calculate_moves();
 
-	const auto& board = boards.get_current_board();
+	const auto& board = boards.value().get_current_board();
 	this->state = this->current_moves.size() == 0
 		? board.is_in_check() ? State::CHECKMATE : State::STALEMATE
 		: board.is_in_check() ? State::CHECK : State::NONE;
@@ -33,8 +50,18 @@ std::vector<std::shared_ptr<Consequence>> ChessEngine::make_move(const std::shar
 
 void ChessEngine::calculate_moves()
 {
-	auto& board = boards.get_current_board();
-	const auto& player = boards.get_current_player();
+	if (!this->boards.has_value())
+	{
+		return;
+	}
+
+	if (!require_gil)
+	{
+		py::gil_scoped_release release;
+	}
+
+	auto& board = boards.value().get_current_board();
+	const auto& player = boards.value().get_current_player();
 	const auto& [width, height] = board.get_dimensions();
 
 	const auto opposing_player = Maths::get_opposing_player(player);
@@ -48,8 +75,10 @@ void ChessEngine::calculate_moves()
 	{
 		king_informations.emplace_back(
 			coordinate,
-			MoveGenerator::get_king_move_mask(boards, piece_configuration, player, coordinate),
-			MoveGenerator::get_attacking_coordinates(boards, piece_configuration, player, coordinate));
+			MoveGenerator::get_king_move_mask(
+				boards.value(), piece_configuration, player, coordinate),
+			MoveGenerator::get_attacking_coordinates(
+				boards.value(), piece_configuration, player, coordinate));
 	}
 
 	std::vector<std::reference_wrapper<const KingInformation>> single_checks = {};
@@ -90,7 +119,7 @@ void ChessEngine::calculate_moves()
 			// A king is under double check, so only moves by that king are valid.
 			const auto& double_check = double_checks.at(0);
 			auto moves = MoveGenerator::get_valid_moves(
-				boards,
+				boards.value(),
 				player,
 				king_piece_data,
 				double_check.get().coordinate);
@@ -146,12 +175,12 @@ void ChessEngine::calculate_moves()
 	for (const auto& king_information : king_informations)
 	{
 		auto attacks = MoveGenerator::get_valid_attack_moves(
-			boards,
+			boards.value(),
 			player,
 			king_piece_data,
 			king_information.coordinate);
 		auto pushes = MoveGenerator::get_valid_push_moves(
-			boards,
+			boards.value(),
 			player,
 			king_piece_data,
 			king_information.coordinate);
@@ -205,7 +234,7 @@ void ChessEngine::calculate_moves()
 		{
 			auto& piece = board.get_piece(checker);
 			const auto blocks = MoveGenerator::get_blocks_to_attack(
-				boards,
+				boards.value(),
 				opposing_player,
 				piece_configuration.get_piece_data(piece.get_type()),
 				checker,
@@ -218,7 +247,7 @@ void ChessEngine::calculate_moves()
 
 #pragma region Pin Move Aggregation
 
-	auto pins = MoveGenerator::get_pins(boards, piece_configuration, player);
+	auto pins = MoveGenerator::get_pins(boards.value(), piece_configuration, player);
 	for (auto& pin : pins)
 	{
 		if (!board.has_piece(pin.get_coordinate()))
@@ -235,13 +264,13 @@ void ChessEngine::calculate_moves()
 		const auto piece_data = piece_configuration.get_piece_data(piece.get_type());
 
 		auto attacks = MoveGenerator::get_valid_attack_moves(
-			boards,
+			boards.value(),
 			player,
 			piece_data,
 			pin.get_coordinate());
 
 		auto pushes = MoveGenerator::get_valid_push_moves(
-			boards,
+			boards.value(),
 			player,
 			piece_data,
 			pin.get_coordinate());
@@ -301,13 +330,13 @@ void ChessEngine::calculate_moves()
 			const auto& piece_data = piece_configuration.get_piece_data(piece.get_type());
 
 			auto attacks = MoveGenerator::get_valid_attack_moves(
-				boards,
+				boards.value(),
 				player,
 				piece_data,
 				cell);
 
 			auto pushes = MoveGenerator::get_valid_push_moves(
-				boards,
+				boards.value(),
 				player,
 				piece_data,
 				cell);
@@ -333,6 +362,11 @@ void ChessEngine::calculate_moves()
 
 std::string ChessEngine::get_move_representation(const std::shared_ptr<Move> move)
 {
+	if (!this->boards.has_value())
+	{
+		throw InvalidOperationException("Unexpecting missing boards.");
+	}
+
 	const auto move_consequence = move->get_move_consequence();
 	if (!move_consequence.has_value())
 	{
@@ -347,7 +381,7 @@ std::string ChessEngine::get_move_representation(const std::shared_ptr<Move> mov
 			return from.second - to.second > 0 ? "O-O-O" : "O-O";
 	}
 
-	const auto& current_board = boards.get_previous_board();
+	const auto& current_board = boards.value().get_previous_board();
 	if (!current_board.has_piece(from))
 	{
 		return "-";
@@ -415,7 +449,16 @@ State ChessEngine::get_state() const
 
 Player ChessEngine::get_current_player() const
 {
-	return this->boards.get_current_player();
+	if (!this->boards.has_value())
+	{
+		throw InvalidOperationException("Unexpecting missing boards.");
+	}
+	return this->boards.value().get_current_player();
 }
 
 #pragma endregion
+
+void ChessEngine::do_not_release_gil()
+{
+	require_gil = true;
+}
