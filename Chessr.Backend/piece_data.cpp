@@ -168,40 +168,46 @@ std::vector<std::shared_ptr<Move>> PieceData::get_moves(
 	const MoveStyle move_style,
 	const std::optional<Coordinate>& ignore_coordinate) const
 {
+	auto move_types = std::vector<MoveType>();
+	switch (move_type)
+	{
+		case MoveType::ALL:
+			move_types.push_back(MoveType::PUSH);
+			move_types.push_back(MoveType::ATTACK);
+			break;
+		case MoveType::PUSH:
+		case MoveType::ATTACK:
+			move_types.push_back(move_type);
+			break;
+	}
+
 	std::vector<std::shared_ptr<Move>> moves = {};
-
-	if (move_type == MoveType::ALL)
+	for (auto& mt : move_types)
 	{
-		const auto pushes = get_moves(boards, player, coordinate, MoveType::PUSH, move_style, ignore_coordinate);
-		const auto attacks = get_moves(boards, player, coordinate, MoveType::ATTACK, move_style, ignore_coordinate);
-		moves.insert(moves.end(), pushes.begin(), pushes.end());
-		moves.insert(moves.end(), attacks.begin(), attacks.end());
-		return moves;
-	}
+		const auto attack = mt == MoveType::ATTACK;
+		const auto& rays = move_style == MoveStyle::ALL || move_style == MoveStyle::RAY
+			? get_vectors(mt, MoveStyle::RAY, player)
+			: std::vector<Coordinate>{};
+		const auto& jumps = move_style == MoveStyle::ALL || move_style == MoveStyle::JUMP
+			? get_vectors(mt, MoveStyle::JUMP, player)
+			: std::vector<Coordinate>{};
 
-	const auto attack = move_type == MoveType::ATTACK;
-	const auto& rays = move_style == MoveStyle::ALL || move_style == MoveStyle::RAY
-		? get_vectors(move_type, MoveStyle::RAY, player)
-		: std::vector<Coordinate>{};
-	const auto& jumps = move_style == MoveStyle::ALL || move_style == MoveStyle::JUMP
-		? get_vectors(move_type, MoveStyle::JUMP, player)
-		: std::vector<Coordinate>{};
-
-	for (auto& ray : rays)
-	{
-		const auto cells = get_ray(boards, player, ray, coordinate, ignore_coordinate, attack);
-		for (const auto& cell : cells)
+		for (auto& ray : rays)
 		{
-			moves.push_back(create_basic_move(move_type, MoveStyle::RAY, ray, coordinate, cell, attack));
+			const auto cells = get_ray(boards, player, ray, coordinate, ignore_coordinate, attack);
+			for (const auto& cell : cells)
+			{
+				moves.push_back(create_basic_move(mt, MoveStyle::RAY, ray, coordinate, cell, attack));
+			}
 		}
-	}
 
-	for (auto& jump : jumps)
-	{
-		auto cell = get_jump(boards, player, jump, coordinate, attack);
-		if (cell.has_value())
+		for (auto& jump : jumps)
 		{
-			moves.push_back(create_basic_move(move_type, MoveStyle::JUMP, jump, coordinate, cell.value(), attack));
+			auto cell = get_jump(boards, player, jump, coordinate, attack);
+			if (cell.has_value())
+			{
+				moves.push_back(create_basic_move(mt, MoveStyle::JUMP, jump, coordinate, cell.value(), attack));
+			}
 		}
 	}
 
@@ -211,15 +217,6 @@ std::vector<std::shared_ptr<Move>> PieceData::get_moves(
 #pragma endregion
 
 #pragma region Pawn Specific Methods
-
-PawnPieceData::PawnPieceData(
-	const std::string representation,
-	const std::vector<Coordinate> attack_rays,
-	const std::vector<Coordinate> attack_jumps,
-	const std::vector<Coordinate> push_rays,
-	const std::vector<Coordinate> push_jumps) : PieceData(representation, attack_rays, attack_jumps, push_rays, push_jumps)
-{
-}
 
 std::vector<std::shared_ptr<Move>> PawnPieceData::get_moves(
 	const Boards& boards,
@@ -235,86 +232,80 @@ std::vector<std::shared_ptr<Move>> PawnPieceData::get_moves(
 	if (move_type == MoveType::ALL || move_type == MoveType::ATTACK)
 	{
 		const auto& last_move = boards.get_last_move();
-		if (!last_move.has_value() || last_move.value()->get_property() != MoveProperty::DOUBLE_MOVE)
+		if (last_move.has_value() && last_move.value()->get_property() == MoveProperty::DOUBLE_MOVE)
 		{
-			return moves;
-		}
-
-		const auto& last_move_destination = [&last_move]()
-		{
-			const auto& move_consequence = last_move.value()->get_move_consequence();
-			return move_consequence.has_value()
-				? std::optional<Coordinate>{ move_consequence.value()->get_to() }
-				: std::optional<Coordinate>{};
-		}();
-
-		if (!last_move_destination.has_value())
-		{
-			return moves;
-		}
-
-		for (const auto& direction : std::vector<Coordinate>{ Maths::LEFT, Maths::RIGHT })
-		{
-			const auto cell = Maths::add_coordinates(coordinate, direction);
-			if (!current_board.has_piece(cell) || cell != last_move_destination.value())
+			const auto& last_move_consequence = last_move.value()->get_move_consequence();
+			if (last_move_consequence.has_value())
 			{
-				continue;
+				const auto enemy_forward = Maths::flip_vector(Maths::UP, Maths::get_opposing_player(player));
+				for (auto it = moves.begin(); it != moves.end(); it++)
+				{
+					const auto& move = (*it)->get_move_consequence();
+					if (!move.has_value()
+						|| move.value()->get_move_type() != MoveType::ATTACK
+						|| current_board.has_piece(move.value()->get_to()))
+					{
+						continue;
+					}
+
+					const auto& cell_to_attack = Maths::add_coordinates(move.value()->get_to(), enemy_forward);
+					if (!last_move.value()->moves_to(cell_to_attack)
+						|| !current_board.has_piece(cell_to_attack))
+					{
+						continue;
+					}
+
+					const auto& piece_to_attack = current_board.get_piece(cell_to_attack);
+					if (piece_to_attack.get_player() == player)
+					{
+						continue;
+					}
+
+					std::vector<std::shared_ptr<Consequence>> consequences = { 
+						move.value(),
+						std::make_shared<RemoveConsequence>(cell_to_attack)
+					};
+					it = moves.erase(it);
+					it = moves.insert(it, std::make_shared<Move>(consequences, MoveProperty::EN_PASSANT));
+				}
 			}
-
-			const auto& piece = current_board.get_piece(cell);
-			if (piece.get_player() == player || piece.get_type() != PieceType::PAWN)
-			{
-				continue;
-			}
-
-			const auto move_vector = Maths::add_coordinates(direction, Maths::flip_vector(Maths::UP, player));
-			const auto pawn_destination = Maths::add_coordinates(coordinate, move_vector);
-
-			auto pawn_consequence = std::make_shared<MoveConsequence>(MoveType::ATTACK, MoveStyle::JUMP, move_vector, coordinate, pawn_destination);
-			auto remove_consequence = std::make_shared<RemoveConsequence>(cell);
-
-			std::vector<std::shared_ptr<Consequence>> consequences = { pawn_consequence, remove_consequence };
-			auto move = std::make_shared<Move>(consequences, MoveProperty::EN_PASSANT);
-
-			moves.push_back(move);
 		}
 	}
 	
 	if (move_type == MoveType::ALL || move_type == MoveType::PUSH)
 	{
-		auto it = moves.begin();
 		const auto final_rank = player == Player::WHITE
 			? 0
 			: current_board.get_dimensions().second - 1;
-		while (it != moves.end())
+		for (auto it = moves.begin(); it != moves.end(); it++)
 		{
 			const auto& move = (*it)->get_move_consequence();
-			if (!move.has_value())
+			if (!move.has_value() || (*it)->get_property() != MoveProperty::NONE)
 			{
 				continue;
 			}
 			if (move.value()->get_to().first == final_rank)
 			{
-				it = moves.erase(it);
 				std::vector<std::shared_ptr<Consequence>> consequences = { move.value() };
-				moves.insert(it, std::make_shared<Move>(consequences, MoveProperty::PROMOTION));
-			}
-			else
-			{
-				it++;
+				it = moves.erase(it);
+				it = moves.insert(it, std::make_shared<Move>(consequences, MoveProperty::PROMOTION));
 			}
 		}
 
 		if (!boards.has_moved(coordinate))
 		{
 			const auto move_vector = Maths::flip_vector({ -2, 0 }, player);
-			
-			auto consequence = std::make_shared<MoveConsequence>(MoveType::PUSH, MoveStyle::JUMP, move_vector, coordinate, Maths::add_coordinates(coordinate, move_vector));
-			
-			std::vector<std::shared_ptr<Consequence>> consequences = { consequence };
-			auto move = std::make_shared<Move>(consequences, MoveProperty::DOUBLE_MOVE);
-			
-			moves.push_back(move);
+			const auto destination = Maths::add_coordinates(coordinate, move_vector);
+
+			if (Maths::in_bounds(current_board.get_dimensions(), destination))
+			{
+				auto consequence = std::make_shared<MoveConsequence>(MoveType::PUSH, MoveStyle::JUMP, move_vector, coordinate, destination);
+
+				std::vector<std::shared_ptr<Consequence>> consequences = { consequence };
+				auto move = std::make_shared<Move>(consequences, MoveProperty::DOUBLE_MOVE);
+
+				moves.push_back(move);
+			}
 		}
 	}
 
@@ -324,15 +315,6 @@ std::vector<std::shared_ptr<Move>> PawnPieceData::get_moves(
 #pragma endregion
 
 #pragma region King Specific Methods
-
-KingPieceData::KingPieceData(
-	const std::string representation,
-	const std::vector<Coordinate> attack_rays,
-	const std::vector<Coordinate> attack_jumps,
-	const std::vector<Coordinate> push_rays,
-	const std::vector<Coordinate> push_jumps) : PieceData(representation, attack_rays, attack_jumps, push_rays, push_jumps)
-{
-}
 
 std::vector<std::shared_ptr<Move>> KingPieceData::get_moves(
 	const Boards& boards,
@@ -359,12 +341,18 @@ std::vector<std::shared_ptr<Move>> KingPieceData::get_moves(
 			{},
 			false);
 
-		if (ray.size() < 2 || !current_board.has_piece(ray.back()))
+		if (ray.size() < 2)
 		{
 			continue;
 		}
 
-		const auto& rook_coordinate = ray.back();
+		const auto& rook_coordinate = Maths::add_coordinates(ray.back(), direction);
+		if (!Maths::in_bounds(current_board.get_dimensions(), rook_coordinate)
+			|| !current_board.has_piece(rook_coordinate))
+		{
+			continue;
+		}
+		
 		const auto& piece = current_board.get_piece(rook_coordinate);
 		if (piece.get_player() != player
 			|| piece.get_type() != PieceType::ROOK

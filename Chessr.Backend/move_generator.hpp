@@ -30,7 +30,7 @@ public:
 	static std::vector<Coordinate> get_possible_attacks(
 		const Boards& boards,
 		const Player& player,
-		const PieceData& piece_data,
+		const std::shared_ptr<PieceData> piece_data,
 		const Coordinate& coordinate,
 		const std::optional<Coordinate>& ignore_coordinate);
 
@@ -49,7 +49,7 @@ public:
 	static std::vector<Coordinate> get_blocks_to_attack(
 		const Boards& boards,
 		const Player& player,
-		const PieceData& piece_data,
+		const std::shared_ptr<PieceData> piece_data,
 		const Coordinate& from,
 		const Coordinate& to);
 
@@ -71,7 +71,7 @@ public:
 	static std::vector<std::shared_ptr<Move>> get_valid_push_moves(
 		const Boards& boards,
 		const Player& player,
-		const PieceData& piece_data,
+		const std::shared_ptr<PieceData> piece_data,
 		const Coordinate& coordinate);
 
 	/// <summary>
@@ -80,7 +80,7 @@ public:
 	static std::vector<std::shared_ptr<Move>> get_valid_attack_moves(
 		const Boards& boards,
 		const Player& player,
-		const PieceData& piece_data,
+		const std::shared_ptr<PieceData> piece_data,
 		const Coordinate& coordinate);
 
 	/// <summary>
@@ -89,7 +89,7 @@ public:
 	static std::vector<std::shared_ptr<Move>> get_valid_moves(
 		const Boards& boards,
 		const Player& player,
-		const PieceData& piece_data,
+		const std::shared_ptr<PieceData> piece_data,
 		const Coordinate& coordinate);
 
 #pragma endregion

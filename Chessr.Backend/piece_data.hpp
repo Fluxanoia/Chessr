@@ -5,6 +5,7 @@
 #include <memory>
 #include <algorithm>
 #include "move.hpp"
+#include "maths.hpp"
 #include "types.hpp"
 #include "boards.hpp"
 
@@ -66,12 +67,7 @@ class PawnPieceData : public PieceData
 {
 public:
 
-	PawnPieceData(
-		const std::string representation,
-		const std::vector<Coordinate> attack_rays,
-		const std::vector<Coordinate> attack_jumps,
-		const std::vector<Coordinate> push_rays,
-		const std::vector<Coordinate> push_jumps);
+	using PieceData::PieceData;
 
 	std::vector<std::shared_ptr<Move>> get_moves(
 		const Boards& boards,
@@ -87,12 +83,7 @@ class KingPieceData : public PieceData
 {
 public:
 
-	KingPieceData(
-		const std::string representation,
-		const std::vector<Coordinate> attack_rays,
-		const std::vector<Coordinate> attack_jumps,
-		const std::vector<Coordinate> push_rays,
-		const std::vector<Coordinate> push_jumps);
+	using PieceData::PieceData;
 
 	std::vector<std::shared_ptr<Move>> get_moves(
 		const Boards& boards,

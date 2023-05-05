@@ -78,7 +78,7 @@ void ChessEngine::calculate_moves()
 
 #pragma region Double Checks
 
-	const auto& king_piece_data = piece_configuration.get_data(PieceType::KING);
+	const auto& king_piece_data = piece_configuration.get_piece_data(PieceType::KING);
 
 	switch (double_checks.size())
 	{
@@ -207,7 +207,7 @@ void ChessEngine::calculate_moves()
 			const auto blocks = MoveGenerator::get_blocks_to_attack(
 				boards,
 				opposing_player,
-				piece_configuration.get_data(piece.get_type()),
+				piece_configuration.get_piece_data(piece.get_type()),
 				checker,
 				king_information.coordinate);
 			pushable.restrict(blocks);
@@ -232,7 +232,7 @@ void ChessEngine::calculate_moves()
 			continue;
 		}
 
-		const auto& piece_data = piece_configuration.get_data(piece.get_type());
+		const auto piece_data = piece_configuration.get_piece_data(piece.get_type());
 
 		auto attacks = MoveGenerator::get_valid_attack_moves(
 			boards,
@@ -298,7 +298,7 @@ void ChessEngine::calculate_moves()
 				continue;
 			}
 
-			const auto& piece_data = piece_configuration.get_data(piece.get_type());
+			const auto& piece_data = piece_configuration.get_piece_data(piece.get_type());
 
 			auto attacks = MoveGenerator::get_valid_attack_moves(
 				boards,
@@ -354,7 +354,7 @@ std::string ChessEngine::get_move_representation(const std::shared_ptr<Move> mov
 	}
 
 	const auto& piece = current_board.get_piece(from);
-	const auto& piece_data = piece_configuration.get_data(piece.get_type());
+	const auto& piece_data = piece_configuration.get_piece_data(piece.get_type());
 	const auto attack = move->attacks();
 
 	auto destination = piece_configuration.get_notation_from_coordinate(to, current_board.get_dimensions().second);
@@ -379,7 +379,7 @@ std::string ChessEngine::get_move_representation(const std::shared_ptr<Move> mov
 			file_ambigious = file_ambigious || attack;
 			break;
 		default:
-			piece_string = piece_data.get_representation();
+			piece_string = piece_data->get_representation();
 			break;
 	}
 

@@ -17,18 +17,21 @@ const std::vector<std::shared_ptr<Consequence>>& Move::get_consequences() const
 	return this->consequences;
 }
 
-const std::optional<PieceType>& Move::get_promotion_piece_type() const
-{
-	return this->promotion_piece_type;
-}
-
 void Move::set_promotion_type(const PieceType piece_type)
 {
 	if (this->move_property != MoveProperty::PROMOTION)
 	{
 		throw InvalidOperationException("There was an attempt to set the promotion piece type for a non-promotion move.");
 	}
-	this->promotion_piece_type = piece_type;
+	auto move_consequence = get_move_consequence();
+	if (!move_consequence.has_value())
+	{
+		return;
+	}
+
+	this->consequences.push_back(
+		std::make_shared<ChangeConsequence>(move_consequence.value()->get_to(), piece_type)
+	);
 }
 
 std::optional<std::shared_ptr<MoveConsequence>> Move::get_move_consequence() const
@@ -69,7 +72,7 @@ bool Move::moves_to(const Coordinate coordinate) const
 {
 	for (const auto& consequence : consequences)
 	{
-		if (consequence->get_type() == ConsequenceType::MOVE)
+		if (consequence->get_type() != ConsequenceType::MOVE)
 		{
 			continue;
 		}

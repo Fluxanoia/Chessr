@@ -2,7 +2,7 @@
 
 #pragma region Constructor
 
-std::map<PieceType, PieceData> generate_piece_data()
+std::map<PieceType, std::shared_ptr<PieceData>> generate_piece_data()
 {
 	std::vector<Coordinate> all_directions = {
 		Maths::UP,
@@ -40,14 +40,22 @@ std::map<PieceType, PieceData> generate_piece_data()
 		{ 1, -2 },
 	};
 
-	PieceData queen = { "Q", all_directions, {}, all_directions, {} };
-	PieceData bishop = { "B", diagonals, {}, diagonals, {} };
-	PieceData rook = { "R", orthogonals, {}, orthogonals, {} };
-	PieceData knight = { "N", {}, knight_vectors, {}, knight_vectors };
-	PieceData king = KingPieceData{ "K", {}, all_directions, {}, all_directions };
-	PieceData pawn = PawnPieceData{ "P", {}, { { -1, -1 }, { -1, 1 } }, {}, { Maths::UP } };
+	std::vector<Coordinate> pawn_push_vectors = { Maths::UP };
+	std::vector<Coordinate> pawn_attack_vectors = {
+		{ -1, -1 },
+		{ -1, 1 }
+	};
 
-	return std::map<PieceType, PieceData>{
+	std::vector<Coordinate> none = {};
+
+	auto queen = std::make_shared<PieceData>("Q", all_directions, none, all_directions, none);
+	auto bishop = std::make_shared<PieceData>("B", diagonals, none, diagonals, none);
+	auto rook = std::make_shared<PieceData>("R", orthogonals, none, orthogonals, none);
+	auto knight = std::make_shared<PieceData>("N", none, knight_vectors, none, knight_vectors);
+	auto king = std::make_shared<KingPieceData>("K", none, all_directions, none, all_directions);
+	auto pawn = std::make_shared<PawnPieceData>("P", none, pawn_attack_vectors, none, pawn_push_vectors);
+
+	return std::map<PieceType, std::shared_ptr<PieceData>>{
 		{ PieceType::QUEEN, queen },
 		{ PieceType::BISHOP, bishop },
 		{ PieceType::ROOK, rook },
@@ -57,7 +65,7 @@ std::map<PieceType, PieceData> generate_piece_data()
 	};
 }
 
-std::vector<PieceType> generate_piece_types(std::map<PieceType, PieceData> map)
+std::vector<PieceType> generate_piece_types(const std::map<PieceType, std::shared_ptr<PieceData>> map)
 {
 	std::vector<PieceType> types = {};
 	for (const auto& [key, _] : map)
@@ -80,7 +88,7 @@ std::optional<PieceType> PieceConfiguration::get_piece_type(std::string represen
 {
 	for (const auto& [key, value] : this->data)
 	{
-		if (value.get_representation() == representation)
+		if (value->get_representation() == representation)
 		{
 			return key;
 		}
@@ -88,7 +96,7 @@ std::optional<PieceType> PieceConfiguration::get_piece_type(std::string represen
 	return {};
 }
 
-const PieceData& PieceConfiguration::get_data(const PieceType piece_type) const
+const std::shared_ptr<PieceData> PieceConfiguration::get_piece_data(const PieceType piece_type) const
 {
 	return this->data.at(piece_type);
 }

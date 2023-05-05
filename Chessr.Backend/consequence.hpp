@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include "types.hpp"
 #include "exceptions.hpp"
 

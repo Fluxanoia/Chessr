@@ -70,8 +70,10 @@ void Boards::apply_move(const std::shared_ptr<Move> move)
 					throw InvalidOperationException("There was an attempt to change a piece that doesn't exist.");
 				}
 
+				auto player = piece.value().get_player();
+
 				grid[i][j].reset();
-				grid[i][j].emplace(change_consequence->get_piece_type(), piece.value().get_player());
+				grid[i][j].emplace(change_consequence->get_piece_type(), player);
 				break;
 			}
 			default:

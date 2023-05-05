@@ -32,7 +32,7 @@ std::shared_ptr<FlagBoard> MoveGenerator::get_king_move_mask(
 			auto possible_attacks = MoveGenerator::get_possible_attacks(
 				boards,
 				opposing_player,
-				piece_configuration.get_data(piece.get_type()),
+				piece_configuration.get_piece_data(piece.get_type()),
 				cell,
 				coordinate);
 
@@ -46,11 +46,11 @@ std::shared_ptr<FlagBoard> MoveGenerator::get_king_move_mask(
 std::vector<Coordinate> MoveGenerator::get_possible_attacks(
 	const Boards& boards,
 	const Player& player,
-	const PieceData& piece_data,
+	const std::shared_ptr<PieceData> piece_data,
 	const Coordinate& coordinate,
 	const std::optional<Coordinate>& ignore_coordinate)
 {
-	const auto moves = piece_data.get_moves(boards, player, coordinate, MoveType::ATTACK, MoveStyle::ALL, ignore_coordinate);
+	const auto moves = piece_data->get_moves(boards, player, coordinate, MoveType::ATTACK, MoveStyle::ALL, ignore_coordinate);
 
 	std::vector<Coordinate> coordinates = {};
 	for (const auto& move : moves)
@@ -96,8 +96,8 @@ std::vector<Coordinate> MoveGenerator::get_attacking_coordinates(
 			continue;
 		}
 
-		const auto& piece_data = piece_configuration.get_data(piece.get_type());
-		auto moves = piece_data.get_moves(
+		const auto& piece_data = piece_configuration.get_piece_data(piece.get_type());
+		auto moves = piece_data->get_moves(
 			boards,
 			opposing_player,
 			cell,
@@ -123,11 +123,11 @@ std::vector<Coordinate> MoveGenerator::get_attacking_coordinates(
 std::vector<Coordinate> MoveGenerator::get_blocks_to_attack(
 	const Boards& boards,
 	const Player& player,
-	const PieceData& piece_data,
+	const std::shared_ptr<PieceData> piece_data,
 	const Coordinate& from,
 	const Coordinate& to)
 {
-	for (auto& jump : piece_data.get_moves(boards, player, from, MoveType::ATTACK, MoveStyle::JUMP, {}))
+	for (auto& jump : piece_data->get_moves(boards, player, from, MoveType::ATTACK, MoveStyle::JUMP, {}))
 	{
 		if (jump->is_attacking(to))
 		{
@@ -136,7 +136,7 @@ std::vector<Coordinate> MoveGenerator::get_blocks_to_attack(
 		}
 	}
 
-	for (auto& ray : piece_data.get_moves(boards, player, from, MoveType::ATTACK, MoveStyle::RAY, {}))
+	for (auto& ray : piece_data->get_moves(boards, player, from, MoveType::ATTACK, MoveStyle::RAY, {}))
 	{
 		const auto& move_consequence = ray->get_move_consequence();
 		if (!move_consequence.has_value())
@@ -144,7 +144,7 @@ std::vector<Coordinate> MoveGenerator::get_blocks_to_attack(
 			continue;
 		}
 
-		auto cells = piece_data.get_ray(
+		auto cells = piece_data->get_ray(
 			boards,
 			player,
 			move_consequence.value()->get_move_vector(),
@@ -174,11 +174,11 @@ std::vector<PinnedPiece> MoveGenerator::get_pins(
 	std::vector<PinnedPiece> pinned_pieces = {};
 	for (const auto& piece_type : piece_configuration.get_piece_types())
 	{
-		const auto& piece_data = piece_configuration.get_data(piece_type);
+		const auto& piece_data = piece_configuration.get_piece_data(piece_type);
 
 		for (const auto& king_position : king_positions)
 		for (const auto& coordinate : board.positions_of(piece_type, opposing_player))
-		for (const auto& move : piece_data.get_moves(boards, opposing_player, coordinate, MoveType::ATTACK, MoveStyle::RAY, {}))
+		for (const auto& move : piece_data->get_moves(boards, opposing_player, coordinate, MoveType::ATTACK, MoveStyle::RAY, {}))
 		{
 			const auto& move_consequence = move->get_move_consequence();
 			if (!move_consequence.has_value())
@@ -192,7 +192,7 @@ std::vector<PinnedPiece> MoveGenerator::get_pins(
 				continue;
 			}
 
-			auto possible_destinations = piece_data.get_ray(
+			auto possible_destinations = piece_data->get_ray(
 				boards,
 				opposing_player,
 				move_consequence.value()->get_move_vector(),
@@ -239,11 +239,11 @@ std::vector<PinnedPiece> MoveGenerator::get_pins(
 std::vector<std::shared_ptr<Move>> MoveGenerator::get_valid_attack_moves(
 	const Boards& boards,
 	const Player& player,
-	const PieceData& piece_data,
+	const std::shared_ptr<PieceData> piece_data,
 	const Coordinate& coordinate)
 {
 	const auto& board = boards.get_current_board();
-	auto moves = piece_data.get_moves(boards, player, coordinate, MoveType::ATTACK, MoveStyle::ALL, {});
+	auto moves = piece_data->get_moves(boards, player, coordinate, MoveType::ATTACK, MoveStyle::ALL, {});
 
 	auto it = moves.begin();
 	while (it != moves.end())
@@ -285,16 +285,16 @@ std::vector<std::shared_ptr<Move>> MoveGenerator::get_valid_attack_moves(
 std::vector<std::shared_ptr<Move>> MoveGenerator::get_valid_push_moves(
 	const Boards& boards,
 	const Player& player,
-	const PieceData& piece_data,
+	const std::shared_ptr<PieceData> piece_data,
 	const Coordinate& coordinate)
 {
-	return piece_data.get_moves(boards, player, coordinate, MoveType::PUSH, MoveStyle::ALL, {});
+	return piece_data->get_moves(boards, player, coordinate, MoveType::PUSH, MoveStyle::ALL, {});
 }
 
 std::vector<std::shared_ptr<Move>> MoveGenerator::get_valid_moves(
 	const Boards& boards,
 	const Player& player,
-	const PieceData& piece_data,
+	const std::shared_ptr<PieceData> piece_data,
 	const Coordinate& coordinate)
 {
 	auto moves = get_valid_push_moves(boards, player, piece_data, coordinate);
