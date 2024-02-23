@@ -1,7 +1,6 @@
 from typing import Any, Callable, Optional
 
 import pygame as pg
-
 from src.engine.factory import Factory
 from src.engine.group_manager import DrawingPriority
 from src.sprites.sprite import ChessrSprite, GroupType
@@ -33,7 +32,7 @@ class Text(ChessrSprite):
 
 #region Super Class Methods
 
-    def update(self, *args : list[Any]) -> None:
+    def update(self, *args : list[Any], **kwargs : dict[str, Any]) -> None:
         if not self.__slide_tween is None:
             self.__slide = self.__slide_tween.value
             if self.__slide_tween.finished():

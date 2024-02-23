@@ -1,7 +1,6 @@
 from typing import Any, Optional, cast
 
 import pygame as pg
-
 from src.engine.factory import Factory
 from src.engine.group_manager import DrawingPriority, GroupType
 from src.utils.enums import Anchor
@@ -35,7 +34,7 @@ class ChessrSprite(pg.sprite.DirtySprite):
         
         self.set_position(xy)
     
-    def update(self, *args : list[Any]) -> None:
+    def update(self, *args : list[Any], **kwargs : dict[str, Any]) -> None:
         position = self.__raw_position
         if self.__position_tween is not None:
             position = cast(FloatVector, self.__position_tween.values)

@@ -1,7 +1,6 @@
 from typing import Any, Optional
 
 import pygame as pg
-
 from src.engine.factory import Factory
 from src.engine.group_manager import DrawingPriority, GroupType
 from src.sprites.sprite import ChessrSprite
@@ -19,7 +18,7 @@ class Spinner(ChessrSprite):
         image = Factory.get().spinner_spritesheet.get_sheet(scale)
         super().__init__(xy, group, DrawingPriority.PLUS_ONE, image, self.__get_src_rect(scale), Anchor.CENTER)
     
-    def update(self, *args: list[Any]) -> None:
+    def update(self, *args : list[Any], **kwargs : dict[str, Any]) -> None:
         if self.__frame_timer.finished():
             self.__frame += 1
             self.__frame_timer.restart()

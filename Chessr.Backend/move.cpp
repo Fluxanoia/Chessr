@@ -17,6 +17,11 @@ const std::vector<std::shared_ptr<Consequence>>& Move::get_consequences() const
 	return this->consequences;
 }
 
+const std::optional<PieceType>& Move::get_promotion_piece_type() const
+{
+	return this->promotion_piece_type;
+}
+
 void Move::set_promotion_type(const PieceType piece_type)
 {
 	if (this->move_property != MoveProperty::PROMOTION)

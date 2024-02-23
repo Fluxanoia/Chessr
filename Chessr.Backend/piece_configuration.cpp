@@ -148,11 +148,11 @@ std::optional<Coordinate> PieceConfiguration::get_coordinate_from_notation(const
 	for (const auto& x : column)
 	{
 		j *= 26;
-		j += static_cast<int>(x) - static_cast<int>('a');
+		j += static_cast<int>(x) - static_cast<int>('a') + 1;
 	}
 
 	auto i = board_height - std::stoi(row);
-	return Coordinate{ i, j };
+	return Coordinate{ i, j - 1 };
 }
 
 std::string PieceConfiguration::get_notation_from_coordinate(const Coordinate coordinate, const CoordinateValue board_height) const
@@ -164,10 +164,11 @@ std::string PieceConfiguration::get_file_from_coordinate(CoordinateValue file) c
 {
 	file++;
 	std::string repr = "";
+	const auto base_char_value = static_cast<long long>('a');
 	while (file > 0)
 	{
 		auto r = (file - 1) % 26;
-		repr = std::to_string(static_cast<char>(static_cast<int>('a') + r)) + repr;
+		repr = std::string(1, base_char_value + r) + repr;
 		file = (file - r) / 26;
 	}
 	return repr;

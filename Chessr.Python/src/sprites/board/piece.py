@@ -47,7 +47,7 @@ class Piece(ChessrSprite):
         self.__shadow.delete()
         super().delete()
 
-    def update(self, *args : list[Any]) -> None:
+    def update(self, *args : list[Any], **kwargs : dict[str, Any]) -> None:
         if not self.__lift_tween is None:
             self.__lift = self.__lift_tween.value
             self.__update_shadow_alpha()
